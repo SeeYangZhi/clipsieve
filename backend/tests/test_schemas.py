@@ -47,6 +47,7 @@ def test_merge_flattens_refs_and_has_no_file_refs():
         "Brief",
         "Counters",
         "Stage",
+        "Question",
     ]:
         assert name in merged["$defs"], name
 
@@ -83,8 +84,71 @@ def test_generated_ts_has_banner_and_types():
         "Run",
         "Counters",
         "Brief",
+        "Question",
     ]:
         assert f"interface {name} " in ts or f"type {name} " in ts, name
+
+
+def test_ts_bounded_arrays_are_plain_arrays():
+    ts = (ROOT / "frontend/src/lib/types.ts").read_text(encoding="utf-8")
+    assert "[string, string" not in ts
+    assert "persona_fit_criteria: string[];" in ts
+    assert "keyframes: string[];" in ts
+    assert "criteria: string[];" in ts
+    assert "export type Question = ChoiceQuestion | ScoreQuestion | NoulQuestion;" in ts
+
+
+def test_question_is_plain_union_alias():
+    from typing import TypeAliasType, get_args
+
+    from clipsieve.models import ChoiceQuestion, NoulQuestion, Question, RubricPack, ScoreQuestion
+
+    assert isinstance(Question, TypeAliasType)
+    assert set(get_args(Question.__value__)) == {ChoiceQuestion, ScoreQuestion, NoulQuestion}
+    pack = RubricPack.model_validate(
+        {
+            "name": "t",
+            "version": 1,
+            "jev_model": "jev-test",
+            "language_mode": "raw",
+            "metadata_pass": [],
+            "pass_one_keep": 0.5,
+            "questions": {
+                "hook": {"type": "choice", "instructions": "i", "criteria": {"a": "x", "b": "y"}},
+                "clarity": {"type": "score", "instructions": "i", "criteria": ["low", "high"]},
+                "risky": {"type": "noul", "instructions": "i"},
+            },
+            "selection": {
+                "weights": {},
+                "hard_filters": {},
+                "review_confidence_below": 0.5,
+                "shortlist_size": 3,
+                "diversity": {},
+            },
+        }
+    )
+    assert isinstance(pack.questions["hook"], ChoiceQuestion)
+    assert isinstance(pack.questions["clarity"], ScoreQuestion)
+    assert isinstance(pack.questions["risky"], NoulQuestion)
+
+
+def test_constrained_map_values_are_plain_ints():
+    from pydantic import ValidationError
+
+    from clipsieve.models import Plan
+
+    base = {
+        "run_id": "r",
+        "brief": {"text": "t", "topic": "x", "audience": "a", "persona": "p"},
+        "queries": [],
+        "rubric_pack": "default",
+        "persona_fit_criteria": ["a", "b", "c", "d", "e"],
+    }
+    plan = Plan.model_validate({**base, "quantities": {"youtube": 50}})
+    assert plan.quantities == {"youtube": 50}
+    assert type(plan.quantities["youtube"]) is int
+    with pytest.raises(ValidationError):
+        Plan.model_validate({**base, "quantities": {"youtube": 0}})
 
 
 @pytest.mark.parametrize("n", [1, 2, 3, 4, 5])

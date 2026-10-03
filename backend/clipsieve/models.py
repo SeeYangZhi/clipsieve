@@ -330,6 +330,9 @@ class NoulQuestion(BaseModel):
     instructions: str
 
 
+type Question = ChoiceQuestion | ScoreQuestion | NoulQuestion
+
+
 class HardFilters(BaseModel):
     model_config = ConfigDict(
         extra="forbid",
@@ -371,7 +374,7 @@ class RubricPack(BaseModel):
     language_mode: LanguageMode
     metadata_pass: list[str]
     pass_one_keep: Annotated[float, Field(ge=0.0, le=1.0)]
-    questions: dict[str, ChoiceQuestion | ScoreQuestion | NoulQuestion]
+    questions: dict[str, Question]
     selection: SelectionPolicy
 
 

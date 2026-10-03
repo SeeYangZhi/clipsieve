@@ -26,13 +26,7 @@
     "pass_one_keep": { "type": "number", "minimum": 0, "maximum": 1 },
     "questions": {
       "type": "object",
-      "additionalProperties": {
-        "oneOf": [
-          { "$ref": "#/$defs/ChoiceQuestion" },
-          { "$ref": "#/$defs/ScoreQuestion" },
-          { "$ref": "#/$defs/NoulQuestion" }
-        ]
-      }
+      "additionalProperties": { "$ref": "#/$defs/Question" }
     },
     "selection": { "$ref": "#/$defs/SelectionPolicy" }
   },
@@ -75,6 +69,13 @@
         "type": { "type": "string", "const": "noul" },
         "instructions": { "type": "string" }
       }
+    },
+    "Question": {
+      "oneOf": [
+        { "$ref": "#/$defs/ChoiceQuestion" },
+        { "$ref": "#/$defs/ScoreQuestion" },
+        { "$ref": "#/$defs/NoulQuestion" }
+      ]
     },
     "SelectionPolicy": {
       "type": "object",

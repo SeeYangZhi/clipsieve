@@ -36,6 +36,8 @@ def main() -> int:
         "--field-constraints",
         # Annotated keeps constrained map values plain (dict[str, int], not dict[str, RootModel]).
         "--use-annotated",
+        # Unions such as Question become `type X = A | B`, not RootModel, so isinstance() works.
+        "--use-type-alias",
         "--snake-case-field",
         "--disable-timestamp",
         "--use-schema-description",
