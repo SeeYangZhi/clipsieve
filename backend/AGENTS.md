@@ -28,9 +28,10 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/events/payloads.py` | `PAYLOAD_MODELS`, one Pydantic model per `RunEventType` |
 | `clipsieve/adapters/` | `Adapter` protocol, `registry`, `local_import`, `youtube`, `ytdlp_client`, `vtt` |
 | `clipsieve/evidence/` | `asr`, `ocr`, `frames`, `comments`, `packet`, `extract` |
+| `clipsieve/judge/rubric.py` | rubric pack loading, per-pass question selection, TypeSafe primitive conversion, persona criteria |
 | `clipsieve/select/select.py` | `Selection` model (plan 01); selection functions (plan 03) |
 
-Later plans add `judge/`, `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
+Later plans add the rest of `judge/`, then `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
 
 ## adapters/
 
@@ -72,3 +73,14 @@ Turns a post's media into text. No per-post network calls; Whisper and PaddleOCR
 - `Evidence.truncated` is `False` at extraction; the Runner sets it from `build_state`.
 - Helpers: `ocr_lang_for_post` (zh to `ch`, else `en`), `read_sidecar_transcript` (`asr.py`), `write_thumbnail`, `resolve_media`, `run_relative` (`extract.py`).
 - `evidence/` never imports from `adapters/`.
+
+## judge/
+
+Turns rubric packs into TypeSafe Jev requests and Jev answers into `JudgeAnswer`s.
+
+- `rubric.py` owns the conversion between pack questions and `typesafe_sdk` primitives. `to_typesafe` maps `choice` to `Choice(instructions, criteria=dict)`, `score` to `Score(instructions, criteria=list)` (level n is list index n, from 0), `noul` to `Noul(instructions)`.
+- `from_typesafe(question_id, question, response)` reads `response.choices`, `response.scores` or `response.nouls` (the `SystemOneResponse` cached views). `JudgeAnswer.value` is the label for choice, the fractional score for score, the yes-probability for noul. Score `legend` and `probabilities` keys are the SDK's integer levels as strings (`"0"` is the lowest level). Noul answers carry no `confidence` and no `probabilities`.
+- `find_pack(name, rubrics_dir)` reads `<rubrics_dir>/<name>.yaml` and raises `PackNotFound` for a missing file or a name that is not a plain file stem (letters, digits, `.`, `_`, `-`).
+- `questions_for_pass`: `pass_one` returns the `metadata_pass` questions in that order; `pass_two` returns every question.
+- `with_persona_criteria(pack, criteria)` returns a deep copy with `persona_fit` replaced by a validated 5-level `ScoreQuestion`; the input pack is never mutated.
+- Tests never call the TypeSafe API; `from_typesafe` tests use hand-built response objects.

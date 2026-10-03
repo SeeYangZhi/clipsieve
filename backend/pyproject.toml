@@ -17,6 +17,7 @@ dependencies = [
   "httpx>=0.28",
   "yt-dlp>=2026.1.1",
   "pillow>=10.4",
+  "typesafe-sdk>=0.7.2",
 ]
 
 [project.optional-dependencies]
@@ -42,6 +43,7 @@ dev = [
   "pytest-asyncio>=0.24",
   "ruff>=0.6",
   "datamodel-code-generator>=0.26",
+  "types-pyyaml>=6.0.12.20260906",
 ]
 
 [build-system]

@@ -72,5 +72,6 @@ Implementation plan: `docs/superpowers/plans/`.
 |---|---|
 | `backend/AGENTS.md` | Python package `clipsieve`: config, logging, store, events (plan 01); adapters, evidence (plan 02); judge, select, explain, pipeline, API, CLI (plan 03) |
 | `packages/schema/AGENTS.md` | JSON Schemas and the two generators |
+| `rubrics/AGENTS.md` | Rubric pack YAML (`creator-hooks-v1`) and per-pack calibration notes |
 
-`frontend/` currently holds a placeholder `package.json` so root scripts resolve; plan 04 replaces it and adds `frontend/AGENTS.md`. `rubrics/`, `contrib/adapter-xhs-mediacrawler/` and `evals/` get their AGENTS.md in plans 03 and 05.
+`frontend/` currently holds a placeholder `package.json` so root scripts resolve; plan 04 replaces it and adds `frontend/AGENTS.md`. `contrib/adapter-xhs-mediacrawler/` and `evals/` get their AGENTS.md when a later plan creates them.
