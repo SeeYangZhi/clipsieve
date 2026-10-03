@@ -3688,13 +3688,13 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Produces: typer app `app` with commands `run`, `replay`, `reselect`, `reindex`, `eval` (stub). Exit codes: 0 success, 1 run failed, 2 usage or not implemented.
 - `print` is permitted in this module only (output helpers `_say`, `_json`).
 
-- [ ] **Step 1: Add dependency**
+- [x] **Step 1: Add dependency**
 
 ```bash
 cd backend && uv add typer
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `backend/tests/test_cli.py`:
 
@@ -3766,12 +3766,12 @@ def test_unknown_run_exits_1(tmp_path):
     assert result.exit_code == 1 and "not found" in result.output
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/test_cli.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.cli'` (or an ImportError if plan 01 left a placeholder `cli.py`; replace it).
 
-- [ ] **Step 4: Implement `cli.py`**
+- [x] **Step 4: Implement `cli.py`**
 
 ```python
 """`sieve` command line. The only module in clipsieve/ allowed to print."""
@@ -3913,12 +3913,12 @@ def eval(pack: str = typer.Option(..., "--pack"), golden: Path = typer.Option(..
 
 If plan 01 generated `Settings` with `frozen=True`, replace the `model_copy` in `_settings` with `Settings(clipsieve_data_dir=data_dir)` plus `_env_file` defaults; the test passes `CLIPSIEVE_DATA_DIR` through the environment either way.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/test_cli.py -q`
 Expected: `6 passed`. Then `cd backend && uv run sieve --help` prints the five commands.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/cli.py backend/tests/test_cli.py backend/pyproject.toml backend/uv.lock
