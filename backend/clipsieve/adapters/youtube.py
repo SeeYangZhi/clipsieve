@@ -13,7 +13,12 @@ from typing import Any
 
 import httpx
 
-from clipsieve.adapters.base import AdapterHealth, hash_creator, incoming_dir
+from clipsieve.adapters.base import (
+    AdapterHealth,
+    MediaDownloadError,
+    hash_creator,
+    incoming_dir,
+)
 from clipsieve.adapters.vtt import parse_vtt, vtt_lang_from_filename
 from clipsieve.adapters.ytdlp_client import FakeYtDlpClient, RealYtDlpClient, YtDlpClient
 from clipsieve.config import Settings, ensure_creator_salt
@@ -35,14 +40,16 @@ _DATA_API_FULL_LANGS = {"zh-Hans", "zh-Hant"}
 RAW_COMMENT_KEYS = frozenset({"id", "parent", "text", "like_count", "timestamp", "is_pinned"})
 # yt-dlp writes `video.<ext>` (outtmpl `video.%(ext)s`); these siblings are not the media file.
 _NOT_MEDIA_SUFFIXES = {".vtt", ".part", ".ytdl", ".json"}
-
-
-class MediaDownloadError(RuntimeError):
-    """yt-dlp finished without leaving a media file (over max_filesize, or unavailable)."""
+# A live, scheduled or just-ended stream is not a Short, whatever its duration says.
+_LIVE_STATUSES = {"is_live", "is_upcoming", "post_live"}
 
 
 def _watch_url(video_id: str) -> str:
     return f"https://www.youtube.com/watch?v={video_id}"
+
+
+def _is_live(info: dict[str, Any]) -> bool:
+    return bool(info.get("is_live")) or info.get("live_status") in _LIVE_STATUSES
 
 
 def _posted_at(info: dict[str, Any]) -> datetime | None:
@@ -165,7 +172,12 @@ class YouTubeAdapter:
     # -- search ---------------------------------------------------------------
 
     def _is_short(self, duration: float | None) -> bool:
-        return duration is None or duration < self._max_duration_s
+        return duration is not None and duration < self._max_duration_s
+
+    def _flat_entry_may_be_short(self, entry: dict[str, Any]) -> bool:
+        # Flat search entries often lack a duration; let those through to the full info check.
+        duration = entry.get("duration")
+        return not _is_live(entry) and (duration is None or self._is_short(duration))
 
     def _candidate_ids(self, query: Query, n: int) -> list[str]:
         if self._api_key:
@@ -178,7 +190,7 @@ class YouTubeAdapter:
                 )
                 log.warning("youtube_data_api_failed", error_type=type(exc).__name__, status=status)
         entries = self._client.search(query.query, n)
-        return [e["id"] for e in entries if e.get("id") and self._is_short(e.get("duration"))]
+        return [e["id"] for e in entries if e.get("id") and self._flat_entry_may_be_short(e)]
 
     def _data_api_ids(self, query: Query, n: int) -> list[str]:
         if self._http is None:
@@ -224,7 +236,9 @@ class YouTubeAdapter:
         if not info.get("id"):
             log.warning("youtube_info_empty", video_id=video_id)
             return None
-        if not self._is_short(info.get("duration")):
+        # A finished video always reports a duration, so a missing one is not a Short either.
+        if _is_live(info) or not self._is_short(info.get("duration")):
+            log.info("youtube_not_a_short", video_id=video_id, live_status=info.get("live_status"))
             return None
         raw = _strip_comment_authors(info)
         post_id = f"youtube:{raw['id']}"
@@ -273,9 +287,13 @@ class YouTubeAdapter:
 
     def _download(self, post: Post, dest: Path) -> Path:
         video_id = post.id.partition(":")[2]
-        result = self._client.download(
-            _watch_url(video_id), dest, subtitle_langs=_caption_langs(post.lang)
-        )
+        try:
+            result = self._client.download(
+                _watch_url(video_id), dest, subtitle_langs=_caption_langs(post.lang)
+            )
+        except Exception as exc:  # noqa: BLE001 - yt-dlp's DownloadError and anything else
+            log.warning("youtube_download_failed", post_id=post.id, error=str(exc))
+            raise MediaDownloadError(f"yt-dlp download failed for {post.id}: {exc}") from exc
         # The format fallback may yield another container than mp4: trust what yt-dlp reports.
         downloads = result.get("requested_downloads") or []
         reported = downloads[0].get("filepath") if downloads else None

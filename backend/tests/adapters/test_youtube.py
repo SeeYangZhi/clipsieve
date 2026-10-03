@@ -291,3 +291,72 @@ def test_data_api_key_travels_in_a_header_not_the_url(settings):
     assert request.headers["x-goog-api-key"] == "SECRET-KEY"
     assert "SECRET-KEY" not in str(request.url)
     assert request.url.params["relevanceLanguage"] == "zh-Hans"
+
+
+# -- fix round 1: live streams, shared MediaDownloadError ----------------------------------------
+
+
+class InfoPatchClient(FakeYtDlpClient):
+    """Applies `patch` to the recorded info of aB3dEfGhIjK."""
+
+    def __init__(self, fixture_dir: Path, patch: dict, drop: tuple[str, ...] = ()) -> None:
+        super().__init__(fixture_dir)
+        self._patch = patch
+        self._drop = drop
+
+    def info(self, url: str) -> dict:
+        meta = super().info(url)
+        if meta["id"] == "aB3dEfGhIjK":
+            meta = {k: v for k, v in meta.items() if k not in self._drop} | self._patch
+        return meta
+
+
+class FailingDownloadClient(FakeYtDlpClient):
+    def download(self, url: str, dest: Path, subtitle_langs: list[str]) -> dict:
+        raise RuntimeError("ERROR: [youtube] aB3dEfGhIjK: Video unavailable")
+
+
+@pytest.mark.parametrize(
+    ("patch", "drop"),
+    [
+        ({"is_live": True}, ("duration",)),
+        ({"live_status": "is_live"}, ("duration",)),
+        ({"live_status": "is_upcoming"}, ("duration",)),
+        ({"live_status": "post_live"}, ()),
+        ({}, ("duration",)),  # a finished video always reports a duration
+    ],
+    ids=["is_live", "live_status_is_live", "is_upcoming", "post_live", "no_duration"],
+)
+def test_live_and_durationless_videos_are_not_shorts(settings, patch, drop):
+    client = InfoPatchClient(FIXTURES, patch, drop)
+    adapter = YouTubeAdapter(client=client, data_dir=settings.clipsieve_data_dir, salt="salt")
+    posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], 10))
+    assert [p.id for p in posts] == ["youtube:zH1sH4nGh41"]
+
+
+def test_flat_search_entry_without_duration_still_reaches_info(settings, fixture_copy):
+    entries = json.loads((fixture_copy / "search.json").read_text(encoding="utf-8"))
+    del entries[0]["duration"]
+    (fixture_copy / "search.json").write_text(json.dumps(entries), encoding="utf-8")
+    adapter = YouTubeAdapter(
+        client=FakeYtDlpClient(fixture_copy), data_dir=settings.clipsieve_data_dir, salt="salt"
+    )
+    posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], 10))
+    assert "youtube:aB3dEfGhIjK" in {p.id for p in posts}
+
+
+def test_media_download_error_is_the_shared_base_class():
+    from clipsieve.adapters import base
+
+    assert MediaDownloadError is base.MediaDownloadError
+
+
+def test_fetch_media_wraps_client_download_failures(settings, tmp_path):
+    adapter = YouTubeAdapter(
+        client=FailingDownloadClient(FIXTURES), data_dir=settings.clipsieve_data_dir, salt="salt"
+    )
+    post = _first(adapter, "aB3dEfGhIjK")
+    with pytest.raises(MediaDownloadError) as info:
+        adapter.fetch_media(post, tmp_path / "m")
+    assert isinstance(info.value.__cause__, RuntimeError)
+    assert "Video unavailable" in str(info.value)

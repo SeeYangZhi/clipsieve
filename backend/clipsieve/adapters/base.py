@@ -9,6 +9,10 @@ from typing import Protocol, runtime_checkable
 from clipsieve.models import Post, Query
 
 
+class MediaDownloadError(Exception):
+    """yt-dlp finished without leaving a media file (over max_filesize, or unavailable)."""
+
+
 @dataclass
 class AdapterHealth:
     ok: bool
@@ -27,7 +31,10 @@ class Adapter(Protocol):
 
 
 def hash_creator(platform_creator_id: str, salt: str) -> str:
-    """Stable, salted, one-way creator identifier. Never store the raw id."""
+    """Stable, salted, one-way creator identifier.
+
+    Never put the raw id in a Post; raw payloads keep platform ids as local provenance.
+    """
     return hashlib.sha256(f"{salt}:{platform_creator_id}".encode()).hexdigest()
 
 
