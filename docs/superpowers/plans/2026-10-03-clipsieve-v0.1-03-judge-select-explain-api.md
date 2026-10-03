@@ -1835,7 +1835,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Produces: `class ClaudeCliBackend(ExplainBackend)` with `__init__(self, bin: str, max_budget_usd: float, model: str = "opus", effort: str = "high", timeout_s: int = 900)`, `plan(...)`, `explain(...)`, and the module constants `PLAN_TASK = "Create the research plan for the brief in the JSON on stdin."`, `EXPLAIN_TASK = "Analyze the shortlisted posts in the JSON on stdin and return the report."`.
 - Shim env contract (test only): `CLIPSIEVE_SHIM_STATE` (path to a counter file) and `CLIPSIEVE_SHIM_BAD_FIRST=1` make the shim return a report citing `local:does-not-exist` on the first explain call and the fixture report afterwards. `CLIPSIEVE_SHIM_FAIL=1` makes it print `{"is_error": true, "result": "shim failure"}`. The shim records every argv line to `$CLIPSIEVE_SHIM_STATE.argv` when that variable is set.
 
-- [ ] **Step 1: Write the shim**
+- [x] **Step 1: Write the shim**
 
 `backend/tests/fixtures/claude-shim/claude`:
 
@@ -1865,7 +1865,7 @@ python3 -c 'import json,sys; print(json.dumps({"is_error": False, "structured_ou
 Run: `chmod +x backend/tests/fixtures/claude-shim/claude && echo '{"mode": "plan"}' | backend/tests/fixtures/claude-shim/claude | head -c 80`
 Expected: `{"is_error": false, "structured_output": {"run_id": "FIXTURE", ...`
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `backend/tests/explain/test_claude_cli.py`:
 
@@ -1951,12 +1951,12 @@ def test_missing_binary_raises(packet):
         ClaudeCliBackend(bin="/definitely/not/claude", max_budget_usd=3).explain(packet)
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/explain/test_claude_cli.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.explain.claude_cli'`.
 
-- [ ] **Step 4: Implement `explain/claude_cli.py`**
+- [x] **Step 4: Implement `explain/claude_cli.py`**
 
 ```python
 """Explain backend that shells out to `claude -p` with structured output.
@@ -2065,12 +2065,12 @@ class ClaudeCliBackend(ExplainBackend):
         raise ExplainError("unreachable")
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/explain -q`
 Expected: `11 passed, 1 xfailed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/explain/claude_cli.py backend/tests/explain/test_claude_cli.py backend/tests/fixtures/claude-shim
