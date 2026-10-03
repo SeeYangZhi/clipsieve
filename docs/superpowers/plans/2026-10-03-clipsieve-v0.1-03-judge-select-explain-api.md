@@ -69,7 +69,7 @@ If any of these names is missing when you start a task, stop and fix the earlier
   - `with_persona_criteria(pack: RubricPack, criteria: list[str]) -> RubricPack`
   - `class PackNotFound(Exception)`
 
-- [ ] **Step 1: Add dependencies**
+- [x] **Step 1: Add dependencies**
 
 ```bash
 cd backend && uv add pyyaml typesafe-sdk && uv add --dev types-PyYAML
@@ -77,7 +77,7 @@ cd backend && uv add pyyaml typesafe-sdk && uv add --dev types-PyYAML
 
 Expected: `pyproject.toml` gains `pyyaml>=6` and `typesafe-sdk` under `[project] dependencies`; `uv.lock` updated.
 
-- [ ] **Step 2: Write the rubric pack in full**
+- [x] **Step 2: Write the rubric pack in full**
 
 `rubrics/creator-hooks-v1.yaml`:
 
@@ -167,7 +167,7 @@ selection:
       max_share: 0.5
 ```
 
-- [ ] **Step 3: Write the calibration template and DOX docs**
+- [x] **Step 3: Write the calibration template and DOX docs**
 
 `rubrics/creator-hooks-v1.calibration.md`:
 
@@ -226,7 +226,7 @@ None.
 
 Root `AGENTS.md`: replace the Child DOX Index line for rubrics so the list reads `rubrics/` as present (keep the others as "when created").
 
-- [ ] **Step 4: Write the failing tests**
+- [x] **Step 4: Write the failing tests**
 
 `backend/tests/judge/__init__.py` (empty) and `backend/tests/judge/test_rubric.py`:
 
@@ -314,12 +314,12 @@ def test_with_persona_criteria_requires_five():
         with_persona_criteria(pack, ["only", "four", "levels", "here"])
 ```
 
-- [ ] **Step 5: Run tests to verify they fail**
+- [x] **Step 5: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/judge/test_rubric.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.judge'`.
 
-- [ ] **Step 6: Implement `judge/rubric.py`**
+- [x] **Step 6: Implement `judge/rubric.py`**
 
 `backend/clipsieve/judge/__init__.py`: empty.
 
@@ -422,12 +422,12 @@ def with_persona_criteria(pack: RubricPack, criteria: list[str]) -> RubricPack:
     return pack.model_copy(update={"questions": {**pack.questions, "persona_fit": new_q}}, deep=True)
 ```
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/judge/test_rubric.py -q`
 Expected: `6 passed`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add rubrics backend/clipsieve/judge backend/tests/judge backend/pyproject.toml backend/uv.lock AGENTS.md
