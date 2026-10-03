@@ -1,4 +1,5 @@
 import asyncio
+import dataclasses
 import json
 from pathlib import Path
 
@@ -138,7 +139,7 @@ async def test_concurrency_is_bounded():
             for i in range(20)
         ]
     )
-    assert client.max_in_flight <= 4
+    assert client.max_in_flight == 4
     assert len(client.calls) == 20
 
 
@@ -269,9 +270,32 @@ async def test_missing_answer_raises_judge_failed():
     assert ei.value.post_id == "local:m" and ei.value.attempts == 1
 
 
+def install_mock_sdk(monkeypatch, handler):
+    """Route the default factory's real `AsyncTypeSafeClient` through `handler`.
+
+    The judge's own `RetryPolicy` is kept; only its backoff is zeroed so SDK retries never sleep.
+    """
+    built = []
+
+    def client_with_mock_transport(**kwargs):
+        if kwargs.get("retry") is not None:
+            kwargs["retry"] = dataclasses.replace(kwargs["retry"], backoff_initial=0.0)
+        client = AsyncTypeSafeClient(**kwargs, transport=httpx2.MockTransport(handler))
+        built.append(client)
+        return client
+
+    monkeypatch.setattr(typesafe_client, "AsyncTypeSafeClient", client_with_mock_transport)
+    return built
+
+
+def answer_200():
+    qs = {qid: to_typesafe(q) for qid, q in pack_questions("pass_two").items()}
+    return httpx2.Response(200, json=response_payload(qs))
+
+
 async def test_default_client_batches_one_request_and_owns_retries(monkeypatch, capsys):
     """The real SDK client over a mock transport: one POST per attempt carrying every question,
-    state sent as a JSON object with literal non-ASCII, and no SDK-internal retries."""
+    state sent as a JSON object with literal non-ASCII, and 429/529 retried by our loop only."""
     secret = "sk-test-secret-key"
     bodies = []
     statuses = iter([429, 529, 200])
@@ -282,17 +306,9 @@ async def test_default_client_batches_one_request_and_owns_retries(monkeypatch, 
         status = next(statuses)
         if status != 200:
             return httpx2.Response(status, json={"error": "busy"})
-        qs = {qid: to_typesafe(q) for qid, q in pack_questions("pass_two").items()}
-        return httpx2.Response(200, json=response_payload(qs))
+        return answer_200()
 
-    built = []
-
-    def client_with_mock_transport(**kwargs):
-        client = AsyncTypeSafeClient(**kwargs, transport=httpx2.MockTransport(handler))
-        built.append(client)
-        return client
-
-    monkeypatch.setattr(typesafe_client, "AsyncTypeSafeClient", client_with_mock_transport)
+    built = install_mock_sdk(monkeypatch, handler)
     slept = []
 
     async def sleeper(s):
@@ -315,3 +331,55 @@ async def test_default_client_batches_one_request_and_owns_retries(monkeypatch, 
     assert built[0]._http_client.is_closed
     out = capsys.readouterr()
     assert secret not in out.out + out.err
+
+
+@pytest.mark.parametrize("blip", ["connect", "timeout", "503"])
+async def test_sdk_retries_network_blips_inside_one_attempt(monkeypatch, blip):
+    """Connection errors, timeouts and plain 5xx stay with the SDK's own retries: the post
+    succeeds in one `judge()` call and our 429/529 backoff never runs."""
+    requests = []
+
+    def handler(request: httpx2.Request) -> httpx2.Response:
+        requests.append(request)
+        if len(requests) == 1:
+            if blip == "connect":
+                raise httpx2.ConnectError("network unreachable", request=request)
+            if blip == "timeout":
+                raise httpx2.ReadTimeout("read timed out", request=request)
+            return httpx2.Response(503, json={"error": "unavailable"})
+        return answer_200()
+
+    install_mock_sdk(monkeypatch, handler)
+    slept = []
+
+    async def sleeper(s):
+        slept.append(s)
+
+    judge = TypeSafeJudge(api_key="k", sleeper=sleeper)
+    result = await judge.judge(
+        "local:a", "pass_two", state_for("local:a"), pack_questions("pass_two"), "m"
+    )
+    await judge.aclose()
+    assert result.post_id == "local:a"
+    assert len(requests) == 2 and slept == []
+
+
+@pytest.mark.parametrize(
+    ("retry_after_ms", "low", "high"),
+    [("5000", 5.0, 5.0), ("120000", 30.0, 30.0), ("100", 0.5, 0.6)],
+    ids=["server-wait", "capped-30s", "schedule-floor"],
+)
+async def test_rate_limit_honours_retry_after(retry_after_ms, low, high):
+    error = TypeSafeRateLimitError(
+        429, {"error": "slow down"}, httpx2.Headers({"retry-after-ms": retry_after_ms})
+    )
+    assert error.retry_after_ms == float(retry_after_ms)
+    slept = []
+
+    async def sleeper(s):
+        slept.append(s)
+
+    client = FakeClient(fail_plan={"local:r": [error]})
+    judge = TypeSafeJudge(api_key="k", client_factory=lambda: client, sleeper=sleeper)
+    await judge.judge("local:r", "pass_one", state_for("local:r"), pack_questions("pass_one"), "m")
+    assert len(slept) == 1 and low <= slept[0] <= high  # server wait, schedule floor, 30 s cap

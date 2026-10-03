@@ -1,7 +1,8 @@
 """TypeSafe Jev judge: one batched system_one request per post, bounded concurrency, backoff.
 
-Retries are owned here (429/529, `0.5 s * 2^n` capped at 8 s plus jitter); the SDK client is
-built with its own retries off so attempts and delays are exactly the ones below.
+429 and 529 are retried here (`0.5 s * 2^n` capped at 8 s plus jitter, or the server's
+Retry-After when longer, up to 30 s). The SDK client keeps its own retries for connection errors,
+timeouts and the other 408/5xx statuses, inside one of our attempts, but never for 429 or 529.
 """
 
 from __future__ import annotations
@@ -25,7 +26,9 @@ RETRYABLE_STATUS = {429, 529}
 BASE_BACKOFF_S = 0.5
 MAX_BACKOFF_S = 8.0
 JITTER_S = 0.1
-SDK_RETRY = RetryPolicy(max_retries=0)
+MAX_RETRY_AFTER_S = 30.0
+# SDK defaults (2 retries, connection/timeout errors, 408 and 5xx) minus the statuses we own.
+SDK_RETRY = RetryPolicy(http_statuses=RetryPolicy().http_statuses - RETRYABLE_STATUS)
 
 
 def _is_retryable(exc: BaseException) -> bool:
@@ -34,6 +37,14 @@ def _is_retryable(exc: BaseException) -> bool:
         return True
     name = type(exc).__name__.lower()
     return "ratelimit" in name or "overloaded" in name
+
+
+def _backoff_s(attempt: int, exc: BaseException) -> float:
+    delay = min(MAX_BACKOFF_S, BASE_BACKOFF_S * (2 ** (attempt - 1))) + random.uniform(0, JITTER_S)
+    retry_after_ms = getattr(exc, "retry_after_ms", None)  # TypeSafeRateLimitError, parsed
+    if retry_after_ms:
+        delay = max(delay, min(MAX_RETRY_AFTER_S, retry_after_ms / 1000))
+    return delay
 
 
 def _default_client_factory(api_key: str) -> Callable[[], Any]:
@@ -55,6 +66,8 @@ class TypeSafeJudge(Judge):
         self._factory = client_factory or _default_client_factory(api_key)
         self._client: Any = None
         self._sem = asyncio.Semaphore(concurrency)
+        # Total attempts per post (5 = at most 5 requests), unlike the SDK's
+        # `RetryPolicy.max_retries`, which counts retries after the first request.
         self._max_retries = max_retries
         self._sleep = sleeper
 
@@ -88,8 +101,7 @@ class TypeSafeJudge(Judge):
                     )
                 except Exception as exc:
                     if _is_retryable(exc) and attempts < self._max_retries:
-                        delay = min(MAX_BACKOFF_S, BASE_BACKOFF_S * (2 ** (attempts - 1)))
-                        delay += random.uniform(0, JITTER_S)
+                        delay = _backoff_s(attempts, exc)
                         log.warning(
                             "jev_retry",
                             post_id=post_id,
