@@ -765,7 +765,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `clipsieve.store.paths.safe_post_filename`, `clipsieve.models.JudgeResult`.
 - Produces: `class RecordedJudge(Judge)` with `__init__(self, fixture_dir: Path)`, `calls: list[tuple[str, str]]` (post_id, pass_name) for test assertions; `class FixtureMissing(FileNotFoundError)`.
 
-- [ ] **Step 1: Write the fixture generator**
+- [x] **Step 1: Write the fixture generator**
 
 `backend/tests/fixtures/judge/make_fixtures.py`. The table encodes the intended story: fx-001 and fx-004 are strong Shanghai-expat vlogs, fx-002 is a talking-head visa explainer with a risky claim, fx-003 is an off-topic food carousel, fx-005 is an on-topic image carousel with a weak hook and low confidence (lands in review).
 
@@ -826,7 +826,7 @@ print("wrote", len(TABLE) * 2, "fixtures")
 Run: `cd backend && uv run python tests/fixtures/judge/make_fixtures.py`
 Expected: `wrote 10 fixtures` and ten JSON files beside the script.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `backend/tests/judge/test_recorded.py`:
 
@@ -868,12 +868,12 @@ async def test_missing_fixture_raises():
         await judge.judge("local:nope", "pass_one", {}, {}, "jev-1.13.0")
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/judge/test_recorded.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.judge.recorded'`.
 
-- [ ] **Step 4: Implement `judge/recorded.py`**
+- [x] **Step 4: Implement `judge/recorded.py`**
 
 ```python
 """Judge fake that replays JudgeResult fixtures by post id and pass."""
@@ -910,12 +910,12 @@ class RecordedJudge(Judge):
         return result.model_copy(update={"answers": answers})
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/judge -q`
 Expected: `15 passed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/judge/recorded.py backend/tests/judge backend/tests/fixtures/judge
