@@ -49,7 +49,7 @@
 - Consumes: nothing.
 - Produces: root scripts `dev`, `dev:api`, `dev:web`, `schema`, `check:schema`, `lint`, `format`, `test`, `typecheck`, `check` exactly as in the overview. Env variable names consumed by Task 4.
 
-- [ ] **Step 1: Verify `.gitignore` already excludes secrets and run data, then add the schema build dir**
+- [x] **Step 1: Verify `.gitignore` already excludes secrets and run data, then add the schema build dir**
 
 Run: `grep -n "^\.env$\|^data/\|^runs/" .gitignore`
 Expected: three matching lines.
@@ -62,7 +62,7 @@ Append to `.gitignore`:
 packages/schema/.build/
 ```
 
-- [ ] **Step 2: Create root `package.json` with the exact scripts from the overview**
+- [x] **Step 2: Create root `package.json` with the exact scripts from the overview**
 
 ```json
 {
@@ -88,7 +88,7 @@ packages/schema/.build/
 }
 ```
 
-- [ ] **Step 3: Create `biome.jsonc`**
+- [x] **Step 3: Create `biome.jsonc`**
 
 ```jsonc
 {
@@ -103,7 +103,7 @@ packages/schema/.build/
 
 Note: ultracite 7 exports only `ultracite/biome/*` presets (no bare `ultracite`), so `extends` names the `core` preset; plan 04 adds `ultracite/biome/react` and `ultracite/biome/next` in `frontend/biome.jsonc`. Biome's `noBiomeFirstException` rule rejects a leading `"**"` in `files.includes`, so the list holds only exclusions. The `$schema` version tracks the Biome that ultracite installs.
 
-- [ ] **Step 4: Create the placeholder frontend workspace**
+- [x] **Step 4: Create the placeholder frontend workspace**
 
 `frontend/package.json`:
 
@@ -136,7 +136,7 @@ Also create a placeholder `packages/schema/package.json` so `bun install` can re
 }
 ```
 
-- [ ] **Step 5: Create `.env.example`**
+- [x] **Step 5: Create `.env.example`**
 
 ```dotenv
 # TypeSafe Jev. Required for real runs. https://console.typesafe.ai/
@@ -163,7 +163,7 @@ CLIPSIEVE_CREATOR_SALT=
 CLIPSIEVE_XHS_CHROME_CDP_PORT=9222
 ```
 
-- [ ] **Step 6: Create the CI workflow**
+- [x] **Step 6: Create the CI workflow**
 
 `.github/workflows/check.yml`:
 
@@ -196,7 +196,7 @@ jobs:
         run: bun run check
 ```
 
-- [ ] **Step 7: Install JS dependencies and verify the lockfile is created**
+- [x] **Step 7: Install JS dependencies and verify the lockfile is created**
 
 Run: `bun install`
 Expected: `bun.lock` created, `node_modules/ultracite` present.
@@ -204,7 +204,7 @@ Expected: `bun.lock` created, `node_modules/ultracite` present.
 Run: `bunx ultracite check`
 Expected: exits 0 (no TS files to check yet, or only the placeholder).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add package.json biome.jsonc .env.example frontend/package.json frontend/src/lib/.gitkeep .github/workflows/check.yml .gitignore bun.lock
