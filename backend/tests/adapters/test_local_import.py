@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from clipsieve.adapters.base import hash_creator
+from clipsieve.adapters.base import MediaDownloadError, hash_creator
 from clipsieve.adapters.local_import import LocalImportAdapter
 from clipsieve.config import Settings
 from clipsieve.models import Query
@@ -160,3 +160,30 @@ def test_missing_source_yields_nothing(settings, tmp_path):
         list(adapter.search([Query(platform="local", query=str(tmp_path / "nope"), lang="en")], 5))
         == []
     )
+
+
+# -- final review: fetch_media runs after the Runner relocates the raw payload (B.10) ----------
+
+
+def test_fetch_media_derives_source_from_url_not_raw_ref(settings, tmp_path):
+    # Spaces and CJK in the path: the file:// URL is percent-encoded and must decode back.
+    folder = tmp_path / "我的 clips"
+    folder.mkdir()
+    (folder / "a b.mp4").write_bytes(b"\x01" * 32)
+    adapter = LocalImportAdapter.from_settings(settings)
+    post = next(adapter.search([Query(platform="local", query=str(folder), lang="zh")], 1))
+    Path(post.raw_ref).unlink()  # the Runner moved it into the run
+    moved = post.model_copy(update={"raw_ref": "raw/local__whatever.json"})
+    dest = tmp_path / "m"
+    got = adapter.fetch_media(moved, dest)
+    assert got.media[0].local_path == "video.mp4"
+    assert (dest / "video.mp4").read_bytes() == b"\x01" * 32
+    assert got.raw_ref == "raw/local__whatever.json"
+
+
+def test_fetch_media_raises_media_error_when_source_is_gone(settings, media_folder, tmp_path):
+    adapter = LocalImportAdapter.from_settings(settings)
+    post = next(adapter.search([Query(platform="local", query=str(media_folder), lang="en")], 1))
+    (media_folder / "a.mp4").unlink()
+    with pytest.raises(MediaDownloadError):
+        adapter.fetch_media(post, tmp_path / "m")

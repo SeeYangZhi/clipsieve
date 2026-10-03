@@ -10,8 +10,15 @@ import shutil
 from collections.abc import Iterator
 from datetime import UTC, datetime
 from pathlib import Path
+from urllib.parse import urlparse
+from urllib.request import url2pathname
 
-from clipsieve.adapters.base import AdapterHealth, hash_creator, incoming_dir
+from clipsieve.adapters.base import (
+    AdapterHealth,
+    MediaDownloadError,
+    hash_creator,
+    incoming_dir,
+)
 from clipsieve.config import Settings, ensure_creator_salt
 from clipsieve.logging import get_logger
 from clipsieve.models import Media, Metrics, Post, PostText, Query
@@ -31,6 +38,14 @@ def _int_or_none(value: str | None) -> int | None:
         return int(float(value))
     except ValueError:
         return None
+
+
+def _source_from_url(post: Post) -> Path:
+    """The local file behind a folder-import post: its `url` is `file.resolve().as_uri()`."""
+    parsed = urlparse(post.url)
+    if parsed.scheme != "file":
+        raise MediaDownloadError(f"local post {post.id} has media but no file:// url")
+    return Path(url2pathname(parsed.path))
 
 
 class LocalImportAdapter:
@@ -158,11 +173,14 @@ class LocalImportAdapter:
     # -- media ----------------------------------------------------------------
 
     def fetch_media(self, post: Post, dest: Path) -> Post:
-        """Copy the source file into `dest`; `local_path` is relative to `dest`. Idempotent."""
+        """Copy the source file into `dest`; `local_path` is relative to `dest`. Idempotent.
+
+        The source comes from `post.url` (a `file://` URI), never from `raw_ref`: the Runner has
+        already moved the raw payload into the run by the time this is called.
+        """
         if not post.media:
             return post
-        raw = json.loads(Path(post.raw_ref).read_text(encoding="utf-8"))
-        source = Path(raw["source"])
+        source = _source_from_url(post)
         dest.mkdir(parents=True, exist_ok=True)
         media = []
         for m in post.media:
@@ -173,6 +191,9 @@ class LocalImportAdapter:
             )
             target = dest / name
             if not target.exists():
+                if not source.is_file():
+                    log.warning("local_media_missing", post_id=post.id, source=str(source))
+                    raise MediaDownloadError(f"local source file is gone for {post.id}: {source}")
                 # Copy then rename, so an interrupted copy never looks like a finished one.
                 part = target.with_name(f"{name}.part")
                 shutil.copy2(source, part)

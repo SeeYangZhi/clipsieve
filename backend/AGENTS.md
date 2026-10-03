@@ -39,7 +39,8 @@ Platform adapters turn a `Query` into `Post` records and download media on reque
 - Implement `Adapter` from `adapters/base.py`: `platform`, `search(queries, limit)`, `fetch_media(post, dest)`, `healthcheck()`, plus `@classmethod from_settings(settings)`.
 - Register in `pyproject.toml` under `[project.entry-points."clipsieve.adapters"]`. `registry.load_adapters` discovers entry points first, then built-ins by import.
 - `search` yields posts with `media[].local_path = None`. Raw payloads go to `<data_dir>/incoming/<platform>/<safe_id>.json`; `raw_ref` is that absolute path until the Runner relocates it into the run.
-- `fetch_media` writes into `dest` and sets `local_path` relative to `dest` (for example `video.mp4`). It is idempotent: never re-download an existing file. A yt-dlp download failure, or one that leaves no file, raises `MediaDownloadError` (defined in `adapters/base.py`, re-exported by `youtube.py`). `requested_downloads[0]["filepath"]` is honoured.
+- The Runner moves the raw file to `raw/<safe_id>.json` and rewrites `raw_ref` to that run-relative path BEFORE calling `fetch_media` (overview B.10). `fetch_media` therefore never reads `raw_ref` or the incoming file: everything it needs lives on the `Post` (`url`, `media[]`, `id`).
+- `fetch_media` writes into `dest` and sets `local_path` relative to `dest` (for example `video.mp4`; never absolute). It is idempotent: never re-download an existing file. A yt-dlp download failure, or one that leaves no file, raises `MediaDownloadError` (defined in `adapters/base.py`, re-exported by `youtube.py`). `requested_downloads[0]["filepath"]` is honoured.
 - Captions, when available, are written as `<media>.transcript.json` (temp file then replace) so ASR is skipped.
 - Creator ids are hashed with `hash_creator(id, salt)`, salt from `ensure_creator_salt(settings)`, at mapping time. Never put the raw id in a `Post`; raw payloads keep platform ids as local provenance, but comment author identifiers are stripped. `creator_display` may hold a display name.
 - Comments are capped at 50, most-liked first.
@@ -47,11 +48,11 @@ Platform adapters turn a `Query` into `Post` records and download media on reque
 - Raw payloads are placed with `incoming_dir(data_dir, platform)` from `base.py`.
 - Recorded YouTube fixtures live in `tests/fixtures/youtube/` (`search.json`, `<id>.json`, `<id>.<lang>.vtt`); `FakeYtDlpClient(fixture_dir)` replays them.
 - The only setting the YouTube adapter reads is `youtube_api_key`: Data API search when set, else yt-dlp search.
-- `local_import`: folder or CSV. Folder posts get `local:<sha1[:12]>` ids and hidden files are skipped; CSV rows have `media=[]`, so `fetch_media` is a no-op for them. A non-empty `creator` CSV column sets per-row `creator_hash` and `creator_display`; otherwise the hash is of the CSV path.
+- `local_import`: folder or CSV. Folder posts get `local:<sha1[:12]>` ids and hidden files are skipped; CSV rows have `media=[]`, so `fetch_media` is a no-op for them. Folder posts' `fetch_media` copies the file behind `Post.url` (`file.resolve().as_uri()`); a vanished source raises `MediaDownloadError`. A non-empty `creator` CSV column sets per-row `creator_hash` and `creator_display`; otherwise the hash is of the CSV path.
 - `youtube`: live, upcoming and post-live videos are rejected. Shorts filter is duration < 180 s; a missing duration at the full-info stage means "not a Short". Optional Data API key is sent in the `x-goog-api-key` header. Downloads are capped at 200 MB.
 - `vtt.py`: tags are stripped, then character references are unescaped; the cue split tolerates YouTube's `" "` placeholder lines.
 - `adapters/` never imports from `evidence/`.
-- Every adapter passes `tests/adapters/contract.py::run_adapter_contract` against a recorded fixture. Tests never hit the network: yt-dlp is behind `YtDlpClient` with `FakeYtDlpClient`; HTTP uses `httpx.MockTransport`.
+- Every adapter passes `tests/adapters/contract.py::run_adapter_contract` against a recorded fixture. The helper checks unique post ids and a `^[0-9a-f]{64}$` `creator_hash`, relocates every raw file and rewrites `raw_ref` exactly as the Runner does, then calls `fetch_media` twice and requires dest-relative `local_path`s. Tests never hit the network: yt-dlp is behind `YtDlpClient` with `FakeYtDlpClient`; HTTP uses `httpx.MockTransport`.
 
 ## evidence/
 
