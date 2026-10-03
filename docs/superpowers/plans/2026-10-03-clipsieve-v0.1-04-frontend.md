@@ -1523,7 +1523,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `api.listAdapters`, `api.listRubrics`, `api.createRun`, `api.listRuns`, `CreateRunBody`, `AdapterStatus`, `RubricPackSummary`; `t`, `useLocale`.
 - Produces: `BriefForm({ adapters, rubrics, onSubmit, busy })`, `RecentRuns({ runs })`, `AppHeader()`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 Create `frontend/src/components/brief/BriefForm.test.tsx`:
 
@@ -1578,7 +1578,7 @@ describe("BriefForm", () => {
 Run: `cd frontend && bun run test src/components/brief`
 Expected: FAIL, cannot find `./BriefForm`.
 
-- [ ] **Step 2: Implement BriefForm**
+- [x] **Step 2: Implement BriefForm**
 
 Create `frontend/src/components/brief/BriefForm.tsx`:
 
@@ -1680,7 +1680,7 @@ export function BriefForm({ adapters, rubrics, onSubmit, busy }: Props) {
 
 A native `<select>` is used for the rubric because the shadcn `Select` renders in a portal that jsdom cannot drive with `userEvent.selectOptions`; record this in `frontend/AGENTS.md` in Task 12.
 
-- [ ] **Step 3: RecentRuns, AppHeader, layout, page**
+- [x] **Step 3: RecentRuns, AppHeader, layout, page**
 
 Create `frontend/src/components/brief/RecentRuns.tsx`:
 
@@ -1818,7 +1818,7 @@ export default function HomePage() {
 Run: `cd frontend && bun run test src/components/brief && bun run typecheck`
 Expected: 3 passed, typecheck clean.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/components frontend/src/app/layout.tsx frontend/src/app/page.tsx
