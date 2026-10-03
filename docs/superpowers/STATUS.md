@@ -1,15 +1,20 @@
 # clipsieve build status
 
-Updated: 2026-10-03T17:33:03Z by iteration 1
+Updated: 2026-10-03T19:50:55Z by iteration 2
 
 ## Plans
 | Plan | Branch | Tasks done / total | Merged | Last commit |
 |---|---|---|---|---|
 | 01 foundation | plan/01-foundation (merged, branch deleted locally) | 8 / 8 | yes (574e57d) | d7b28e8 |
 | 02 adapters-evidence | plan/02-adapters-evidence (merged, branch deleted locally) | 12 / 12 | yes (7c3beb5) | 44206fc |
-| 03 judge-select-explain-api | plan/03-judge-select-explain-api (worktree .worktrees/plan-03-judge-select-explain-api) | 0 / 12 | no | 7c3beb5 (task 1 in flight) |
+| 03 judge-select-explain-api | plan/03-judge-select-explain-api (worktree .worktrees/plan-03-judge-select-explain-api) | 10 / 12 (task 11 CLI in flight) | no | f23ad90 |
 | 04 frontend | plan/04-frontend (worktree .worktrees/plan-04-frontend, pushed) | 10 / 12 (paused: tasks 11-12 need plan 03 API) | no | a33d9d1 |
 | 05 contrib-xhs-evals | | 0 / 7 | no | |
+
+## Iteration 2 did
+- Plan 03 tasks 1-10 complete (rubric pack + judge/rubric.py, TypeSafeJudge with retries, RecordedJudge + fixtures, scoring, quotas/select, explain contract + fake + prompts, claude -p backend + shim, planner, pipeline Runner + FixtureAdapter, FastAPI app + SSE). Fix rounds on tasks 1, 2, 10. Backend suite 367 passed, 1 xfailed; `bun run check` exit 0 on the plan 03 branch.
+- Overview gained Addenda E.11-E.13 (Runner emits run_created; where: planner error; SSE Last-Event-ID precedence; 409 cases; context built once under a lock). Plan 03 text patched: Task 5 quota cap rule; Tasks 10/11 no explicit run_created emit.
+- Task 11 (sieve CLI incl. the definition-of-done smoke command in fake mode) dispatched; Task 12 (DOX closeout) next, then whole-branch review and merge; then plan 04 resumes (tasks 11-12) and plan 05 starts.
 
 ## Last iteration did (continued)
 - Plan 02 complete: 12 tasks, fix rounds on tasks 3, 4, 5, 7, 12; whole-branch review found 1 Critical (local fetch_media read the relocated raw_ref) + 4 Important, all fixed in one wave and re-reviewed clean; merged --no-ff into main (7c3beb5); main `bun run check` exit 0 with 192 backend tests; pushed.
