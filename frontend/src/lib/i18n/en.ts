@@ -121,6 +121,7 @@ export const en: Record<string, string> = {
   "replay.speed": "Speed",
 
   "replay.title": "Replay",
+  "report.back_to_run": "Back to the run",
   "report.caveats": "Caveats",
   "report.cited": "Cited posts",
   "report.clips": "Why each clip works",
@@ -140,6 +141,7 @@ export const en: Record<string, string> = {
   "report.post.answers": "Jev answers",
   "report.post.caption": "Caption",
   "report.post.transcript": "Transcript",
+  "report.section_empty": "None",
 
   "report.title": "Report",
   "report.unknown_post": "Post not found in this run",

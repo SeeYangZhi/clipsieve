@@ -121,6 +121,7 @@ export const zh: Record<string, string> = {
   "replay.speed": "速度",
 
   "replay.title": "回放",
+  "report.back_to_run": "返回任务",
   "report.caveats": "注意事项",
   "report.cited": "引用的帖子",
   "report.clips": "每条内容为何有效",
@@ -140,6 +141,7 @@ export const zh: Record<string, string> = {
   "report.post.answers": "Jev 回答",
   "report.post.caption": "文案",
   "report.post.transcript": "转写文本",
+  "report.section_empty": "暂无",
 
   "report.title": "报告",
   "report.unknown_post": "本次任务中找不到该帖子",
