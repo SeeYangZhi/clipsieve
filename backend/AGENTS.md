@@ -6,7 +6,7 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 
 - Python 3.12 only. `uv` for everything: `uv sync`, `uv run pytest`, `uv add`.
 - `clipsieve/models.py` is GENERATED from `packages/schema/`. Never edit it. Run `bun run schema` at the repo root after changing a schema.
-- Logging via `clipsieve.logging.get_logger(__name__)`. No `print()`.
+- Logging via `clipsieve.logging.get_logger(__name__)`. No `print()`, except the two output helpers `_say` and `_json` in `clipsieve/cli.py` (inline `# noqa: T201`; ruff T20 stays on everywhere else).
 - Config via `clipsieve.config.get_settings()`. Never read `os.environ` elsewhere. Nothing depends on cwd: `.env` is read from `REPO_ROOT/.env`, then `./.env` (the cwd file wins), and a relative `CLIPSIEVE_DATA_DIR` resolves against `REPO_ROOT`; absolute paths are kept as given.
 - `CLIPSIEVE_FIXTURE_DIR` (`clipsieve_fixture_dir`) is for tests, fake mode and the Playwright flow only. A blank value means unset (not the cwd); a relative one resolves against `REPO_ROOT`.
 - The creator-hash salt comes only from `config.ensure_creator_salt(settings)`: the configured value, else `<data_dir>/creator_salt`, created on first use (32 hex chars, mode 0600). Never log the salt.
@@ -49,10 +49,9 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/api/events.py` | `GET /runs/{id}/events` SSE, `format_sse` |
 | `clipsieve/api/meta.py` | `GET /adapters`, `GET /rubrics`, `GET /runs/{id}/media/{post_id}/{filename}` |
 | `clipsieve/app.py` | `create_app(ctx=None)`, module-level `app` for `uvicorn clipsieve.app:app` |
+| `clipsieve/cli.py` | `sieve` typer `app` (`[project.scripts]`): `run`, `replay`, `reselect`, `reindex`, `eval` stub; `_say`, `_json` |
 | `tests/fixtures/evidence/<safe_id>/` | Fixture media plus sidecars that `FixtureAdapter.fetch_media` copies; with the fakes they reproduce `tests/fixtures/evidence/<safe_id>.json` |
 | `tests/fixtures/claude-shim/claude` | Test-only bash stand-in for the `claude` binary (executable, mode 100755) |
-
-Later tasks add `cli.py` and extend this table.
 
 ## planner/
 
@@ -122,6 +121,19 @@ FastAPI under `/api`. The binding HTTP contract is the overview plan's; this is 
 - SSE: `id: <seq>`, `event: run_event`, `data: <RunEvent JSON>`; the data line is the `events.jsonl` line byte for byte (`by_alias`, `exclude_none`, CJK literal). The stream holds exactly the events with `seq > max(after, Last-Event-ID)`. A finished run (a `done` event, or any event with stage `failed`) is served whole from that point and the stream closes, including events after `done` such as a reselect's `selected`; a live run is followed with `follow_events` until its first terminal event.
 - Media: `post_id` arrives URL-decoded (`local%3Afx-001`). `filename` may be a sub-path (`frames/<name>`). 404 unless the post's media dir sits directly under `<run>/media/` and the resolved file is inside it, so `..`, absolute paths and a post id of `..` never escape.
 - Tests (`tests/api/`) drive the app in fake mode with `httpx.AsyncClient(ASGITransport)`; settings come from kwargs with `_env_file=None`. SSE tests read only streams that end (a run that reaches `done`); the `client` fixture waits for background tasks before the loop closes.
+
+## cli.py
+
+`sieve` (`[project.scripts] sieve = "clipsieve.cli:app"`), a typer app over the same `build_context` as the API.
+
+- Commands: `run --brief TEXT [--platforms a,b] [--limit N] [--pack NAME] [--language-hint L] [--auto-approve] [--data-dir PATH]`; `replay RUN_ID [--speed X] [--data-dir PATH]`; `reselect RUN_ID --weights q=0.5,r=0.5 [--data-dir PATH]`; `reindex RUN_ID [--data-dir PATH]`; `eval --pack P --golden FILE [--mode M]` (stub until plan 05). Global `-v/--verbose`: structlog at INFO instead of WARNING. Logs always go to stderr (`configure_logging` in the app callback), so stdout carries only command output.
+- Exit codes: 0 success; 1 run failed (stage `failed`, a crash in `plan()`/`approve()`/`run()`, or any stage other than `done` at the end), run not found, or reselect before a selection exists; 2 usage error (typer/click, bad `--weights`, unknown platform or rubric pack, empty brief), plan declined, no answer on stdin, or `eval`.
+- Output: `print` only in `_say` (stdout, or stderr with `err=True`, always flushed) and `_json` (one line, `ensure_ascii=False`, so CJK is literal). Errors and refusals go to stderr.
+- Settings: `get_settings()` (env and `.env`); `--data-dir` replaces `clipsieve_data_dir` (absolute kept as given, relative resolved against `REPO_ROOT`, as for `CLIPSIEVE_DATA_DIR`). `build_context` picks fake or real mode, so `CLIPSIEVE_EXPLAIN_BACKEND=fake` alone runs on `DEFAULT_FIXTURE_DIR`. Commands that build a context dispose its engine on exit.
+- `run`: validates platforms against `ctx.adapters` and the pack with `find_pack` before creating anything, then `repo.create_run` and `ctx.runner_for` (its constructor emits `run_created`; the CLI never does). Prints `run_id: <id>` as the first stdout line. `plan()` runs in its own `asyncio.run`; a failure is recorded as the API's `_plan` records it (logged `cli_plan_failed`, `counters.errors` + 1, recoverable `error` `where: planner`), the run stays in `planning`, exit 1. Then `plan:` and the plan as one JSON line. Without `--auto-approve`, `typer.confirm` (default no) runs outside any event loop: `n` leaves the run in `planning` with its plan saved (exit 2); EOF or Ctrl-C at the prompt says `--auto-approve` is needed (exit 2). `approve` and `run()` share a second `asyncio.run` (nothing loop-bound is created while planning: `build_plan` runs in a thread and the judge is first used here), with a `follow_events` task printing `progress: <from> -> <to>` per `stage_changed` and `error: <where> (<post_id>): <message>` per `error` event (stderr) up to the terminal event. Ends with `stage: <stage>` and one `<counter>: <value>` line per `Counters` field.
+- `replay`: reads `events.jsonl` directly (no context, no salt, no database); missing file means not found. One JSON line per event (`by_alias`, `exclude_none`), sleeping `(ts - previous ts) / speed` between events; `--speed 0` means no delay, negative is a usage error.
+- `reselect`: `Runner.reselect(weights)` (no Jev calls; emits another `selected`) and prints the `Selection` as one JSON line. Unknown weight keys are not rejected, as in the API. `reindex`: `RunRepository.reindex`, prints `reindexed <id>`.
+- Tests (`tests/test_cli.py`) use typer's `CliRunner` in fake mode with env vars in a `tmp_path` data dir; an autouse fixture swaps `cli.get_settings` for `Settings(_env_file=None)`, so no real `.env` and no cached settings leak in. `result.output` mixes stdout and stderr (click 8.2+); assert on `result.stdout` where the stream matters.
 
 ## evidence/
 

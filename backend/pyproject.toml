@@ -64,7 +64,8 @@ extend-exclude = ["clipsieve/models.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "T20"]
-# T20 forbids print(); allowed only in packages/schema/generate.py, which ruff never sees.
+# T20 forbids print(). Exceptions: packages/schema/generate.py (ruff never sees it) and the
+# two output helpers in clipsieve/cli.py (`_say`, `_json`), each with an inline noqa.
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]
