@@ -1,0 +1,41 @@
+{
+  "run_id": "FIXTURE",
+  "brief": {
+    "text": "I am planning to start social media accounts with the persona of a Singaporean moving to Shanghai, vlog style. Look for such videos and analyse hooks and styles.",
+    "topic": "Singaporean expat life in Shanghai",
+    "audience": "Singaporeans and Southeast Asians considering or starting a move to mainland China",
+    "persona": "A Singaporean in their late twenties who has just moved to Shanghai, filming daily life, admin hurdles and cultural contrasts in a candid vlog voice mixing English and Mandarin."
+  },
+  "queries": [
+    {
+      "platform": "youtube",
+      "query": "Singaporean moving to Shanghai vlog",
+      "lang": "en"
+    },
+    {
+      "platform": "youtube",
+      "query": "expat life Shanghai first week",
+      "lang": "en"
+    },
+    {
+      "platform": "xiaohongshu",
+      "query": "新加坡人 上海 生活 vlog",
+      "lang": "zh"
+    },
+    {
+      "platform": "xiaohongshu",
+      "query": "新加坡 搬到上海 第一周",
+      "lang": "zh"
+    },
+    { "platform": "local", "query": "./fixtures", "lang": "en" }
+  ],
+  "quantities": { "youtube": 500, "xiaohongshu": 500, "local": 5 },
+  "rubric_pack": "creator-hooks-v1",
+  "persona_fit_criteria": [
+    "Creator has no connection to Singapore, Shanghai or relocation",
+    "Expat or relocation content, but a different country or city",
+    "Singaporean in Shanghai, but a corporate, travel or food angle rather than daily-life vlog",
+    "Singaporean recently moved to Shanghai, vlogging daily life in a candid voice",
+    "Could be the user's own channel: Singaporean, just moved to Shanghai, mixed English and Mandarin vlog"
+  ]
+}

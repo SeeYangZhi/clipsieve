@@ -35,8 +35,12 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/select/scoring.py` | Pure scoring: `normalize_score`, `answer_confidence`, `composite`, `passes_hard_filters`, `needs_review` |
 | `clipsieve/select/quotas.py` | `violates_quota`: diversity cap per choice label, at least one per label |
 | `clipsieve/select/select.py` | `Selection` model; `select()` (hard filter, rank by composite, quotas; review posts skip the shortlist; dropped reasons `hard_filter`/`quota`/`not_selected`) and `pass_one_keep()` (top fraction, ceil, min one, metadata questions only) |
+| `clipsieve/explain/base.py` | `ExplainBackend` protocol, `ExplainPacket`, `PlanRequest`, `RubricPackSummary`, `ExplainError`, `validate_report_citations`, `cli_payload`, `get_backend`, `PROMPTS_DIR` |
+| `clipsieve/explain/prompts/` | `plan.md`, `explain.md`: system prompts for the `claude -p` backend |
+| `clipsieve/explain/fake.py` | `FakeExplainBackend` replaying `tests/fixtures/explain/plan.json` and `report.json` |
+| `clipsieve/explain/claude_api.py` | `ClaudeApiBackend` stub: both methods raise `NotImplementedError` (v0.2 follow-up) |
 
-Later plans add the rest of `judge/`, then `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
+Later tasks add `explain/claude_cli.py`, then `pipeline/`, `api/`, `cli.py` and extend this table.
 
 ## adapters/
 
@@ -95,3 +99,16 @@ Turns rubric packs into TypeSafe Jev requests and Jev answers into `JudgeAnswer`
 - `asyncio.Semaphore(concurrency)` (default 16) bounds in-flight requests per `TypeSafeJudge`. A post backing off keeps its slot; other posts proceed in the rest (`test_one_post_rate_limited_others_proceed`). The client is built lazily from `client_factory` and closed by `aclose()`. Never log the API key; `jev_retry` logs post id, attempt, error class and delay.
 - Tests never call the TypeSafe API. `from_typesafe` tests use hand-built response objects; `TypeSafeJudge` tests use a fake client returning real `SystemOneResponse`s, plus the real SDK client over `httpx2.MockTransport`.
 - `RecordedJudge(fixture_dir)` reads `<fixture_dir>/judge/<safe_post_filename(post_id)>.<pass_name>.json`, filters answers to the questions asked, records `calls: list[(post_id, pass_name)]`, raises `FixtureMissing(FileNotFoundError)`. Fixtures (five posts x two passes) come from `tests/fixtures/judge/make_fixtures.py`, which reads labels, levels and legends from `creator-hooks-v1` and emits `from_typesafe`-shaped answers; rerun it after a pack change (a test compares committed files to its output).
+
+## explain/
+
+Plans a run from a brief and explains a shortlist. One interface, three backends.
+
+- Backends implement `ExplainBackend` (`explain/base.py`): `plan(brief, packs, platforms) -> Plan` and `explain(packet: ExplainPacket) -> Report`. `get_backend(settings, fixture_dir=None)` picks one from `clipsieve_explain_backend`: `fake` (needs `fixture_dir`, else `ExplainError`), `claude_cli` (`explain/claude_cli.py`), `claude_api` (stub; both methods raise `NotImplementedError`).
+- Backends never know the run id. They return `Plan.run_id` / `Report.run_id` as they have them (`"FIXTURE"` for the fake, `"PENDING"` or model output for the CLI) and the caller overwrites both. `PlanRequest` carries no quantities, so the caller also sets `Plan.quantities` from the run; the plan prompt writes placeholder values.
+- `cli_payload(mode, body)` returns JSON text: `body` dumped `mode="json", exclude_none=True` (optional means absent) plus a top-level `"mode": "plan" | "explain"`, the only key not in the body's model. `ensure_ascii=False` keeps CJK literal. A body with its own `mode` key raises `ExplainError`.
+- A report may cite only ids in `packet.posts`. `validate_report_citations(report, known_post_ids)` returns the sorted, unique unknown ids cited in `patterns[].post_ids`, `clips[].post_id`, `gaps[].post_ids` and `concepts[].inspired_by_post_ids`.
+- `prompts/plan.md` and `prompts/explain.md` are system prompts: task, output rules, citation rules. They never hold weights, thresholds or quotas (`test_prompts_exist_cite_only_given_posts_and_carry_no_policy` guards the words); policy stays in rubric YAML and `select/`. A `local` query is a folder or `.csv` path, not a search phrase.
+- `FakeExplainBackend(fixture_dir)` reads `<fixture_dir>/explain/plan.json` and `report.json` on every call and appends `"plan"` / `"explain"` to `calls`. `plan` returns the fixture plan (`quantities` includes `local: 5`) with the given brief when it has a `topic`, else the fixture brief. `explain` re-points every citation at `packet.posts` (cycled, deduplicated), writes one clip per packet post in packet order, and returns no patterns, clips, gaps or concepts for an empty packet.
+- Fixtures `tests/fixtures/explain/plan.json` and `report.json` are a valid `Plan` and `Report` with `run_id` `"FIXTURE"`, five `persona_fit_criteria`, citations only among `local:fx-001..005`, and no `null`s (a test compares each file to its `exclude_none` dump).
+- Tests never run the `claude` binary or touch the network.
