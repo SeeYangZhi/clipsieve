@@ -26,6 +26,49 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/store/` | `RunPaths`, SQLite engine and tables, `RunRepository` |
 | `clipsieve/events/` | `EventWriter`, `read_events`, `follow_events` |
 | `clipsieve/events/payloads.py` | `PAYLOAD_MODELS`, one Pydantic model per `RunEventType` |
+| `clipsieve/adapters/` | `Adapter` protocol, `registry`, `local_import`, `youtube`, `ytdlp_client`, `vtt` |
+| `clipsieve/evidence/` | `asr`, `ocr`, `frames`, `comments`, `packet`, `extract` |
 | `clipsieve/select/select.py` | `Selection` model (plan 01); selection functions (plan 03) |
 
-Later plans add `adapters/`, `evidence/`, `judge/`, `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
+Later plans add `judge/`, `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
+
+## adapters/
+
+Platform adapters turn a `Query` into `Post` records and download media on request.
+
+- Implement `Adapter` from `adapters/base.py`: `platform`, `search(queries, limit)`, `fetch_media(post, dest)`, `healthcheck()`, plus `@classmethod from_settings(settings)`.
+- Register in `pyproject.toml` under `[project.entry-points."clipsieve.adapters"]`. `registry.load_adapters` discovers entry points first, then built-ins by import.
+- `search` yields posts with `media[].local_path = None`. Raw payloads go to `<data_dir>/incoming/<platform>/<safe_id>.json`; `raw_ref` is that absolute path until the Runner relocates it into the run.
+- The Runner moves the raw file to `raw/<safe_id>.json` and rewrites `raw_ref` to that run-relative path BEFORE calling `fetch_media` (overview B.10). `fetch_media` therefore never reads `raw_ref` or the incoming file: everything it needs lives on the `Post` (`url`, `media[]`, `id`).
+- `fetch_media` writes into `dest` and sets `local_path` relative to `dest` (for example `video.mp4`; never absolute). It is idempotent: never re-download an existing file. A yt-dlp download failure, or one that leaves no file, raises `MediaDownloadError` (defined in `adapters/base.py`, re-exported by `youtube.py`). `requested_downloads[0]["filepath"]` is honoured.
+- Captions, when available, are written as `<media>.transcript.json` (temp file then replace) so ASR is skipped.
+- YouTube requests only the post's language, its auto-generated `<lang>-orig` track and `en` (a `-orig` track's sidecar `lang` drops the suffix). yt-dlp aborts the whole download when one caption track fails, so a download error whose message mentions subtitles or captions is retried once with `subtitle_langs=[]` (no captions; logs `youtube.subtitles_skipped`) and Whisper covers the transcript. `YtDlpClient.download` with an empty `subtitle_langs` writes no captions; `FakeYtDlpClient` copies only the requested tracks.
+- Creator ids are hashed with `hash_creator(id, salt)`, salt from `ensure_creator_salt(settings)`, at mapping time. Never put the raw id in a `Post`; raw payloads keep platform ids as local provenance, but comment author identifiers are stripped. `creator_display` may hold a display name.
+- Comments are capped at 50, most-liked first.
+- `registry._iter_entry_points()` is the module-level seam tests (and plan 05) monkeypatch. A failing plugin or built-in is logged (`adapter_entry_point_import_failed`, `adapter_builtin_import_failed`, `adapter_load_failed`, `adapter_not_protocol`) and skipped, never fatal.
+- Raw payloads are placed with `incoming_dir(data_dir, platform)` from `base.py`.
+- Recorded YouTube fixtures live in `tests/fixtures/youtube/` (`search.json`, `<id>.json`, `<id>.<lang>.vtt`); `FakeYtDlpClient(fixture_dir)` replays them.
+- `YouTubeAdapter.from_settings` reads `clipsieve_data_dir` (for the incoming raw dir), the creator salt via `ensure_creator_salt(settings)`, and `youtube_api_key`: Data API search when set, else yt-dlp search.
+- `local_import`: folder or CSV. Folder posts get `local:<sha1[:12]>` ids and hidden files are skipped; CSV rows have `media=[]`, so `fetch_media` is a no-op for them. Folder posts' `fetch_media` copies the file behind `Post.url` (`file.resolve().as_uri()`); a vanished source raises `MediaDownloadError`. A non-empty `creator` CSV column sets per-row `creator_hash` and `creator_display`; otherwise the hash is of the CSV path.
+- `youtube`: live, upcoming and post-live videos are rejected. Shorts filter is duration < 180 s; a missing duration at the full-info stage means "not a Short". The flat yt-dlp search asks for `SEARCH_OVERFETCH` (3) times the remaining count, since long videos are dropped after it; `search` still stops at the limit before fetching another info. Optional Data API key is sent in the `x-goog-api-key` header. Downloads are capped at 200 MB.
+- `vtt.py`: tags are stripped, then character references are unescaped; the cue split tolerates YouTube's `" "` placeholder lines.
+- `adapters/` never imports from `evidence/`.
+- Every adapter passes `tests/adapters/contract.py::run_adapter_contract` against a recorded fixture. The helper checks unique post ids and a `^[0-9a-f]{64}$` `creator_hash`, relocates every raw file and rewrites `raw_ref` exactly as the Runner does, then calls `fetch_media` twice and requires dest-relative `local_path`s. Tests never hit the network: yt-dlp is behind `YtDlpClient` with `FakeYtDlpClient`; HTTP uses `httpx.MockTransport`.
+
+## evidence/
+
+Turns a post's media into text. No per-post network calls; Whisper and PaddleOCR download model weights on first use.
+
+- Interfaces with fakes: `ASR` (`WhisperASR`, `FakeASR`), `OCR` (`PaddleOCRBackend`, `FakeOCR`), `FrameExtractor` (`FfmpegFrames`, `FakeFrames`). Heavy libraries are optional extras (`uv sync --extra asr --extra ocr`) imported lazily inside the class; the `paddleocr` extra is pinned `<3` (2.x API).
+- `WhisperASR.transcribe` passes the language hint through `normalize_lang_hint` (`asr.py`): lowercase primary subtag (`zh-Hans` -> `zh`, `en-US` -> `en`, a few legacy aliases such as `iw` -> `he`), `None` (auto-detect) when not in `WHISPER_LANGUAGES`. Never hand a raw `Post.lang` to a Whisper backend.
+- `WhisperASR` and `PaddleOCRBackend` are shared across the Runner's concurrent extractions (concurrency 2 via `asyncio.to_thread`), so each serialises model or engine construction and inference behind a per-instance `threading.Lock` (`WhisperASR` takes it after the sidecar check). Any new heavy backend must do the same.
+- Fakes read sidecars: `<media>.transcript.json`, `<image>.ocr.json`. Real backends honour the transcript sidecar too. A corrupt sidecar raises. Formats: `<media>.transcript.json` = `{"lang"?: str, "segments": [{start_s, end_s, text}]}`; `<image>.ocr.json` = JSON list of strings.
+- `FfmpegFrames`: the scene pass runs with `check=False` and tolerates any non-zero exit when no scene files were written (ffmpeg returns 234 for no scene changes); the hook pass still raises. Hook frame first. `PNG_1X1` (used by `FakeFrames`) is a valid 1x1 PNG.
+- `extract_evidence(post, paths, asr, ocr, frames)` writes `Evidence` to `paths.evidence_json(post.id)`. It assumes one video per post (frames share one `frames/` dir). Keyframes are run-relative paths `media/<safe_id>/frames/<name>`, hook frame first, at most 8.
+- A failing ASR, OCR or frame step is caught and logged as `evidence_step_failed`; only that section is left empty and the post still gets evidence.
+- Evidence JSON is written `exclude_none` via temp file then replace (optional means absent).
+- `extract_evidence` also writes `media/<safe_id>/thumb.jpg` (256px wide, Pillow) from the first keyframe or first image; plan 03 serves it at `GET /api/runs/{id}/media/{post_id}/thumb.jpg`. Never re-written if present.
+- `packet.build_metadata_state` (pass one) and `packet.build_state` (pass two) are the only places that assemble Jev state; `state_json` serialises it. `MAX_STATE_TOKENS = 28000`, measured on the serialised state; `estimate_tokens` counts CJK characters as one token each. Truncation order is fixed: comments (sample, then top_terms), OCR from the end, transcript tail (whole segments, then within the head segment), and only then caption, hashtags, title. If the brief plus the post block (id, platform, kind, any remaining post text) still exceeds the cap after all truncation, `packet.over_cap` is logged and the state is returned anyway.
+- `Evidence.truncated` is `False` at extraction; the Runner sets it from `build_state`.
+- Helpers: `ocr_lang_for_post` (zh to `ch`, else `en`), `read_sidecar_transcript` (`asr.py`), `write_thumbnail`, `resolve_media`, `run_relative` (`extract.py`).
+- `evidence/` never imports from `adapters/`.

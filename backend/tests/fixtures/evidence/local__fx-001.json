@@ -1,0 +1,49 @@
+{
+  "comment_summary": {
+    "count": 3,
+    "sample": [
+      "The deposit part is so real. Three months upfront broke me.",
+      "Which district did you end up in?",
+      "Moving in Jan, saving this."
+    ],
+    "top_terms": [
+      "deposit",
+      "part",
+      "real",
+      "three",
+      "months",
+      "upfront",
+      "broke",
+      "district",
+      "end",
+      "moving"
+    ]
+  },
+  "keyframes": [
+    "media/local__fx-001/frames/hook.jpg",
+    "media/local__fx-001/frames/scene_01.jpg"
+  ],
+  "ocr": [
+    {
+      "index": 0,
+      "source": "keyframe",
+      "text": "STOP SCROLLING"
+    }
+  ],
+  "post_id": "local:fx-001",
+  "token_estimate": 83,
+  "transcript": [
+    {
+      "end_s": 2.0,
+      "start_s": 0.0,
+      "text": "hook line for local:fx-001"
+    },
+    {
+      "end_s": 5.0,
+      "start_s": 2.0,
+      "text": "second line 第二句"
+    }
+  ],
+  "transcript_lang": "en",
+  "truncated": false
+}

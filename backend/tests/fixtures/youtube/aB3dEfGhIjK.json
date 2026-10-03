@@ -1,0 +1,27 @@
+{
+  "id": "aB3dEfGhIjK",
+  "title": "I built a Chrome extension in 10 minutes with zero code",
+  "description": "Stop scrolling. Zero code, ten minutes. #nocode #chromeextension #buildinpublic",
+  "tags": ["no code", "chrome extension"],
+  "duration": 48,
+  "width": 1080,
+  "height": 1920,
+  "upload_date": "20260912",
+  "timestamp": 1789171200,
+  "channel_id": "UC_builder_001",
+  "uploader": "No Code Nat",
+  "uploader_id": "@nocodenat",
+  "view_count": 182344,
+  "like_count": 15321,
+  "comment_count": 412,
+  "language": "en",
+  "webpage_url": "https://www.youtube.com/watch?v=aB3dEfGhIjK",
+  "automatic_captions": {
+    "en": [{ "ext": "vtt", "url": "https://example.invalid/captions/en.vtt" }]
+  },
+  "comments": [
+    { "id": "c1", "text": "this is the hook I needed", "like_count": 240 },
+    { "id": "c2", "text": "ok but which tool", "like_count": 88 },
+    { "id": "c3", "text": "saved", "like_count": 3 }
+  ]
+}

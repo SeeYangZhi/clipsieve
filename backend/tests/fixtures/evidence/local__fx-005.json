@@ -1,0 +1,32 @@
+{
+  "comment_summary": {
+    "count": 2,
+    "sample": [
+      "Alipay tour pass saved my life",
+      "Does Grab work there at all?"
+    ],
+    "top_terms": ["alipay", "tour", "pass", "saved", "life", "grab", "work"]
+  },
+  "keyframes": [],
+  "ocr": [
+    {
+      "index": 0,
+      "source": "image",
+      "text": "overlay 0 房租"
+    },
+    {
+      "index": 1,
+      "source": "image",
+      "text": "overlay 1 房租"
+    },
+    {
+      "index": 2,
+      "source": "image",
+      "text": "overlay 2 房租"
+    }
+  ],
+  "post_id": "local:fx-005",
+  "token_estimate": 49,
+  "transcript": [],
+  "truncated": false
+}

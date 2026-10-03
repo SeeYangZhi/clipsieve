@@ -66,7 +66,7 @@ These fill gaps the overview leaves open. Plan 03 (Runner) must honour the first
 - Consumes: `clipsieve.models.Post`, `clipsieve.models.Query` (plan 01).
 - Produces: `AdapterHealth`, `Adapter` Protocol, `hash_creator(platform_creator_id: str, salt: str) -> str`, test helper `run_adapter_contract(adapter, query, tmp_path) -> list[Post]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `backend/tests/adapters/test_base.py`:
 
@@ -95,12 +95,12 @@ def test_adapter_health_dataclass():
     assert h.ok is False and h.message == "no chrome"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/adapters/test_base.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.adapters'`
 
-- [ ] **Step 3: Write the protocol and hashing**
+- [x] **Step 3: Write the protocol and hashing**
 
 `backend/clipsieve/adapters/__init__.py`:
 
@@ -150,7 +150,7 @@ def incoming_dir(data_dir: Path, platform: str) -> Path:
     return d
 ```
 
-- [ ] **Step 4: Write the reusable contract helper**
+- [x] **Step 4: Write the reusable contract helper**
 
 `backend/tests/adapters/__init__.py` is empty.
 
@@ -207,12 +207,12 @@ def run_adapter_contract(adapter: Adapter, query: Query, tmp_path: Path, limit: 
     return posts
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `uv run pytest tests/adapters/test_base.py -v`
 Expected: 4 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/adapters/__init__.py backend/clipsieve/adapters/base.py backend/tests/adapters/__init__.py backend/tests/adapters/contract.py backend/tests/adapters/test_base.py
@@ -234,7 +234,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `clipsieve.config.Settings` (plan 01), `Adapter`.
 - Produces: `ENTRY_POINT_GROUP = "clipsieve.adapters"`, `load_adapters(settings: Settings) -> dict[str, Adapter]`, `BUILTIN_ADAPTERS: dict[str, str]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `backend/tests/adapters/test_registry.py`:
 
@@ -304,12 +304,12 @@ def test_broken_entry_point_is_skipped_not_fatal(monkeypatch, settings):
     assert "local" in adapters
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/adapters/test_registry.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.adapters.registry'`
 
-- [ ] **Step 3: Write the registry**
+- [x] **Step 3: Write the registry**
 
 `backend/clipsieve/adapters/registry.py`:
 
@@ -385,7 +385,7 @@ def load_adapters(settings: Settings) -> dict[str, Adapter]:
     return adapters
 ```
 
-- [ ] **Step 4: Register entry points and core dependencies in pyproject**
+- [x] **Step 4: Register entry points and core dependencies in pyproject**
 
 Modify `backend/pyproject.toml`. Add under `[project]` dependencies (keep plan 01's list, append):
 
@@ -403,7 +403,7 @@ asr = [
     "faster-whisper>=1.1; sys_platform != 'darwin' or platform_machine != 'arm64'",
 ]
 ocr = [
-    "paddleocr>=2.9",
+    "paddleocr>=2.9,<3",
     "paddlepaddle>=3.0",
 ]
 
@@ -415,14 +415,14 @@ youtube = "clipsieve.adapters.youtube:YouTubeAdapter"
 Run: `uv sync`
 Expected: resolves and installs yt-dlp and httpx; no error.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 The two built-in modules do not exist yet, so `test_builtins_are_loaded_without_entry_points` and `test_broken_entry_point_is_skipped_not_fatal` will still fail on `local`. That is expected until Task 3. Run only the discovery test now:
 
 Run: `uv run pytest tests/adapters/test_registry.py::test_entry_point_adapter_is_discovered -v`
 Expected: 1 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/adapters/registry.py backend/pyproject.toml backend/uv.lock backend/tests/adapters/test_registry.py
@@ -443,7 +443,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `Adapter`, `hash_creator`, `incoming_dir`, `clipsieve.store.paths.safe_post_filename`, `Settings`, models `Post, PostText, Media, Metrics, Comment, Query`.
 - Produces: `LocalImportAdapter` with `from_settings`, `search`, `fetch_media`, `healthcheck`. Platform `"local"`. Post ids `local:<sha1 of absolute source path>[:12]`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/adapters/test_local_import.py`:
 
@@ -550,12 +550,12 @@ def test_missing_source_yields_nothing(settings, tmp_path):
     assert list(adapter.search([Query(platform="local", query=str(tmp_path / "nope"), lang="en")], 5)) == []
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/adapters/test_local_import.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.adapters.local_import'`
 
-- [ ] **Step 3: Implement the adapter**
+- [x] **Step 3: Implement the adapter**
 
 `backend/clipsieve/adapters/local_import.py`:
 
@@ -716,12 +716,12 @@ class LocalImportAdapter:
         return AdapterHealth(ok=True, message="local import ready")
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/adapters/test_local_import.py tests/adapters/test_registry.py -v`
 Expected: 7 passed in `test_local_import.py`; in `test_registry.py` the builtin test still fails only on `youtube` (next task). Confirm the failure message names `youtube`, not `local`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/adapters/local_import.py backend/tests/adapters/test_local_import.py
@@ -748,7 +748,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `clipsieve.models.TranscriptSegment`.
 - Produces: `YtDlpClient` Protocol with `search(query: str, n: int) -> list[dict]`, `info(url: str) -> dict`, `download(url: str, dest: Path, subtitle_langs: list[str]) -> dict`; `RealYtDlpClient`; `FakeYtDlpClient(fixture_dir: Path)`; `parse_vtt(text: str) -> list[TranscriptSegment]`; `vtt_lang_from_filename(path: Path) -> str | None`.
 
-- [ ] **Step 1: Write the failing VTT tests**
+- [x] **Step 1: Write the failing VTT tests**
 
 `backend/tests/adapters/test_vtt.py`:
 
@@ -791,7 +791,7 @@ def test_vtt_lang_from_filename():
     assert vtt_lang_from_filename(Path("video.vtt")) is None
 ```
 
-- [ ] **Step 2: Create the VTT fixtures**
+- [x] **Step 2: Create the VTT fixtures**
 
 `backend/tests/fixtures/youtube/aB3dEfGhIjK.en.vtt`:
 
@@ -845,7 +845,7 @@ Language: zh-Hans
 新加坡人的真实体验
 ```
 
-- [ ] **Step 3: Create the recorded yt-dlp info fixtures**
+- [x] **Step 3: Create the recorded yt-dlp info fixtures**
 
 `backend/tests/fixtures/youtube/search.json` (shape of `extract_info("ytsearch2:...", download=False)["entries"]` with `extract_flat`):
 
@@ -916,12 +916,12 @@ Language: zh-Hans
 }
 ```
 
-- [ ] **Step 4: Run VTT tests to verify they fail**
+- [x] **Step 4: Run VTT tests to verify they fail**
 
 Run: `uv run pytest tests/adapters/test_vtt.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.adapters.vtt'`
 
-- [ ] **Step 5: Implement the VTT parser**
+- [x] **Step 5: Implement the VTT parser**
 
 `backend/clipsieve/adapters/vtt.py`:
 
@@ -990,12 +990,12 @@ def vtt_lang_from_filename(path: Path) -> str | None:
     return None
 ```
 
-- [ ] **Step 6: Run VTT tests to verify they pass**
+- [x] **Step 6: Run VTT tests to verify they pass**
 
 Run: `uv run pytest tests/adapters/test_vtt.py -v`
 Expected: 4 passed
 
-- [ ] **Step 7: Implement the yt-dlp client interface, real client, and fake**
+- [x] **Step 7: Implement the yt-dlp client interface, real client, and fake**
 
 `backend/clipsieve/adapters/ytdlp_client.py`:
 
@@ -1103,7 +1103,7 @@ class FakeYtDlpClient:
         return meta
 ```
 
-- [ ] **Step 8: Lint and commit**
+- [x] **Step 8: Lint and commit**
 
 Run: `uv run ruff check . && uv run ruff format --check .`
 Expected: `All checks passed!` and no files would be reformatted.
@@ -1127,7 +1127,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `YtDlpClient`, `FakeYtDlpClient`, `parse_vtt`, `vtt_lang_from_filename`, `hash_creator`, `incoming_dir`, `safe_post_filename`, `Settings`, models.
 - Produces: `YouTubeAdapter(client: YtDlpClient, data_dir: Path, salt: str, api_key: str = "", http: httpx.Client | None = None, max_duration_s: int = 180)` with `from_settings`, `search`, `fetch_media`, `healthcheck`; `map_info_to_post(info: dict, salt: str, raw_ref: str) -> Post`; `write_transcript_sidecar(media_path: Path, lang: str | None, segments) -> Path`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/adapters/test_youtube.py`:
 
@@ -1240,12 +1240,12 @@ def test_from_settings_builds_real_client(settings):
     assert adapter.platform == "youtube"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/adapters/test_youtube.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.adapters.youtube'`
 
-- [ ] **Step 3: Implement the adapter**
+- [x] **Step 3: Implement the adapter**
 
 `backend/clipsieve/adapters/youtube.py`:
 
@@ -1451,12 +1451,12 @@ class YouTubeAdapter:
 __all__ = ["YouTubeAdapter", "map_info_to_post", "write_transcript_sidecar", "FakeYtDlpClient"]
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/adapters -v`
 Expected: all tests in `test_base.py`, `test_registry.py` (now including the builtin test), `test_local_import.py`, `test_vtt.py`, `test_youtube.py` pass.
 
-- [ ] **Step 5: Lint and commit**
+- [x] **Step 5: Lint and commit**
 
 Run: `uv run ruff check . && uv run ruff format --check .`
 Expected: clean.
@@ -1482,7 +1482,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `clipsieve.models.TranscriptSegment`.
 - Produces: `ASR` Protocol, `WhisperASR(model_name: str = "large-v3")`, `FakeASR()`, `read_sidecar_transcript(media: Path) -> tuple[list[TranscriptSegment], str | None] | None`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_asr.py`:
 
@@ -1571,12 +1571,12 @@ def test_protocol_conformance():
     assert isinstance(WhisperASR(), ASR)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_asr.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence'`
 
-- [ ] **Step 3: Implement ASR**
+- [x] **Step 3: Implement ASR**
 
 `backend/clipsieve/evidence/__init__.py`:
 
@@ -1668,12 +1668,12 @@ class WhisperASR:
         return segments, getattr(info, "language", None)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/evidence/test_asr.py -v`
 Expected: 7 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/__init__.py backend/clipsieve/evidence/asr.py backend/tests/evidence/__init__.py backend/tests/evidence/test_asr.py
@@ -1693,7 +1693,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `OCR` Protocol, `PaddleOCRBackend(min_confidence: float = 0.6)`, `FakeOCR()`, `ocr_lang_for_post(lang: str | None) -> str` returning `"ch"` for any `zh*` language else `"en"`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_ocr.py`:
 
@@ -1773,12 +1773,12 @@ def test_protocol_conformance():
     assert isinstance(PaddleOCRBackend(), OCR)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_ocr.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence.ocr'`
 
-- [ ] **Step 3: Implement OCR**
+- [x] **Step 3: Implement OCR**
 
 `backend/clipsieve/evidence/ocr.py`:
 
@@ -1838,12 +1838,12 @@ class PaddleOCRBackend:
         return lines
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/evidence/test_ocr.py -v`
 Expected: 6 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/ocr.py backend/tests/evidence/test_ocr.py
@@ -1863,7 +1863,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `FrameExtractor` Protocol, `FfmpegFrames(ffmpeg_bin: str = "ffmpeg", scene_threshold: float = 0.3, width: int = 640)`, `FakeFrames(count: int = 2)`, `build_hook_argv(...)`, `build_scene_argv(...)`, `PNG_1X1: bytes`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_frames.py`:
 
@@ -1930,12 +1930,12 @@ def test_protocol_conformance():
     assert isinstance(FfmpegFrames(), FrameExtractor)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_frames.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence.frames'`
 
-- [ ] **Step 3: Implement frames**
+- [x] **Step 3: Implement frames**
 
 `backend/clipsieve/evidence/frames.py`:
 
@@ -2016,12 +2016,12 @@ class FfmpegFrames:
         return frames
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/evidence/test_frames.py -v`
 Expected: 6 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/frames.py backend/tests/evidence/test_frames.py
@@ -2042,7 +2042,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `clipsieve.models.Comment`, `clipsieve.models.CommentSummary`.
 - Produces: `summarize_comments(comments: list[Comment], lang: str | None) -> CommentSummary`, `tokenize(text: str, lang: str | None) -> list[str]`, `is_cjk(text: str) -> bool`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_comments.py`:
 
@@ -2097,12 +2097,12 @@ def test_mixed_language_auto_detects_cjk_when_lang_missing():
     assert "上海" in s.top_terms
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_comments.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence.comments'`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `backend/clipsieve/evidence/comments.py`:
 
@@ -2170,12 +2170,12 @@ def summarize_comments(comments: list[Comment], lang: str | None) -> CommentSumm
     return CommentSummary(count=len(comments), top_terms=top_terms, sample=sample)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/evidence/test_comments.py -v`
 Expected: 6 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/comments.py backend/tests/evidence/test_comments.py
@@ -2196,7 +2196,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: models `Brief, Post, Evidence`.
 - Produces: `MAX_STATE_TOKENS = 28_000`, `estimate_tokens(text: str) -> int`, `build_metadata_state(brief: Brief, post: Post) -> dict`, `build_state(brief: Brief, post: Post, evidence: Evidence | None) -> tuple[dict, bool]`, `state_json(state: dict) -> str`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_packet.py`:
 
@@ -2300,12 +2300,12 @@ def test_state_json_is_deterministic_and_unicode():
     assert a == b and "房租好贵" in a and "\\u" not in a
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_packet.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence.packet'`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `backend/clipsieve/evidence/packet.py`:
 
@@ -2410,12 +2410,12 @@ def build_state(brief: Brief, post: Post, evidence: Evidence | None) -> tuple[di
     return state, truncated
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/evidence/test_packet.py -v`
 Expected: 8 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/packet.py backend/tests/evidence/test_packet.py
@@ -2437,7 +2437,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `RunPaths` (plan 01), `ASR`, `OCR`, `FrameExtractor`, `summarize_comments`, `estimate_tokens`, `ocr_lang_for_post`, models, fixture posts `backend/tests/fixtures/posts/local__fx-00N.json`.
 - Produces: `extract_evidence(post: Post, paths: RunPaths, asr: ASR, ocr: OCR, frames: FrameExtractor) -> Evidence`, `resolve_media(paths: RunPaths, post: Post, media: Media) -> Path`, `run_relative(paths: RunPaths, path: Path) -> str`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_extract.py`:
 
@@ -2567,12 +2567,12 @@ def test_snapshot_matches_fixture(paths, post):
     assert Evidence.model_validate_json(snap.read_text(encoding="utf-8")) == ev
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_extract.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence.extract'`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `backend/clipsieve/evidence/extract.py`:
 
@@ -2689,7 +2689,7 @@ def extract_evidence(post: Post, paths: RunPaths, asr: ASR, ocr: OCR, frames: Fr
     return evidence
 ```
 
-- [ ] **Step 4: Run tests, generating the snapshots on the first run**
+- [x] **Step 4: Run tests, generating the snapshots on the first run**
 
 Run: `UPDATE_SNAPSHOTS=1 uv run pytest tests/evidence/test_extract.py -v`
 Expected: 10 passed (5 behaviour tests, 5 parametrised snapshots). Five new files appear under `tests/fixtures/evidence/`.
@@ -2697,12 +2697,12 @@ Expected: 10 passed (5 behaviour tests, 5 parametrised snapshots). Five new file
 Run again without the flag: `uv run pytest tests/evidence/test_extract.py -v`
 Expected: 10 passed, no file changes (`git status --short tests/fixtures/evidence` shows only the five untracked files, none modified).
 
-- [ ] **Step 5: Run the whole backend suite and lint**
+- [x] **Step 5: Run the whole backend suite and lint**
 
 Run: `uv run pytest -q && uv run ruff check . && uv run ruff format --check .`
 Expected: all tests pass, lint clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/extract.py backend/tests/evidence/test_extract.py backend/tests/fixtures/evidence
@@ -2724,7 +2724,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: everything above.
 - Produces: documentation only.
 
-- [ ] **Step 1: Add the adapters and evidence sections to `backend/AGENTS.md`**
+- [x] **Step 1: Add the adapters and evidence sections to `backend/AGENTS.md`**
 
 Append to `backend/AGENTS.md` after its existing sections:
 
@@ -2756,7 +2756,7 @@ Turns a post's media into text. Pure local computation; no network.
 - `evidence/` never imports from `adapters/`.
 ```
 
-- [ ] **Step 2: Keep `.env.example` and README current**
+- [x] **Step 2: Keep `.env.example` and README current**
 
 Confirm `.env.example` contains `YOUTUBE_API_KEY=`; add it if absent. Append to `README.md` under Principles:
 
@@ -2766,12 +2766,12 @@ Confirm `.env.example` contains `YOUTUBE_API_KEY=`; add it if absent. Append to 
 Built in: `local` (folder of media or a CSV export) and `youtube` (yt-dlp, Shorts under 180 s, auto-captions). Community adapters that drive a logged-in browser live in `contrib/` with their own terms. See `backend/AGENTS.md` for the adapter contract.
 ```
 
-- [ ] **Step 3: Run the full repo check from the repo root**
+- [x] **Step 3: Run the full repo check from the repo root**
 
 Run (from repo root): `bun run check`
 Expected: schema drift check passes (no generated files changed in this plan), lint clean for TS and Python, typecheck passes, backend tests pass, frontend tests pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/AGENTS.md .env.example README.md

@@ -1,0 +1,49 @@
+{
+  "comment_summary": {
+    "count": 3,
+    "sample": [
+      "第二点我不同意，北京的文化氛围完全不一样",
+      "说得对，上海更国际化",
+      "下一期讲讲工作签证吧"
+    ],
+    "top_terms": [
+      "第二",
+      "二点",
+      "同意",
+      "北京",
+      "文化",
+      "化氛",
+      "氛围",
+      "围完",
+      "完全",
+      "一样"
+    ]
+  },
+  "keyframes": [
+    "media/local__fx-004/frames/hook.jpg",
+    "media/local__fx-004/frames/scene_01.jpg"
+  ],
+  "ocr": [
+    {
+      "index": 0,
+      "source": "keyframe",
+      "text": "STOP SCROLLING"
+    }
+  ],
+  "post_id": "local:fx-004",
+  "token_estimate": 85,
+  "transcript": [
+    {
+      "end_s": 2.0,
+      "start_s": 0.0,
+      "text": "hook line for local:fx-004"
+    },
+    {
+      "end_s": 5.0,
+      "start_s": 2.0,
+      "text": "second line 第二句"
+    }
+  ],
+  "transcript_lang": "zh",
+  "truncated": false
+}
