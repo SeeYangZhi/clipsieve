@@ -1,0 +1,293 @@
+import json
+import shutil
+from pathlib import Path
+
+import httpx
+import pytest
+from structlog.testing import capture_logs
+
+from clipsieve.adapters.youtube import MediaDownloadError, YouTubeAdapter, map_info_to_post
+from clipsieve.adapters.ytdlp_client import FakeYtDlpClient
+from clipsieve.config import Settings
+from clipsieve.models import Query
+from tests.adapters.contract import run_adapter_contract
+
+FIXTURES = Path(__file__).resolve().parents[1] / "fixtures" / "youtube"
+
+
+@pytest.fixture
+def settings(tmp_path: Path) -> Settings:
+    return Settings(clipsieve_data_dir=tmp_path / "data", clipsieve_creator_salt="salt")
+
+
+@pytest.fixture
+def adapter(settings) -> YouTubeAdapter:
+    return YouTubeAdapter(
+        client=FakeYtDlpClient(FIXTURES), data_dir=settings.clipsieve_data_dir, salt="salt"
+    )
+
+
+def test_passes_contract(adapter, tmp_path):
+    posts = run_adapter_contract(
+        adapter,
+        Query(platform="youtube", query="chrome extension no code", lang="en"),
+        tmp_path,
+        limit=5,
+    )
+    assert {p.id for p in posts} == {"youtube:aB3dEfGhIjK", "youtube:zH1sH4nGh41"}
+
+
+def test_shorts_filter_drops_long_videos(adapter):
+    posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], limit=10))
+    assert "youtube:LoNgV1dEo00" not in {p.id for p in posts}
+
+
+def test_mapping_fields():
+    info = json.loads((FIXTURES / "aB3dEfGhIjK.json").read_text(encoding="utf-8"))
+    post = map_info_to_post(info, salt="salt", raw_ref="/tmp/raw.json")
+    assert post.url == "https://www.youtube.com/shorts/aB3dEfGhIjK"
+    assert post.kind == "video"
+    assert post.text.title.startswith("I built")
+    assert sorted(post.text.hashtags) == ["buildinpublic", "chromeextension", "nocode"]
+    assert (
+        post.metrics.views == 182344
+        and post.metrics.likes == 15321
+        and post.metrics.comments == 412
+    )
+    assert post.media[0].duration_s == 48 and post.media[0].width == 1080
+    assert post.posted_at is not None and post.posted_at.year == 2026 and post.posted_at.month == 9
+    assert post.lang == "en"
+    assert post.creator_display == "No Code Nat"
+    assert "UC_builder_001" not in post.creator_hash
+
+
+def test_chinese_mapping_preserves_text():
+    info = json.loads((FIXTURES / "zH1sH4nGh41.json").read_text(encoding="utf-8"))
+    post = map_info_to_post(info, salt="salt", raw_ref="/tmp/raw.json")
+    assert post.text.title == "新加坡人搬到上海的第一天 | 房租篇"
+    assert post.comments[0].text == "同是新加坡人，太真实了"
+    assert post.lang == "zh-Hans"
+
+
+def test_comments_capped_most_liked():
+    info = json.loads((FIXTURES / "aB3dEfGhIjK.json").read_text(encoding="utf-8"))
+    info["comments"] = [{"id": str(i), "text": f"c{i}", "like_count": i} for i in range(120)]
+    post = map_info_to_post(info, salt="salt", raw_ref="/tmp/raw.json")
+    assert len(post.comments) == 50
+    assert post.comments[0].likes == 119 and post.comments[-1].likes == 70
+
+
+def test_fetch_media_writes_video_and_transcript_sidecar(adapter, tmp_path):
+    post = next(
+        p
+        for p in adapter.search([Query(platform="youtube", query="x", lang="en")], 10)
+        if p.id.endswith("aB3dEfGhIjK")
+    )
+    dest = tmp_path / "m"
+    got = adapter.fetch_media(post, dest)
+    assert got.media[0].local_path == "video.mp4"
+    sidecar = json.loads((dest / "video.mp4.transcript.json").read_text(encoding="utf-8"))
+    assert sidecar["lang"] == "en"
+    assert sidecar["segments"][0]["text"].startswith("stop scrolling")
+
+
+def test_fetch_media_is_idempotent_and_does_not_redownload(adapter, tmp_path):
+    post = next(adapter.search([Query(platform="youtube", query="x", lang="en")], 1))
+    dest = tmp_path / "m"
+    adapter.fetch_media(post, dest)
+    calls = adapter._client.download_calls
+    adapter.fetch_media(post, dest)
+    assert adapter._client.download_calls == calls
+
+
+def test_data_api_search_is_used_when_key_present(settings):
+    def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.host == "www.googleapis.com"
+        assert request.url.params["q"] == "shanghai vlog"
+        assert request.url.params["videoDuration"] == "short"
+        return httpx.Response(
+            200,
+            json={
+                "items": [{"id": {"videoId": "zH1sH4nGh41"}}, {"id": {"videoId": "aB3dEfGhIjK"}}]
+            },
+        )
+
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    adapter = YouTubeAdapter(
+        client=FakeYtDlpClient(FIXTURES),
+        data_dir=settings.clipsieve_data_dir,
+        salt="s",
+        api_key="k",
+        http=http,
+    )
+    posts = list(adapter.search([Query(platform="youtube", query="shanghai vlog", lang="en")], 5))
+    assert [p.id for p in posts] == ["youtube:zH1sH4nGh41", "youtube:aB3dEfGhIjK"]
+
+
+def test_healthcheck_reports_ytdlp_import(adapter):
+    health = adapter.healthcheck()
+    assert isinstance(health.ok, bool) and "yt-dlp" in health.message
+
+
+def test_from_settings_builds_real_client(settings):
+    adapter = YouTubeAdapter.from_settings(settings)
+    assert adapter.platform == "youtube"
+
+
+# -- beyond the brief: Task 4 review notes and the privacy rules ---------------------------------
+
+
+class WebmClient(FakeYtDlpClient):
+    """Format fallback: yt-dlp may hand back a .webm instead of the merged .mp4."""
+
+    def download(self, url: str, dest: Path, subtitle_langs: list[str]) -> dict:
+        meta = super().download(url, dest, subtitle_langs)
+        (dest / "video.mp4").rename(dest / "video.webm")
+        meta["requested_downloads"] = [{"filepath": str(dest / "video.webm")}]
+        return meta
+
+
+class OversizeClient(FakeYtDlpClient):
+    """yt-dlp skips a file over max_filesize without raising, so no media file appears."""
+
+    def download(self, url: str, dest: Path, subtitle_langs: list[str]) -> dict:
+        meta = super().download(url, dest, subtitle_langs)
+        (dest / "video.mp4").unlink()
+        return meta
+
+
+class CommentAuthorClient(FakeYtDlpClient):
+    """Real yt-dlp comment dicts carry author fields."""
+
+    def info(self, url: str) -> dict:
+        meta = super().info(url)
+        meta["comments"] = [
+            {
+                **c,
+                "author": "Some Viewer",
+                "author_id": "UC_viewer_9",
+                "author_url": "https://www.youtube.com/channel/UC_viewer_9",
+                "author_thumbnail": "https://example.invalid/avatar.jpg",
+                "author_is_uploader": False,
+            }
+            for c in meta["comments"]
+        ]
+        return meta
+
+
+@pytest.fixture
+def fixture_copy(tmp_path: Path) -> Path:
+    d = tmp_path / "fx"
+    shutil.copytree(FIXTURES, d)
+    return d
+
+
+def _first(adapter: YouTubeAdapter, suffix: str):
+    q = Query(platform="youtube", query="x", lang="en")
+    return next(p for p in adapter.search([q], 10) if p.id.endswith(suffix))
+
+
+def test_fetch_media_uses_the_path_ytdlp_reports(settings, tmp_path):
+    client = WebmClient(FIXTURES)
+    adapter = YouTubeAdapter(client=client, data_dir=settings.clipsieve_data_dir, salt="salt")
+    post = _first(adapter, "aB3dEfGhIjK")
+    dest = tmp_path / "m"
+    got = adapter.fetch_media(post, dest)
+    assert got.media[0].local_path == "video.webm"
+    assert (dest / "video.webm.transcript.json").is_file()
+    again = adapter.fetch_media(got, dest)
+    assert client.download_calls == 1
+    assert again.media[0].local_path == "video.webm"
+
+
+def test_fetch_media_raises_when_no_file_was_written(settings, tmp_path):
+    adapter = YouTubeAdapter(
+        client=OversizeClient(FIXTURES), data_dir=settings.clipsieve_data_dir, salt="salt"
+    )
+    post = _first(adapter, "aB3dEfGhIjK")
+    with pytest.raises(MediaDownloadError):
+        adapter.fetch_media(post, tmp_path / "m")
+
+
+def test_fetch_media_skips_captions_when_vtt_is_malformed(settings, fixture_copy, tmp_path):
+    (fixture_copy / "aB3dEfGhIjK.en.vtt").write_text(
+        "WEBVTT\n\nnot-a-time --> 00:00:01.000\nhello\n", encoding="utf-8"
+    )
+    adapter = YouTubeAdapter(
+        client=FakeYtDlpClient(fixture_copy), data_dir=settings.clipsieve_data_dir, salt="salt"
+    )
+    post = _first(adapter, "aB3dEfGhIjK")
+    dest = tmp_path / "m"
+    with capture_logs() as logs:
+        got = adapter.fetch_media(post, dest)
+    assert got.media[0].local_path == "video.mp4"
+    assert not (dest / "video.mp4.transcript.json").exists()
+    assert any(e["event"] == "youtube_captions_unparseable" for e in logs)
+
+
+def test_fetch_media_prefers_captions_in_the_post_language(settings, fixture_copy, tmp_path):
+    # An auto-translated English track sits next to the original Chinese one.
+    shutil.copy(fixture_copy / "aB3dEfGhIjK.en.vtt", fixture_copy / "zH1sH4nGh41.en.vtt")
+    adapter = YouTubeAdapter(
+        client=FakeYtDlpClient(fixture_copy), data_dir=settings.clipsieve_data_dir, salt="salt"
+    )
+    post = _first(adapter, "zH1sH4nGh41")
+    dest = tmp_path / "m"
+    adapter.fetch_media(post, dest)
+    sidecar = json.loads((dest / "video.mp4.transcript.json").read_text(encoding="utf-8"))
+    assert sidecar["lang"] == "zh-Hans"
+    assert sidecar["segments"][0]["text"] == "刚到上海的第一天 房租真的好贵"
+
+
+def test_raw_payload_has_no_comment_author_identifiers(settings):
+    adapter = YouTubeAdapter(
+        client=CommentAuthorClient(FIXTURES), data_dir=settings.clipsieve_data_dir, salt="salt"
+    )
+    post = _first(adapter, "aB3dEfGhIjK")
+    raw_text = Path(post.raw_ref).read_text(encoding="utf-8")
+    assert "UC_viewer_9" not in raw_text and "Some Viewer" not in raw_text
+    raw = json.loads(raw_text)
+    assert [c["text"] for c in raw["comments"]][0] == "this is the hook I needed"
+    assert not any(k.startswith("author") for c in raw["comments"] for k in c)
+    assert all(set(c.model_dump(exclude_none=True)) <= {"text", "likes"} for c in post.comments)
+
+
+def test_data_api_failure_falls_back_to_ytdlp_without_logging_the_key(settings):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(403, json={"error": {"message": "quotaExceeded"}})
+
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    adapter = YouTubeAdapter(
+        client=FakeYtDlpClient(FIXTURES),
+        data_dir=settings.clipsieve_data_dir,
+        salt="s",
+        api_key="SECRET-KEY",
+        http=http,
+    )
+    with capture_logs() as logs:
+        posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], 5))
+    assert [p.id for p in posts] == ["youtube:aB3dEfGhIjK", "youtube:zH1sH4nGh41"]
+    assert any(e["event"] == "youtube_data_api_failed" for e in logs)
+    assert "SECRET-KEY" not in repr(logs)
+
+
+def test_data_api_key_travels_in_a_header_not_the_url(settings):
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        return httpx.Response(200, json={"items": [{"id": {"videoId": "aB3dEfGhIjK"}}]})
+
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    adapter = YouTubeAdapter(
+        client=FakeYtDlpClient(FIXTURES),
+        data_dir=settings.clipsieve_data_dir,
+        salt="s",
+        api_key="SECRET-KEY",
+        http=http,
+    )
+    list(adapter.search([Query(platform="youtube", query="x", lang="zh-Hans")], 1))
+    [request] = seen
+    assert request.headers["x-goog-api-key"] == "SECRET-KEY"
+    assert "SECRET-KEY" not in str(request.url)
+    assert request.url.params["relevanceLanguage"] == "zh-Hans"
