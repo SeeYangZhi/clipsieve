@@ -2562,7 +2562,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `Report`, `PostView`, `api.getReport`, `api.getPosts`, `answerLabel` (Task 8).
 - Produces: `ReportView({ report, posts })` where `posts: Record<string, PostView>`; `PostDialog({ view, open, onOpenChange })`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 Create `frontend/src/components/report/ReportView.test.tsx`:
 
@@ -2604,7 +2604,7 @@ describe("ReportView", () => {
 Run: `cd frontend && bun run test src/components/report`
 Expected: FAIL, modules not found.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Create `frontend/src/components/report/PostDialog.tsx`:
 
@@ -2811,7 +2811,7 @@ export default function ReportPage() {
 Run: `cd frontend && bun run test src/components/report && bun run typecheck`
 Expected: 2 passed, clean.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/components/report "frontend/src/app/runs/[id]/report"
