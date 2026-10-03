@@ -2437,7 +2437,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `RunPaths` (plan 01), `ASR`, `OCR`, `FrameExtractor`, `summarize_comments`, `estimate_tokens`, `ocr_lang_for_post`, models, fixture posts `backend/tests/fixtures/posts/local__fx-00N.json`.
 - Produces: `extract_evidence(post: Post, paths: RunPaths, asr: ASR, ocr: OCR, frames: FrameExtractor) -> Evidence`, `resolve_media(paths: RunPaths, post: Post, media: Media) -> Path`, `run_relative(paths: RunPaths, path: Path) -> str`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_extract.py`:
 
@@ -2567,12 +2567,12 @@ def test_snapshot_matches_fixture(paths, post):
     assert Evidence.model_validate_json(snap.read_text(encoding="utf-8")) == ev
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_extract.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence.extract'`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `backend/clipsieve/evidence/extract.py`:
 
@@ -2689,7 +2689,7 @@ def extract_evidence(post: Post, paths: RunPaths, asr: ASR, ocr: OCR, frames: Fr
     return evidence
 ```
 
-- [ ] **Step 4: Run tests, generating the snapshots on the first run**
+- [x] **Step 4: Run tests, generating the snapshots on the first run**
 
 Run: `UPDATE_SNAPSHOTS=1 uv run pytest tests/evidence/test_extract.py -v`
 Expected: 10 passed (5 behaviour tests, 5 parametrised snapshots). Five new files appear under `tests/fixtures/evidence/`.
@@ -2697,12 +2697,12 @@ Expected: 10 passed (5 behaviour tests, 5 parametrised snapshots). Five new file
 Run again without the flag: `uv run pytest tests/evidence/test_extract.py -v`
 Expected: 10 passed, no file changes (`git status --short tests/fixtures/evidence` shows only the five untracked files, none modified).
 
-- [ ] **Step 5: Run the whole backend suite and lint**
+- [x] **Step 5: Run the whole backend suite and lint**
 
 Run: `uv run pytest -q && uv run ruff check . && uv run ruff format --check .`
 Expected: all tests pass, lint clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/extract.py backend/tests/evidence/test_extract.py backend/tests/fixtures/evidence
