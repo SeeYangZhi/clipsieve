@@ -1,0 +1,10 @@
+{
+  "name": "frontend",
+  "version": "0.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "echo 'frontend not yet scaffolded (plan 04)'",
+    "test": "echo 'frontend tests arrive in plan 04'",
+    "typecheck": "echo 'frontend typecheck arrives in plan 04'"
+  }
+}

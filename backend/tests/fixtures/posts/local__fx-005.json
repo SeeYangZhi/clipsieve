@@ -1,0 +1,27 @@
+{
+  "id": "local:fx-005",
+  "platform": "local",
+  "url": "file:///fixtures/fx-005",
+  "creator_hash": "3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d",
+  "creator_display": "Mei Does Shanghai",
+  "posted_at": "2026-08-30T10:10:00Z",
+  "kind": "image_note",
+  "text": {
+    "title": "7 apps every Singaporean needs before landing in Shanghai",
+    "caption": "Download these on the plane. Number 5 replaced three Singapore apps for me.",
+    "hashtags": ["shanghai", "singaporean", "expattips", "apps"]
+  },
+  "media": [
+    { "type": "image", "index": 0, "width": 1080, "height": 1350 },
+    { "type": "image", "index": 1, "width": 1080, "height": 1350 },
+    { "type": "image", "index": 2, "width": 1080, "height": 1350 }
+  ],
+  "metrics": { "views": 28700, "likes": 2100, "comments": 96, "saves": 1900 },
+  "comments": [
+    { "text": "Alipay tour pass saved my life", "likes": 73 },
+    { "text": "Does Grab work there at all?", "likes": 31 }
+  ],
+  "lang": "en",
+  "raw_ref": "raw/local__fx-005.json",
+  "collected_at": "2026-10-03T08:00:04Z"
+}

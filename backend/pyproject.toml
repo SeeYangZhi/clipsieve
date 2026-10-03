@@ -1,0 +1,55 @@
+[project]
+name = "clipsieve"
+version = "0.1.0"
+description = "Sift thousands of social clips down to the few worth studying, then explain why they work."
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+license = { text = "Apache-2.0" }
+dependencies = [
+  "fastapi>=0.115",
+  "uvicorn[standard]>=0.30",
+  "pydantic>=2.8",
+  "pydantic-settings>=2.4",
+  "sqlmodel>=0.0.22",
+  "structlog>=24.4",
+  "typer>=0.12",
+  "pyyaml>=6.0",
+  "httpx>=0.27",
+]
+
+[project.scripts]
+sieve = "clipsieve.cli:app"
+
+[dependency-groups]
+dev = [
+  "pytest>=8.3",
+  "pytest-asyncio>=0.24",
+  "ruff>=0.6",
+  "datamodel-code-generator>=0.26",
+]
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["clipsieve"]
+
+[tool.uv]
+python-preference = "managed"
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["clipsieve/models.py"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "T20"]
+# T20 forbids print(); allowed only in packages/schema/generate.py, which ruff never sees.
+
+[tool.ruff.lint.per-file-ignores]
+"tests/**" = ["T20"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

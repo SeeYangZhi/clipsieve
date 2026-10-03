@@ -1,0 +1,91 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clipsieve.dev/schema/post.json",
+  "title": "Post",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "platform",
+    "url",
+    "creator_hash",
+    "kind",
+    "text",
+    "media",
+    "metrics",
+    "comments",
+    "raw_ref",
+    "collected_at"
+  ],
+  "properties": {
+    "id": { "type": "string", "description": "<platform>:<platform_id>" },
+    "platform": { "$ref": "common.json#/$defs/Platform" },
+    "url": { "type": "string" },
+    "creator_hash": {
+      "type": "string",
+      "description": "sha256 hex of salt:platform_creator_id"
+    },
+    "creator_display": { "type": "string" },
+    "posted_at": { "type": "string", "format": "date-time" },
+    "kind": { "type": "string", "enum": ["video", "image_note"] },
+    "text": { "$ref": "#/$defs/PostText" },
+    "media": { "type": "array", "items": { "$ref": "#/$defs/Media" } },
+    "metrics": { "$ref": "#/$defs/Metrics" },
+    "comments": {
+      "type": "array",
+      "maxItems": 50,
+      "items": { "$ref": "#/$defs/Comment" }
+    },
+    "lang": { "type": "string", "description": "BCP-47" },
+    "raw_ref": {
+      "type": "string",
+      "description": "Path relative to the run root"
+    },
+    "collected_at": { "type": "string", "format": "date-time" }
+  },
+  "$defs": {
+    "PostText": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["hashtags"],
+      "properties": {
+        "title": { "type": "string" },
+        "caption": { "type": "string" },
+        "hashtags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "Media": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type"],
+      "properties": {
+        "type": { "type": "string", "enum": ["video", "image"] },
+        "local_path": { "type": "string" },
+        "duration_s": { "type": "number" },
+        "index": { "type": "integer" },
+        "width": { "type": "integer" },
+        "height": { "type": "integer" }
+      }
+    },
+    "Metrics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "views": { "type": "integer" },
+        "likes": { "type": "integer" },
+        "comments": { "type": "integer" },
+        "shares": { "type": "integer" },
+        "saves": { "type": "integer" }
+      }
+    },
+    "Comment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text"],
+      "properties": {
+        "text": { "type": "string" },
+        "likes": { "type": "integer" }
+      }
+    }
+  }
+}

@@ -35,7 +35,7 @@
 ```text
 clipsieve/
   package.json                      bun workspaces: ["frontend", "packages/schema"]; root scripts
-  biome.jsonc                       { "extends": ["ultracite"] }
+  biome.jsonc                       { "root": true, "extends": ["ultracite/biome/core"], ... }  (ultracite 7 has no bare "ultracite" export)
   .github/workflows/check.yml
   .env.example
   backend/
@@ -514,6 +514,11 @@ export function useLocale(): [Locale, (l: Locale) => void];   // localStorage "c
 9. **`datamodel-code-generator>=0.26`** is pinned. `[project.scripts] sieve = "clipsieve.cli:app"` is declared in plan 01; plan 03 creates `cli.py` with a typer `app`.
 10. **CI** pins Bun `1.3.11`, installs Python 3.12 via `astral-sh/setup-uv@v6`, runs `bun install --frozen-lockfile`, `uv sync --frozen`, `bun run check`.
 
+11. **Repo-root resolution in `config.py`.** `REPO_ROOT = Path(__file__).resolve().parents[2]`. `Settings.model_config` uses `env_file=(REPO_ROOT / ".env", ".env")` so a `.env` copied from `.env.example` at the repo root is read even when commands `cd backend`. A relative `clipsieve_data_dir` is resolved against `REPO_ROOT` by a field validator; absolute paths (and `--data-dir`) are used as given.
+12. **Creator salt.** `config.ensure_creator_salt(settings) -> str` returns `settings.clipsieve_creator_salt` if non-empty, else reads or creates `<data_dir>/creator_salt` (`secrets.token_hex(16)`, mode 0600) and returns it. Plan 03's `build_context` and the `sieve run` CLI call it before constructing adapters and pass the result as the `salt` for `hash_creator`. Nothing else generates salts.
+13. **Optional means absent on the wire.** All JSON the backend writes or serves omits `None` fields: `RunRepository` dumps and `EventWriter` serialise with `exclude_none=True`, and plan 03's FastAPI routes use `response_model_exclude_none=True`. Files therefore validate against the JSON Schemas (no `null` for `type: string`), and TypeScript `field?: T` is never `null`. Frontend code may still defensively treat `null` as absent.
+14. **Test fixtures shared from plan 01.** `backend/tests/conftest.py` provides `data_dir` (tmp), `tmp_data_dir` (alias), `engine`, `repo` (`RunRepository` on a fresh tmp db), `fixtures_dir`, and `fixture_posts: list[Post]` (the five fixture posts in id order). An autouse fixture resets structlog (`structlog.reset_defaults()`, `clear_contextvars()`) after every test so `configure_logging()` never leaks a captured stream into later tests.
+
 ## Addendum B: contract decisions made by plan 02 (binding for plans 03 to 05)
 
 1. **Raw payload location.** Adapters write raw payloads to `<data_dir>/incoming/<platform>/<safe_post_id>.json` and set `raw_ref` to that absolute path. The Runner relocates the file to `RunPaths.raw_path(post.id, "json")` on `post_collected` and rewrites `raw_ref` to `raw/<safe_post_id>.json`. Helper `incoming_dir(data_dir, platform)` lives in `adapters/base.py`.
@@ -564,7 +569,7 @@ export function useLocale(): [Locale, (l: Locale) => void];   // localStorage "c
 5. **`build_plan(run_id, brief_text, platforms, quantities, rubric_pack, language_hint, backend, rubrics_dir)`**. `default_lang` maps xiaohongshu, douyin and bilibili to `zh`. `pack_summaries(rubrics_dir)` exists in `planner/plan.py`.
 6. **Additional modules:** `adapters/fixture.py` (`FixtureAdapter`, platform `local`, returns the five fixture posts regardless of query; used when `CLIPSIEVE_FIXTURE_DIR` is set), `pipeline/state.py` (`RunState` at `<run>/state.json` with `pass_one_kept`, `pass_one_dropped`, `judge_failed`, `extracted`), `api/context.py` (`AppContext`, `build_context`, `set_context`, `runner_for`). New setting `clipsieve_fixture_dir: Path | None` from env `CLIPSIEVE_FIXTURE_DIR`.
 7. **Fake mode implies fixtures.** When `CLIPSIEVE_EXPLAIN_BACKEND=fake` and `CLIPSIEVE_FIXTURE_DIR` is unset, `build_context` sets the fixture dir to `backend/tests/fixtures` so the `local` adapter is the `FixtureAdapter`, the judge is `RecordedJudge`, and ASR/OCR/frames are fakes. This satisfies Addendum D.2 without a second switch.
-8. **Runner:** pass one judges all posts concurrently, then emits `pass_one_judged` with `kept`. Extraction concurrency 2 via `asyncio.to_thread`. `pause()` is cooperative; `run()` returns normally when paused and sets `run.paused`; `resume_flag()` clears it. Explain failure moves the stage to `failed`: `stage_changed` then `error` as the last event. `post_state()` returns the six `PostView.state` values.
+8. **Runner:** pass one judges all posts concurrently, then emits `pass_one_judged` with `kept`. Extraction concurrency 2 via `asyncio.to_thread`. `pause()` is cooperative; `run()` returns normally when paused and sets `run.paused`; `resume_flag()` clears it. Explain failure moves the stage to `failed`: `error` (stage `explaining`, `recoverable: false`) first, then `stage_changed` to `failed` as the last event, because `follow_events` and the dashboard stop at the first failed-stage event. `post_state()` returns the six `PostView.state` values.
 9. **API:** `create_app(ctx=None)` factory; extra `GET /api/health`; 201 on create, 409 on double approve or on editing an approved plan, 422 for unknown platforms.
 10. **CLI exit codes:** 0 ok, 1 run failed or not found, 2 usage error or declined plan.
 

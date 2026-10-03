@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clipsieve.dev/schema/run.json",
+  "title": "Run",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "id",
+    "created_at",
+    "stage",
+    "brief",
+    "platforms",
+    "quantities",
+    "rubric_pack",
+    "counters",
+    "paused"
+  ],
+  "properties": {
+    "id": { "type": "string" },
+    "created_at": { "type": "string", "format": "date-time" },
+    "stage": { "$ref": "common.json#/$defs/Stage" },
+    "brief": { "$ref": "common.json#/$defs/Brief" },
+    "platforms": { "type": "array", "items": { "type": "string" } },
+    "quantities": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    },
+    "rubric_pack": { "type": "string" },
+    "counters": { "$ref": "common.json#/$defs/Counters" },
+    "paused": { "type": "boolean" },
+    "error": { "type": "string" }
+  }
+}

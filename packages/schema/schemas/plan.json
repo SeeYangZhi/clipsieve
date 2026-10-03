@@ -1,0 +1,35 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clipsieve.dev/schema/plan.json",
+  "title": "Plan",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "run_id",
+    "brief",
+    "queries",
+    "quantities",
+    "rubric_pack",
+    "persona_fit_criteria"
+  ],
+  "properties": {
+    "run_id": { "type": "string" },
+    "brief": { "$ref": "common.json#/$defs/Brief" },
+    "queries": {
+      "type": "array",
+      "items": { "$ref": "common.json#/$defs/Query" }
+    },
+    "quantities": {
+      "type": "object",
+      "additionalProperties": { "type": "integer", "minimum": 1 }
+    },
+    "rubric_pack": { "type": "string" },
+    "persona_fit_criteria": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": { "type": "string" }
+    },
+    "approved_at": { "type": "string", "format": "date-time" }
+  }
+}

@@ -49,7 +49,7 @@
 - Consumes: nothing.
 - Produces: root scripts `dev`, `dev:api`, `dev:web`, `schema`, `check:schema`, `lint`, `format`, `test`, `typecheck`, `check` exactly as in the overview. Env variable names consumed by Task 4.
 
-- [ ] **Step 1: Verify `.gitignore` already excludes secrets and run data, then add the schema build dir**
+- [x] **Step 1: Verify `.gitignore` already excludes secrets and run data, then add the schema build dir**
 
 Run: `grep -n "^\.env$\|^data/\|^runs/" .gitignore`
 Expected: three matching lines.
@@ -62,7 +62,7 @@ Append to `.gitignore`:
 packages/schema/.build/
 ```
 
-- [ ] **Step 2: Create root `package.json` with the exact scripts from the overview**
+- [x] **Step 2: Create root `package.json` with the exact scripts from the overview**
 
 ```json
 {
@@ -88,20 +88,22 @@ packages/schema/.build/
 }
 ```
 
-- [ ] **Step 3: Create `biome.jsonc`**
+- [x] **Step 3: Create `biome.jsonc`**
 
 ```jsonc
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
   "root": true,
-  "extends": ["ultracite"],
+  "extends": ["ultracite/biome/core"],
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/.next", "!frontend/src/lib/types.ts", "!packages/schema/.build"]
+    "includes": ["!**/node_modules", "!**/.next", "!frontend/src/lib/types.ts", "!packages/schema/.build"]
   }
 }
 ```
 
-- [ ] **Step 4: Create the placeholder frontend workspace**
+Note: ultracite 7 exports only `ultracite/biome/*` presets (no bare `ultracite`), so `extends` names the `core` preset; plan 04 adds `ultracite/biome/react` and `ultracite/biome/next` in `frontend/biome.jsonc`. Biome's `noBiomeFirstException` rule rejects a leading `"**"` in `files.includes`, so the list holds only exclusions. The `$schema` version tracks the Biome that ultracite installs.
+
+- [x] **Step 4: Create the placeholder frontend workspace**
 
 `frontend/package.json`:
 
@@ -120,7 +122,21 @@ packages/schema/.build/
 
 Create the empty file `frontend/src/lib/.gitkeep` so the TypeScript generator has a target directory.
 
-- [ ] **Step 5: Create `.env.example`**
+Also create a placeholder `packages/schema/package.json` so `bun install` can resolve the second workspace member before Task 3 fills the package in (Task 3 Step 1 replaces this file wholesale):
+
+```json
+{
+  "name": "@clipsieve/schema",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "generate": "echo 'schema generator arrives in Task 3'"
+  }
+}
+```
+
+- [x] **Step 5: Create `.env.example`**
 
 ```dotenv
 # TypeSafe Jev. Required for real runs. https://console.typesafe.ai/
@@ -147,7 +163,7 @@ CLIPSIEVE_CREATOR_SALT=
 CLIPSIEVE_XHS_CHROME_CDP_PORT=9222
 ```
 
-- [ ] **Step 6: Create the CI workflow**
+- [x] **Step 6: Create the CI workflow**
 
 `.github/workflows/check.yml`:
 
@@ -180,7 +196,7 @@ jobs:
         run: bun run check
 ```
 
-- [ ] **Step 7: Install JS dependencies and verify the lockfile is created**
+- [x] **Step 7: Install JS dependencies and verify the lockfile is created**
 
 Run: `bun install`
 Expected: `bun.lock` created, `node_modules/ultracite` present.
@@ -188,7 +204,7 @@ Expected: `bun.lock` created, `node_modules/ultracite` present.
 Run: `bunx ultracite check`
 Expected: exits 0 (no TS files to check yet, or only the placeholder).
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add package.json biome.jsonc .env.example frontend/package.json frontend/src/lib/.gitkeep .github/workflows/check.yml .gitignore bun.lock
@@ -215,7 +231,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: nothing.
 - Produces: `clipsieve.logging.configure_logging(level: str = "INFO") -> None` and `clipsieve.logging.get_logger(name: str) -> structlog.stdlib.BoundLogger`.
 
-- [ ] **Step 1: Create `backend/pyproject.toml`**
+- [x] **Step 1: Create `backend/pyproject.toml`**
 
 ```toml
 [project]
@@ -277,7 +293,7 @@ testpaths = ["tests"]
 
 Note: `[project.scripts] sieve` points at `clipsieve.cli:app`, created in plan 03. uv does not import it at sync time, so this is safe now.
 
-- [ ] **Step 2: Create `backend/README.md`**
+- [x] **Step 2: Create `backend/README.md`**
 
 ```markdown
 # clipsieve backend
@@ -291,7 +307,7 @@ Python 3.12, FastAPI, uv.
 See `AGENTS.md` for the contract of this directory.
 ```
 
-- [ ] **Step 3: Create `backend/AGENTS.md`**
+- [x] **Step 3: Create `backend/AGENTS.md`**
 
 ```markdown
 # backend/ — AGENTS.md
@@ -322,7 +338,7 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 Later plans add `adapters/`, `evidence/`, `judge/`, `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
 ```
 
-- [ ] **Step 4: Create the package init and logging module**
+- [x] **Step 4: Create the package init and logging module**
 
 `backend/clipsieve/__init__.py`:
 
@@ -370,7 +386,7 @@ def get_logger(name: str) -> structlog.stdlib.BoundLogger:
     return structlog.get_logger(name)
 ```
 
-- [ ] **Step 5: Create the tests package and a failing logging test**
+- [x] **Step 5: Create the tests package and a failing logging test**
 
 `backend/tests/__init__.py`: empty file.
 
@@ -418,17 +434,17 @@ def test_configure_logging_binds_and_renders(capsys):
     structlog.contextvars.clear_contextvars()
 ```
 
-- [ ] **Step 6: Sync and run the test to verify it fails before the module exists**
+- [x] **Step 6: Sync and run the test to verify it fails before the module exists**
 
 Run: `cd backend && uv sync && uv run pytest -q tests/test_logging.py`
 Expected first run: PASS, because Step 4 already created the module. If you created the test before the module, expected: `ModuleNotFoundError: clipsieve.logging`. Either order is acceptable here since this task's deliverable is the toolchain.
 
-- [ ] **Step 7: Lint**
+- [x] **Step 7: Lint**
 
 Run: `cd backend && uv run ruff check . && uv run ruff format --check .`
 Expected: `All checks passed!` and `N files already formatted`. If format fails, run `uv run ruff format .` and re-check.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/pyproject.toml backend/uv.lock backend/README.md backend/AGENTS.md backend/clipsieve backend/tests
@@ -468,7 +484,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Contract decision: the overview lists eight schema files. Shared types (`Brief`, `Query`, `Counters`, `Stage`, `RunEventType`, `Platform`) live in a ninth file `common.json` so that neither generator emits duplicate `Brief1`-style classes. Each schema file refers to them with `"$ref": "common.json#/$defs/Name"`. `merge.py` folds all files into one root schema under `$defs` before generation.
 
-- [ ] **Step 1: Create `packages/schema/package.json`**
+- [x] **Step 1: Create `packages/schema/package.json`**
 
 ```json
 {
@@ -488,7 +504,7 @@ Contract decision: the overview lists eight schema files. Shared types (`Brief`,
 Run: `bun install`
 Expected: lockfile updated with json-schema-to-typescript.
 
-- [ ] **Step 2: Create `packages/schema/schemas/common.json`**
+- [x] **Step 2: Create `packages/schema/schemas/common.json`**
 
 ```json
 {
@@ -550,7 +566,7 @@ Expected: lockfile updated with json-schema-to-typescript.
 }
 ```
 
-- [ ] **Step 3: Create `post.json`**
+- [x] **Step 3: Create `post.json`**
 
 ```json
 {
@@ -624,7 +640,7 @@ Expected: lockfile updated with json-schema-to-typescript.
 }
 ```
 
-- [ ] **Step 4: Create `evidence.json`**
+- [x] **Step 4: Create `evidence.json`**
 
 ```json
 {
@@ -679,7 +695,7 @@ Expected: lockfile updated with json-schema-to-typescript.
 }
 ```
 
-- [ ] **Step 5: Create `run_event.json`**
+- [x] **Step 5: Create `run_event.json`**
 
 ```json
 {
@@ -701,7 +717,9 @@ Expected: lockfile updated with json-schema-to-typescript.
 }
 ```
 
-- [ ] **Step 6: Create `rubric_pack.json`**
+- [x] **Step 6: Create `rubric_pack.json`**
+
+Note (applied during execution): `questions.additionalProperties` must `$ref` a named `$defs.Question` holding the `oneOf` of the three question types, so both generators emit a `Question` alias that plans 03 and 05 import. Generated Python `Question` is a plain union alias (not a `RootModel`) so `isinstance(q, ChoiceQuestion)` works on dict values.
 
 ```json
 {
@@ -788,7 +806,7 @@ Expected: lockfile updated with json-schema-to-typescript.
 }
 ```
 
-- [ ] **Step 7: Create `plan.json`, `report.json`, `judge_result.json`, `run.json`**
+- [x] **Step 7: Create `plan.json`, `report.json`, `judge_result.json`, `run.json`**
 
 `plan.json`:
 
@@ -928,7 +946,7 @@ Expected: lockfile updated with json-schema-to-typescript.
 }
 ```
 
-- [ ] **Step 8: Create `packages/schema/merge.py`, shared by the Python generator and the test**
+- [x] **Step 8: Create `packages/schema/merge.py`, shared by the Python generator and the test**
 
 ```python
 """Fold the per-file schemas into one root schema with a flat $defs table.
@@ -1009,7 +1027,7 @@ if __name__ == "__main__":
     print(json.dumps(merge(), indent=2, ensure_ascii=False))
 ```
 
-- [ ] **Step 9: Create `packages/schema/generate.py`**
+- [x] **Step 9: Create `packages/schema/generate.py`**
 
 ```python
 """Generate backend/clipsieve/models.py from packages/schema/schemas/*.json.
@@ -1077,7 +1095,9 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 10: Create `packages/schema/generate.ts`**
+- [x] **Step 10: Create `packages/schema/generate.ts`**
+
+Note (applied during execution): compile options include `ignoreMinAndMaxItems: true`, otherwise bounded arrays (`persona_fit_criteria` 5 items, `keyframes` maxItems 8, Score `criteria` 2..10) become TS tuple unions and plan 04's `persona_fit_criteria.map(...)` fails typecheck. Pydantic still enforces the lengths at runtime.
 
 ```ts
 // Generate frontend/src/lib/types.ts from packages/schema/schemas/*.json.
@@ -1182,7 +1202,7 @@ writeFileSync(output, ts, "utf-8");
 console.log(`wrote ${output}`);
 ```
 
-- [ ] **Step 11: Create `packages/schema/AGENTS.md`**
+- [x] **Step 11: Create `packages/schema/AGENTS.md`**
 
 ```markdown
 # packages/schema/ — AGENTS.md
@@ -1212,7 +1232,7 @@ Single source of truth for every data contract. JSON Schema draft 2020-12, one f
 | `schemas/run.json` | `Run` |
 ```
 
-- [ ] **Step 12: Create the five fixture posts and their raw payloads**
+- [x] **Step 12: Create the five fixture posts and their raw payloads**
 
 `backend/tests/fixtures/posts/local__fx-001.json`:
 
@@ -1372,7 +1392,7 @@ Raw payloads mimic a local-import CSV row. Create `backend/tests/fixtures/raw/lo
 { "source": "local_import", "file": "fx-001.mp4", "title": "I moved from Singapore to Shanghai. Nobody warned me about this.", "views": 184200, "likes": 12400, "comments": 388 }
 ```
 
-- [ ] **Step 13: Write the failing schema test**
+- [x] **Step 13: Write the failing schema test**
 
 `backend/tests/test_schemas.py`:
 
@@ -1448,12 +1468,12 @@ def test_cjk_fixture_roundtrip_is_bytewise(fixtures_dir: Path):
     assert len(post.media) == 4
 ```
 
-- [ ] **Step 14: Run the test to verify it fails because nothing is generated yet**
+- [x] **Step 14: Run the test to verify it fails because nothing is generated yet**
 
 Run: `cd backend && uv run pytest -q tests/test_schemas.py`
 Expected: FAIL. `test_generated_models_have_banner_and_classes` with `FileNotFoundError` on `models.py`; fixture tests with `ModuleNotFoundError: clipsieve.models`.
 
-- [ ] **Step 15: Generate both outputs**
+- [x] **Step 15: Generate both outputs**
 
 Run: `bun run schema`
 Expected: `wrote backend/clipsieve/models.py` and `wrote .../frontend/src/lib/types.ts`.
@@ -1462,12 +1482,12 @@ If `datamodel-codegen` rejects `--extra-fields`, run `cd backend && uv add --dev
 
 Inspect: `head -5 backend/clipsieve/models.py` shows the banner then imports. `grep -c "^class " backend/clipsieve/models.py` is at least 28.
 
-- [ ] **Step 16: Run the schema test and verify it passes**
+- [x] **Step 16: Run the schema test and verify it passes**
 
 Run: `cd backend && uv run pytest -q tests/test_schemas.py`
 Expected: `11 passed`.
 
-- [ ] **Step 17: Prove the drift check fails on an unregenerated edit, then restore**
+- [x] **Step 17: Prove the drift check fails on an unregenerated edit, then restore**
 
 Run:
 
@@ -1481,7 +1501,7 @@ git diff --exit-code -- backend/clipsieve/models.py frontend/src/lib/types.ts; e
 
 Expected: first `exit=1` (diff printed for both generated files), second `exit=0`.
 
-- [ ] **Step 18: Lint and commit**
+- [x] **Step 18: Lint and commit**
 
 Run: `bun run lint`
 Expected: exits 0. If Biome complains about `generate.ts`, run `bunx ultracite fix` and re-run.
@@ -1505,7 +1525,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: nothing.
 - Produces: `clipsieve.config.Settings`, `clipsieve.config.get_settings() -> Settings` (lru_cached), exactly the fields in the overview.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `backend/tests/test_config.py`:
 
@@ -1563,12 +1583,12 @@ def test_get_settings_is_cached(monkeypatch):
     get_settings.cache_clear()
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `cd backend && uv run pytest -q tests/test_config.py`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.config'`.
 
-- [ ] **Step 3: Implement `backend/clipsieve/config.py`**
+- [x] **Step 3: Implement `backend/clipsieve/config.py`**
 
 ```python
 """Application settings. The only place that reads environment variables."""
@@ -1601,12 +1621,12 @@ def get_settings() -> Settings:
     return Settings()
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 Run: `cd backend && uv run pytest -q tests/test_config.py`
 Expected: `4 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/config.py backend/tests/test_config.py
@@ -1632,7 +1652,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Contract decision: `RunPaths` gains one extra property beyond the overview, `selection_json` (`root / "selection.json"`), because the repository persists `Selection` and the overview gave it no file.
 
-- [ ] **Step 1: Write the failing paths test**
+- [x] **Step 1: Write the failing paths test**
 
 `backend/tests/test_paths.py`:
 
@@ -1670,12 +1690,12 @@ def test_ensure_creates_all_dirs(tmp_path: Path):
         assert (p.root / sub).is_dir()
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `cd backend && uv run pytest -q tests/test_paths.py`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.store'`.
 
-- [ ] **Step 3: Implement `store/__init__.py` and `store/paths.py`**
+- [x] **Step 3: Implement `store/__init__.py` and `store/paths.py`**
 
 `backend/clipsieve/store/__init__.py`: empty file.
 
@@ -1746,12 +1766,12 @@ class RunPaths:
             (self.root / sub).mkdir(parents=True, exist_ok=True)
 ```
 
-- [ ] **Step 4: Run paths test to verify pass**
+- [x] **Step 4: Run paths test to verify pass**
 
 Run: `cd backend && uv run pytest -q tests/test_paths.py`
 Expected: `3 passed`.
 
-- [ ] **Step 5: Write the failing db test**
+- [x] **Step 5: Write the failing db test**
 
 `backend/tests/test_db.py`:
 
@@ -1777,12 +1797,12 @@ def test_init_db_is_idempotent(data_dir: Path):
     init_db(engine)
 ```
 
-- [ ] **Step 6: Run to verify failure**
+- [x] **Step 6: Run to verify failure**
 
 Run: `cd backend && uv run pytest -q tests/test_db.py`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.store.db'`.
 
-- [ ] **Step 7: Implement `store/db.py`**
+- [x] **Step 7: Implement `store/db.py`**
 
 ```python
 """SQLite index tables. Every row stores the canonical JSON in `data`; key columns exist for lookup and ordering."""
@@ -1854,12 +1874,12 @@ def init_db(engine: Engine) -> None:
     SQLModel.metadata.create_all(engine)
 ```
 
-- [ ] **Step 8: Run db test to verify pass, then lint**
+- [x] **Step 8: Run db test to verify pass, then lint**
 
 Run: `cd backend && uv run pytest -q tests/test_db.py tests/test_paths.py && uv run ruff check . && uv run ruff format --check .`
 Expected: `5 passed`, `All checks passed!`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/clipsieve/store backend/tests/test_paths.py backend/tests/test_db.py
@@ -1884,7 +1904,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Contract decisions: run ids are `"run_" + uuid4().hex[:12]`; `get_post` raises `PostNotFound` (subclass of `KeyError`) when missing; `list_runs` is newest first by `created_at`; `list_posts` is ordered by `collected_at` then `post_id`.
 
-- [ ] **Step 1: Create the `Selection` model stub**
+- [x] **Step 1: Create the `Selection` model stub**
 
 `backend/clipsieve/select/__init__.py`: empty file.
 
@@ -1907,7 +1927,7 @@ class Selection(BaseModel):
     dropped: dict[str, str]
 ```
 
-- [ ] **Step 2: Write the failing repository test**
+- [x] **Step 2: Write the failing repository test**
 
 `backend/tests/test_repo.py`:
 
@@ -2060,12 +2080,14 @@ def test_reindex_rebuilds_rows_from_files(repo: RunRepository, fixtures_dir: Pat
     assert fresh.get_report(run.id) is not None
 ```
 
-- [ ] **Step 3: Run to verify failure**
+- [x] **Step 3: Run to verify failure**
 
 Run: `cd backend && uv run pytest -q tests/test_repo.py`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.store.repo'`.
 
-- [ ] **Step 4: Implement `store/repo.py`**
+- [x] **Step 4: Implement `store/repo.py`**
+
+Note (applied during execution): the SQLite index stores `created_at` and `collected_at` as ISO text and sorts them as text, so `save_run` and `upsert_post` must normalise with `.astimezone(UTC).isoformat()` before writing the row (the JSON file keeps the original offset). Otherwise a `+08:00` post collected earlier sorts after a later UTC post. `save_run` and `save_judge_result` re-validate the model (`type(m).model_validate(dict(m))`) because generated models do not validate on assignment and callers assign plain strings to enum fields.
 
 ```python
 """Files-first run repository. Writes JSON files under data/runs/<run_id>/ then mirrors them to SQLite."""
@@ -2302,12 +2324,12 @@ class RunRepository:
 
 Note on generated enums: `run.stage`, `result.pass_name` are `Enum` members in the generated models, hence `.value`. Pydantic accepts the plain string on input (`stage="planning"`).
 
-- [ ] **Step 5: Run to verify pass**
+- [x] **Step 5: Run to verify pass**
 
 Run: `cd backend && uv run pytest -q tests/test_repo.py`
 Expected: `8 passed`. If `Post.model_dump_json` emits `\uXXXX` escapes, Pydantic's `model_dump_json` writes UTF-8 by default; the on-disk assertion in `test_posts_roundtrip_preserve_cjk_bytes` confirms it.
 
-- [ ] **Step 6: Lint, update `backend/AGENTS.md` layout table (already lists `store/` and `select/select.py`), commit**
+- [x] **Step 6: Lint, update `backend/AGENTS.md` layout table (already lists `store/` and `select/select.py`), commit**
 
 Run: `cd backend && uv run ruff check . && uv run ruff format --check .`
 Expected: `All checks passed!`.
@@ -2336,7 +2358,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Contract decisions: payload models live in `events/payloads.py` so the API layer can import them without importing the writer; `follow_events` tracks a byte offset and ignores a trailing partial line until its newline arrives; `emit` raises `ValueError` (wrapping the Pydantic error) on a payload that does not match its type.
 
-- [ ] **Step 1: Write the failing events test**
+- [x] **Step 1: Write the failing events test**
 
 `backend/tests/test_events.py`:
 
@@ -2460,12 +2482,12 @@ async def test_follow_events_ignores_partial_trailing_line(paths: RunPaths):
     assert seen == [1, 2]
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `cd backend && uv run pytest -q tests/test_events.py`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.events'`.
 
-- [ ] **Step 3: Implement `events/__init__.py` and `events/payloads.py`**
+- [x] **Step 3: Implement `events/__init__.py` and `events/payloads.py`**
 
 `backend/clipsieve/events/__init__.py`: empty file.
 
@@ -2560,7 +2582,7 @@ PAYLOAD_MODELS: dict[RunEventType, type[BaseModel]] = {
 
 If the generated enum member names differ (datamodel-codegen may emit `RunEventType.run_created` as shown, since the values are already valid identifiers), adjust to the generated names; check with `grep -A14 "class RunEventType" backend/clipsieve/models.py`.
 
-- [ ] **Step 4: Implement `events/writer.py`**
+- [x] **Step 4: Implement `events/writer.py`**
 
 ```python
 """Append-only JSONL event writer. One writer per run per process."""
@@ -2631,7 +2653,7 @@ class EventWriter:
         return event
 ```
 
-- [ ] **Step 5: Implement `events/reader.py`**
+- [x] **Step 5: Implement `events/reader.py`**
 
 ```python
 """Read and tail a run's events.jsonl."""
@@ -2700,19 +2722,19 @@ async def follow_events(paths: RunPaths, after: int = 0, poll_s: float = 0.25) -
 
 Note: `fh.tell()` after a text-mode read returns an opaque cookie that is valid for `seek` on the same file reopened in text mode, which is how it is used here.
 
-- [ ] **Step 6: Run to verify pass**
+- [x] **Step 6: Run to verify pass**
 
 Run: `cd backend && uv run pytest -q tests/test_events.py`
 Expected: `8 passed`.
 
 If `test_follow_events_ignores_partial_trailing_line` is flaky because the text-mode offset lands mid-codepoint, switch `follow_events` to binary mode: open with `"rb"`, decode `chunk.decode("utf-8", errors="ignore")` only for complete lines by splitting on `b"\n"` before decoding, and keep the remainder as bytes. Re-run until green.
 
-- [ ] **Step 7: Lint and run the whole backend suite**
+- [x] **Step 7: Lint and run the whole backend suite**
 
 Run: `cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest -q`
 Expected: `All checks passed!` and `35 passed` (11 schemas, 4 config, 3 paths, 2 db, 8 repo, 8 events, 1 logging; adjust if your parametrisation count differs).
 
-- [ ] **Step 8: Update `backend/AGENTS.md` layout table and commit**
+- [x] **Step 8: Update `backend/AGENTS.md` layout table and commit**
 
 Add to the layout table in `backend/AGENTS.md`:
 
@@ -2739,7 +2761,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: everything above.
 - Produces: `bun run check` passes from a clean checkout; root `AGENTS.md` indexes `backend/` and `packages/schema/`.
 
-- [ ] **Step 1: Replace the Child DOX Index in root `AGENTS.md`**
+- [x] **Step 1: Replace the Child DOX Index in root `AGENTS.md`**
 
 Replace the section starting `## Child DOX Index` with:
 
@@ -2754,7 +2776,7 @@ Replace the section starting `## Child DOX Index` with:
 `frontend/` currently holds a placeholder `package.json` so root scripts resolve; plan 04 replaces it and adds `frontend/AGENTS.md`. `rubrics/`, `contrib/adapter-xhs-mediacrawler/` and `evals/` get their AGENTS.md in plans 03 and 05.
 ```
 
-- [ ] **Step 2: Add a Development section to `README.md`**
+- [x] **Step 2: Add a Development section to `README.md`**
 
 Insert before `## Licence`:
 
@@ -2770,12 +2792,12 @@ Requirements: Bun 1.3+, uv, Python 3.12 (uv installs it), ffmpeg.
 After editing anything in `packages/schema/schemas/`, run `bun run schema` and commit the regenerated `backend/clipsieve/models.py` and `frontend/src/lib/types.ts`.
 ```
 
-- [ ] **Step 3: Run the full check**
+- [x] **Step 3: Run the full check**
 
 Run: `bun run check`
 Expected: schema regeneration produces no diff, ultracite and ruff pass, placeholder typecheck echoes, pytest reports all passed, frontend test placeholder echoes. Exit 0.
 
-- [ ] **Step 4: Verify from a clean clone that CI will pass**
+- [x] **Step 4: Verify from a clean clone that CI will pass**
 
 Run:
 
@@ -2785,7 +2807,7 @@ tmp=$(mktemp -d) && git clone -q . "$tmp/clipsieve" && cd "$tmp/clipsieve" && bu
 
 Expected: `exit=0`. If `--frozen-lockfile` fails, run `bun install` in the repo, commit the updated `bun.lock`, and repeat.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```bash
 git add AGENTS.md README.md

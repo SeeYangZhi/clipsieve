@@ -29,3 +29,6 @@ bun.lock.tmp
 
 # git worktrees for plan branches
 .worktrees/
+
+# schema package build output
+packages/schema/.build/

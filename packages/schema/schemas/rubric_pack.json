@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clipsieve.dev/schema/rubric_pack.json",
+  "title": "RubricPack",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "name",
+    "version",
+    "jev_model",
+    "language_mode",
+    "metadata_pass",
+    "pass_one_keep",
+    "questions",
+    "selection"
+  ],
+  "properties": {
+    "name": { "type": "string" },
+    "version": { "type": "integer", "minimum": 1 },
+    "jev_model": { "type": "string" },
+    "language_mode": {
+      "type": "string",
+      "enum": ["raw", "translate", "bilingual"]
+    },
+    "metadata_pass": { "type": "array", "items": { "type": "string" } },
+    "pass_one_keep": { "type": "number", "minimum": 0, "maximum": 1 },
+    "questions": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/Question" }
+    },
+    "selection": { "$ref": "#/$defs/SelectionPolicy" }
+  },
+  "$defs": {
+    "ChoiceQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "instructions", "criteria"],
+      "properties": {
+        "type": { "type": "string", "const": "choice" },
+        "instructions": { "type": "string" },
+        "criteria": {
+          "type": "object",
+          "minProperties": 2,
+          "maxProperties": 255,
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    },
+    "ScoreQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "instructions", "criteria"],
+      "properties": {
+        "type": { "type": "string", "const": "score" },
+        "instructions": { "type": "string" },
+        "criteria": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 10,
+          "items": { "type": "string" }
+        }
+      }
+    },
+    "NoulQuestion": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "instructions"],
+      "properties": {
+        "type": { "type": "string", "const": "noul" },
+        "instructions": { "type": "string" }
+      }
+    },
+    "Question": {
+      "oneOf": [
+        { "$ref": "#/$defs/ChoiceQuestion" },
+        { "$ref": "#/$defs/ScoreQuestion" },
+        { "$ref": "#/$defs/NoulQuestion" }
+      ]
+    },
+    "SelectionPolicy": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "weights",
+        "hard_filters",
+        "review_confidence_below",
+        "shortlist_size",
+        "diversity"
+      ],
+      "properties": {
+        "weights": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "hard_filters": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "risky_claim_max": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        "review_confidence_below": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 1
+        },
+        "shortlist_size": { "type": "integer", "minimum": 1 },
+        "diversity": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["max_share"],
+            "properties": {
+              "max_share": { "type": "number", "minimum": 0, "maximum": 1 }
+            }
+          }
+        }
+      }
+    }
+  }
+}

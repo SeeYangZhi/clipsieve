@@ -1,0 +1,35 @@
+{
+  "id": "local:fx-001",
+  "platform": "local",
+  "url": "file:///fixtures/fx-001.mp4",
+  "creator_hash": "4f8a1c2d9e0b7a6f5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b",
+  "creator_display": "Jules in Shanghai",
+  "posted_at": "2026-08-14T09:30:00Z",
+  "kind": "video",
+  "text": {
+    "title": "I moved from Singapore to Shanghai. Nobody warned me about this.",
+    "caption": "Week one as a Singaporean in Shanghai. The apps, the deposits, the one thing that nearly sent me home.",
+    "hashtags": ["singaporeinshanghai", "expatlife", "shanghai", "vlog"]
+  },
+  "media": [
+    { "type": "video", "duration_s": 58.4, "width": 1080, "height": 1920 }
+  ],
+  "metrics": {
+    "views": 184200,
+    "likes": 12400,
+    "comments": 388,
+    "shares": 910,
+    "saves": 2300
+  },
+  "comments": [
+    {
+      "text": "The deposit part is so real. Three months upfront broke me.",
+      "likes": 412
+    },
+    { "text": "Which district did you end up in?", "likes": 98 },
+    { "text": "Moving in Jan, saving this.", "likes": 77 }
+  ],
+  "lang": "en",
+  "raw_ref": "raw/local__fx-001.json",
+  "collected_at": "2026-10-03T08:00:00Z"
+}

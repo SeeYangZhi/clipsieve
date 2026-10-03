@@ -2768,11 +2768,14 @@ class Runner:
             log.info("run_paused", run_id=self.run_id, stage=run.stage.value)
         except ExplainError as exc:
             run = self._run()
+            # Emit the error first, while the stage is still "explaining": readers (plan 01
+            # follow_events, plan 04 useRunEvents) stop at the first failed-stage event, so the
+            # stage_changed to "failed" must be the last line in the log.
+            self._error(run, "explain", str(exc), recoverable=False)
             run.error = str(exc)
             run.stage = Stage("failed")
             self.repo.save_run(run)
             self.events.emit("stage_changed", "failed", {"from": "explaining", "to": "failed"})
-            self._error(run, "explain", str(exc), recoverable=False)  # last event in the log is the error
 
     # ---- stages ------------------------------------------------------------------------------
 
