@@ -579,6 +579,10 @@ export function useLocale(): [Locale, (l: Locale) => void];   // localStorage "c
 9. **API:** `create_app(ctx=None)` factory; extra `GET /api/health`; 201 on create, 409 on double approve or on editing an approved plan, 422 for unknown platforms.
 10. **CLI exit codes:** 0 ok, 1 run failed or not found, 2 usage error or declined plan.
 
+11. **Runner emits `run_created`.** The `Runner` constructor emits `run_created` when the run's event log is empty; `POST /runs` and `sieve run` do not emit it. **Planning failure** emits a recoverable `error` event with `where: "planner"` (stage `planning`); the plan page should surface it instead of waiting for `plan_ready` forever.
+12. **SSE reconnect precedence.** `GET /runs/{id}/events` honours both `?after=N` and the `Last-Event-ID` header and streams events with `seq > max(after, Last-Event-ID)`. A 409 is returned for `PUT /plan` and `POST /approve` while the planner is still running, and for `POST /reselect` while the pipeline is busy or before a selection exists. `GET /posts` `limit` must be 1..1000. `GET /runs/{id}` returns `"plan": null` while planning (the one explicit null on the wire).
+13. **App context is built once per process** under a lock (`api/context.py`); fake mode (E.7) never constructs `TypeSafeJudge`.
+
 ## Addendum F: reconciliation of plans 01 to 05 (applied 2026-10-03)
 
 Patches made so the five plans agree with this contract and with each other:
