@@ -30,6 +30,8 @@ class Settings(BaseSettings):
     clipsieve_data_dir: Path = Path("./data")
     clipsieve_creator_salt: str = ""
     clipsieve_xhs_chrome_cdp_port: int = 9222
+    # Tests, fake mode and the Playwright flow only: serve the five fixture posts as `local`.
+    clipsieve_fixture_dir: Path | None = None
 
     # Later files win: a cwd .env overrides the repo-root one.
     model_config = SettingsConfigDict(
@@ -41,6 +43,17 @@ class Settings(BaseSettings):
     def _resolve_data_dir(cls, v: Path) -> Path:
         """A relative data dir is relative to the repo root; an absolute one is kept as given."""
         return v if v.is_absolute() else REPO_ROOT / v
+
+    @field_validator("clipsieve_fixture_dir", mode="before")
+    @classmethod
+    def _blank_fixture_dir_is_unset(cls, v: object) -> object:
+        """`CLIPSIEVE_FIXTURE_DIR=` (as shipped in .env.example) means unset, not the cwd."""
+        return None if isinstance(v, str) and not v.strip() else v
+
+    @field_validator("clipsieve_fixture_dir", mode="after")
+    @classmethod
+    def _resolve_fixture_dir(cls, v: Path | None) -> Path | None:
+        return v if v is None or v.is_absolute() else REPO_ROOT / v
 
 
 @lru_cache(maxsize=1)

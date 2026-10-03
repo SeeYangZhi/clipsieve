@@ -1,0 +1,15 @@
+{
+  "lang": "zh",
+  "segments": [
+    {
+      "start_s": 0.0,
+      "end_s": 2.0,
+      "text": "hook line for local:fx-002"
+    },
+    {
+      "start_s": 2.0,
+      "end_s": 5.0,
+      "text": "second line 第二句"
+    }
+  ]
+}

@@ -18,6 +18,7 @@ ENV_KEYS = [
     "CLIPSIEVE_DATA_DIR",
     "CLIPSIEVE_CREATOR_SALT",
     "CLIPSIEVE_XHS_CHROME_CDP_PORT",
+    "CLIPSIEVE_FIXTURE_DIR",
 ]
 
 
@@ -91,6 +92,27 @@ def test_absolute_data_dir_is_kept_as_given(clean_env, tmp_path: Path):
     given = tmp_path / "elsewhere" / "data"
     clean_env.setenv("CLIPSIEVE_DATA_DIR", str(given))
     assert Settings(_env_file=None).clipsieve_data_dir == given
+
+
+def test_fixture_dir_defaults_to_none(clean_env):
+    assert Settings(_env_file=None).clipsieve_fixture_dir is None
+
+
+def test_empty_fixture_dir_is_none_not_cwd(clean_env, tmp_path: Path):
+    """`.env.example` ships `CLIPSIEVE_FIXTURE_DIR=`; that must not turn fixture mode on."""
+    clean_env.chdir(tmp_path)
+    clean_env.setenv("CLIPSIEVE_FIXTURE_DIR", "")
+    assert Settings(_env_file=None).clipsieve_fixture_dir is None
+    clean_env.setenv("CLIPSIEVE_FIXTURE_DIR", "  ")
+    assert Settings(_env_file=None).clipsieve_fixture_dir is None
+
+
+def test_relative_fixture_dir_resolves_against_repo_root(clean_env, tmp_path: Path):
+    clean_env.chdir(tmp_path)
+    clean_env.setenv("CLIPSIEVE_FIXTURE_DIR", "backend/tests/fixtures")
+    assert Settings(_env_file=None).clipsieve_fixture_dir == REPO_ROOT / "backend/tests/fixtures"
+    clean_env.setenv("CLIPSIEVE_FIXTURE_DIR", str(tmp_path / "fx"))
+    assert Settings(_env_file=None).clipsieve_fixture_dir == tmp_path / "fx"
 
 
 def test_env_file_reads_repo_root_first_then_cwd():

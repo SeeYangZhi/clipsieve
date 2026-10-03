@@ -14,11 +14,29 @@ dependencies = [
   "structlog>=24.4",
   "typer>=0.12",
   "pyyaml>=6.0",
-  "httpx>=0.27",
+  "httpx>=0.28",
+  "yt-dlp>=2026.1.1",
+  "pillow>=10.4",
+  "typesafe-sdk>=0.7.2",
+  "python-multipart>=0.0.32",
+]
+
+[project.optional-dependencies]
+asr = [
+  "mlx-whisper>=0.4; sys_platform == 'darwin' and platform_machine == 'arm64'",
+  "faster-whisper>=1.1; sys_platform != 'darwin' or platform_machine != 'arm64'",
+]
+ocr = [
+  "paddleocr>=2.9,<3",
+  "paddlepaddle>=3.0",
 ]
 
 [project.scripts]
 sieve = "clipsieve.cli:app"
+
+[project.entry-points."clipsieve.adapters"]
+local = "clipsieve.adapters.local_import:LocalImportAdapter"
+youtube = "clipsieve.adapters.youtube:YouTubeAdapter"
 
 [dependency-groups]
 dev = [
@@ -26,6 +44,7 @@ dev = [
   "pytest-asyncio>=0.24",
   "ruff>=0.6",
   "datamodel-code-generator>=0.26",
+  "types-pyyaml>=6.0.12.20260906",
 ]
 
 [build-system]
@@ -45,7 +64,8 @@ extend-exclude = ["clipsieve/models.py"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B", "T20"]
-# T20 forbids print(); allowed only in packages/schema/generate.py, which ruff never sees.
+# T20 forbids print(). Exceptions: packages/schema/generate.py (ruff never sees it) and the
+# two output helpers in clipsieve/cli.py (`_say`, `_json`), each with an inline noqa.
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = ["T20"]

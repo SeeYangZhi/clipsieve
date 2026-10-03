@@ -49,7 +49,7 @@ Implementation plan: `docs/superpowers/plans/`.
 ## Coding Rules (repo-wide)
 
 - `uv` for all Python dependency and command execution. Bun for all JS.
-- `structlog` for backend logging. No `print()` in app code.
+- `structlog` for backend logging. No `print()` in app code. The one exception is the `cli.py` output helpers `_say` and `_json`.
 - Pydantic Settings for configuration. Secrets only in local `.env`. Keep `.env.example` current. Never commit keys.
 - Every external system sits behind a small interface with a fake: adapters, Jev client, explain backend, ASR, OCR.
 - Persist raw platform payloads before normalisation. Every `Post` carries a `raw_ref`.
@@ -70,8 +70,9 @@ Implementation plan: `docs/superpowers/plans/`.
 
 | Path | Owns |
 |---|---|
-| `backend/AGENTS.md` | Python package `clipsieve`: config, logging, store, events (plan 01); adapters, evidence, judge, select, explain, pipeline, API, CLI (plans 02, 03) |
+| `backend/AGENTS.md` | Python package `clipsieve`: config, logging, store, events (plan 01); adapters, evidence (plan 02); judge, select, explain, pipeline, API, CLI (plan 03) |
 | `packages/schema/AGENTS.md` | JSON Schemas and the two generators |
+| `rubrics/AGENTS.md` | Rubric pack YAML (`creator-hooks-v1`) and per-pack calibration notes |
 | `frontend/AGENTS.md` | Next.js client: `/api/*` rewrite, SSE, shadcn UI, Vitest/Playwright, Next 16 notes (plan 04) |
 
-`rubrics/`, `contrib/adapter-xhs-mediacrawler/` and `evals/` get their AGENTS.md in plans 03 and 05.
+`contrib/adapter-xhs-mediacrawler/` and `evals/` get their AGENTS.md when plan 05 creates them.

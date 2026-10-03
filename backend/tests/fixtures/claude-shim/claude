@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+# Fake `claude` binary for tests. Reads the packet on stdin, answers from fixtures/explain/*.json.
+set -euo pipefail
+HERE="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FIX="$HERE/../explain"
+if [[ -n "${CLIPSIEVE_SHIM_STATE:-}" ]]; then printf '%s\n' "$@" > "${CLIPSIEVE_SHIM_STATE}.argv"; fi
+INPUT="$(cat)"
+if [[ "${CLIPSIEVE_SHIM_FAIL:-}" == "1" ]]; then
+  printf '{"is_error": true, "result": "shim failure", "total_cost_usd": 0.0}\n'; exit 0
+fi
+if grep -q '"mode": *"plan"' <<<"$INPUT"; then
+  python3 -c 'import json,sys; print(json.dumps({"is_error": False, "structured_output": json.load(open(sys.argv[1])), "total_cost_usd": 0.0}, ensure_ascii=False))' "$FIX/plan.json"
+  exit 0
+fi
+if [[ "${CLIPSIEVE_SHIM_BAD_FIRST:-}" == "1" && -n "${CLIPSIEVE_SHIM_STATE:-}" && ! -f "${CLIPSIEVE_SHIM_STATE}" ]]; then
+  touch "${CLIPSIEVE_SHIM_STATE}"
+  python3 -c 'import json,sys; r=json.load(open(sys.argv[1])); r["patterns"][0]["post_ids"]=["local:does-not-exist"]; print(json.dumps({"is_error": False, "structured_output": r, "total_cost_usd": 0.0}, ensure_ascii=False))' "$FIX/report.json"
+  exit 0
+fi
+python3 -c 'import json,sys; print(json.dumps({"is_error": False, "structured_output": json.load(open(sys.argv[1])), "total_cost_usd": 0.0}, ensure_ascii=False))' "$FIX/report.json"

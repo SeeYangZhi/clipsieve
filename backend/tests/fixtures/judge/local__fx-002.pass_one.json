@@ -1,0 +1,39 @@
+{
+  "post_id": "local:fx-002",
+  "pass_name": "pass_one",
+  "model": "jev-1.13.0",
+  "input_tokens": 640,
+  "latency_ms": 310,
+  "answers": {
+    "niche_relevance": {
+      "type": "score",
+      "value": 3.2,
+      "confidence": 0.8,
+      "probabilities": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 0.0,
+        "3": 0.8,
+        "4": 0.2
+      },
+      "legend": {
+        "0": "`brief.topic` does not appear; the post is about something unrelated",
+        "1": "`brief.topic` appears only as a single hashtag or aside; the post is about something else",
+        "2": "`brief.topic` is one of several subjects; much of the post is about something else",
+        "3": "The post is mainly about `brief.topic` but speaks to a general or different audience, not `brief.audience`",
+        "4": "The whole post is about `brief.topic`, addressed to `brief.audience`"
+      }
+    },
+    "format_guess": {
+      "type": "choice",
+      "value": "talking_head",
+      "confidence": 0.8,
+      "probabilities": {
+        "talking_head": 0.8,
+        "vlog_montage": 0.0667,
+        "image_carousel": 0.0667,
+        "unknown": 0.0667
+      }
+    }
+  }
+}

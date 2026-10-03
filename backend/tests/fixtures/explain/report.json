@@ -1,0 +1,60 @@
+{
+  "run_id": "FIXTURE",
+  "patterns": [
+    {
+      "title": "Story-anchored openings",
+      "observation": "Both top vlogs open mid-scene with a date and place before any explanation. Across all judged posts, story is the most common hook type.",
+      "hypothesis": "A concrete time and place lets the audience place themselves in the move before being asked to care about details.",
+      "post_ids": ["local:fx-001", "local:fx-004"]
+    },
+    {
+      "title": "Admin hurdles outperform scenery",
+      "observation": "The clip whose first line names a visa or housing problem has the highest comment count relative to views.",
+      "hypothesis": "Practical pain points invite questions, and questions drive comments.",
+      "post_ids": ["local:fx-002"]
+    }
+  ],
+  "clips": [
+    {
+      "post_id": "local:fx-001",
+      "why_it_works": "Opens on the first morning in the new flat, names the city, then cuts fast between three errands.",
+      "hook_quote": "Day one in Shanghai and I already got lost in my own compound.",
+      "weaknesses": "No on-screen text for the first six seconds."
+    },
+    {
+      "post_id": "local:fx-004",
+      "why_it_works": "Curiosity gap in the first sentence, resolved only at the end.",
+      "hook_quote": "Nobody told me this about Shanghai supermarkets.",
+      "weaknesses": "Payoff arrives late for a 45-second clip."
+    }
+  ],
+  "gaps": [
+    {
+      "title": "Singlish and Mandarin code-switching",
+      "rationale": "No shortlisted creator switches languages on camera, which the persona does naturally.",
+      "post_ids": ["local:fx-001", "local:fx-002"]
+    }
+  ],
+  "concepts": [
+    {
+      "hook": "I moved from Singapore to Shanghai with two suitcases. Here is what I bought on day one.",
+      "structure": "0-3s hook at the door; 3-20s three purchases with prices; 20-35s one surprise; 35-40s invite questions.",
+      "visual": "Handheld, receipts held to camera, price overlays.",
+      "proof": "Real receipts and the app screen.",
+      "cta": "Ask me what to pack.",
+      "inspired_by_post_ids": ["local:fx-001"]
+    },
+    {
+      "hook": "Three things my Singaporean brain refused to believe about Shanghai.",
+      "structure": "0-3s list promise; 3-30s three items, each with a clip; 30-40s which one changed my mind.",
+      "visual": "Jump cuts, numbered overlays in English and Chinese.",
+      "proof": "Footage of each item.",
+      "cta": "Tell me yours.",
+      "inspired_by_post_ids": ["local:fx-004"]
+    }
+  ],
+  "caveats": [
+    "Two of five fixture posts shortlisted; sample is illustrative only.",
+    "Engagement metrics are correlational."
+  ]
+}
