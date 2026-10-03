@@ -24,7 +24,7 @@ export default function PlanPage() {
   const [attempt, setAttempt] = useState(0);
   const [busy, setBusy] = useState(false);
   const { events } = useRunEvents(id, { mode: "live" });
-  const mounted = useRef(false);
+  const mounted = useRef<boolean>(false);
 
   useEffect(() => {
     mounted.current = true;
@@ -38,9 +38,9 @@ export default function PlanPage() {
     let active = true;
     api
       .getRun(id)
-      .then(({ plan }) => {
+      .then(({ plan: storedPlan }) => {
         if (active) {
-          setLoaded({ id, plan, status: "ok" });
+          setLoaded({ id, plan: storedPlan, status: "ok" });
         }
       })
       .catch((e: unknown) => {

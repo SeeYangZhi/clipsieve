@@ -46,7 +46,13 @@ const plan: Plan = {
     text: "Singaporean in Shanghai vlog",
     topic: "moving to Shanghai",
   },
-  persona_fit_criteria: ["Unrelated", "Adjacent niche", "Same niche, different voice", "Close match", "Could be the user's own channel"],
+  persona_fit_criteria: [
+    "Unrelated",
+    "Adjacent niche",
+    "Same niche, different voice",
+    "Close match",
+    "Could be the user's own channel",
+  ],
   quantities: { xiaohongshu: 500, youtube: 500 },
   queries: [
     { lang: "en", platform: "youtube", query: "Singaporean in Shanghai vlog" },
@@ -78,7 +84,15 @@ function deferred<T>() {
 
 beforeEach(() => {
   mocks.events = [];
-  for (const fn of [mocks.approveRun, mocks.getRun, mocks.push, mocks.savePlan, mocks.toastError, mocks.toastSuccess, mocks.useRunEvents]) {
+  for (const fn of [
+    mocks.approveRun,
+    mocks.getRun,
+    mocks.push,
+    mocks.savePlan,
+    mocks.toastError,
+    mocks.toastSuccess,
+    mocks.useRunEvents,
+  ]) {
     fn.mockReset();
   }
 });
@@ -91,10 +105,14 @@ describe("PlanPage", () => {
     mocks.getRun.mockResolvedValue({ plan: null, run });
     const { rerender } = render(<PlanPage />);
     expect(mocks.useRunEvents).toHaveBeenCalledWith("run 1", { mode: "live" });
-    expect(await screen.findByText("Claude is turning your brief into a plan…")).toBeInTheDocument();
+    expect(
+      await screen.findByText("Claude is turning your brief into a plan…")
+    ).toBeInTheDocument();
     mocks.events = [planReady(plan)];
     rerender(<PlanPage />);
-    expect(screen.getByDisplayValue("新加坡人 上海 生活 vlog")).toBeInTheDocument();
+    expect(
+      screen.getByDisplayValue("新加坡人 上海 生活 vlog")
+    ).toBeInTheDocument();
     expect(mocks.getRun).toHaveBeenCalledTimes(1);
     expect(mocks.getRun).toHaveBeenCalledWith("run 1");
   });
@@ -105,10 +123,17 @@ describe("PlanPage", () => {
     mocks.events = [planReady(plan)];
     render(<PlanPage />);
     expect(screen.getByText("Loading…")).toBeInTheDocument();
-    const edited = { ...plan, queries: [{ lang: "zh", platform: "xiaohongshu", query: "新加坡人 搬到上海" }] };
+    const edited = {
+      ...plan,
+      queries: [
+        { lang: "zh", platform: "xiaohongshu", query: "新加坡人 搬到上海" },
+      ],
+    };
     await act(async () => stored.resolve({ plan: edited, run }));
     expect(screen.getByDisplayValue("新加坡人 搬到上海")).toBeInTheDocument();
-    expect(screen.queryByDisplayValue("新加坡人 上海 生活 vlog")).not.toBeInTheDocument();
+    expect(
+      screen.queryByDisplayValue("新加坡人 上海 生活 vlog")
+    ).not.toBeInTheDocument();
   });
 
   it("saves, then approves, then opens the encoded dashboard", async () => {
@@ -116,21 +141,35 @@ describe("PlanPage", () => {
     mocks.savePlan.mockResolvedValue(plan);
     mocks.approveRun.mockResolvedValue(run);
     render(<PlanPage />);
-    await userEvent.click(await screen.findByRole("button", { name: "Approve and run" }));
-    await waitFor(() => expect(mocks.push).toHaveBeenCalledWith("/runs/run%201"));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Approve and run" })
+    );
+    await waitFor(() =>
+      expect(mocks.push).toHaveBeenCalledWith("/runs/run%201")
+    );
     expect(mocks.savePlan).toHaveBeenCalledWith("run 1", plan);
     expect(mocks.approveRun).toHaveBeenCalledWith("run 1");
-    expect(mocks.savePlan.mock.invocationCallOrder[0]).toBeLessThan(mocks.approveRun.mock.invocationCallOrder[0]);
+    expect(mocks.savePlan.mock.invocationCallOrder[0]).toBeLessThan(
+      mocks.approveRun.mock.invocationCallOrder[0]
+    );
   });
 
   it("reports a refused approval and lets the user try again", async () => {
     mocks.getRun.mockResolvedValue({ plan, run });
     mocks.savePlan.mockResolvedValue(plan);
-    mocks.approveRun.mockRejectedValue(new ApiError(409, "run already approved"));
+    mocks.approveRun.mockRejectedValue(
+      new ApiError(409, "run already approved")
+    );
     render(<PlanPage />);
-    await userEvent.click(await screen.findByRole("button", { name: "Approve and run" }));
-    await waitFor(() => expect(mocks.toastError).toHaveBeenCalledWith("run already approved"));
-    expect(screen.getByRole("button", { name: "Approve and run" })).toBeEnabled();
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Approve and run" })
+    );
+    await waitFor(() =>
+      expect(mocks.toastError).toHaveBeenCalledWith("run already approved")
+    );
+    expect(
+      screen.getByRole("button", { name: "Approve and run" })
+    ).toBeEnabled();
     expect(mocks.push).not.toHaveBeenCalled();
   });
 
@@ -138,8 +177,12 @@ describe("PlanPage", () => {
     mocks.getRun.mockResolvedValue({ plan, run });
     mocks.savePlan.mockResolvedValue(plan);
     render(<PlanPage />);
-    await userEvent.click(await screen.findByRole("button", { name: "Save plan" }));
-    await waitFor(() => expect(mocks.toastSuccess).toHaveBeenCalledWith("Plan saved"));
+    await userEvent.click(
+      await screen.findByRole("button", { name: "Save plan" })
+    );
+    await waitFor(() =>
+      expect(mocks.toastSuccess).toHaveBeenCalledWith("Plan saved")
+    );
     expect(mocks.savePlan).toHaveBeenCalledWith("run 1", plan);
   });
 
@@ -149,7 +192,9 @@ describe("PlanPage", () => {
     render(<PlanPage />);
     expect(await screen.findByRole("alert")).toHaveTextContent("run not found");
     await userEvent.click(screen.getByRole("button", { name: "Retry" }));
-    expect(await screen.findByDisplayValue("新加坡人 上海 生活 vlog")).toBeInTheDocument();
+    expect(
+      await screen.findByDisplayValue("新加坡人 上海 生活 vlog")
+    ).toBeInTheDocument();
     expect(mocks.getRun).toHaveBeenCalledTimes(2);
   });
 
@@ -158,7 +203,9 @@ describe("PlanPage", () => {
     render(<PlanPage />);
     await screen.findByRole("button", { name: "Approve and run" });
     act(() => setLocale("zh"));
-    expect(screen.getByRole("button", { name: "批准并运行" })).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "批准并运行" })
+    ).toBeInTheDocument();
     expect(mocks.getRun).toHaveBeenCalledTimes(1);
   });
 });
