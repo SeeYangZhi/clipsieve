@@ -16,9 +16,13 @@
   "comment_count": 97,
   "language": "zh-Hans",
   "webpage_url": "https://www.youtube.com/watch?v=zH1sH4nGh41",
-  "automatic_captions": {"zh-Hans": [{"ext": "vtt", "url": "https://example.invalid/captions/zh.vtt"}]},
+  "automatic_captions": {
+    "zh-Hans": [
+      { "ext": "vtt", "url": "https://example.invalid/captions/zh.vtt" }
+    ]
+  },
   "comments": [
-    {"id": "k1", "text": "同是新加坡人，太真实了", "like_count": 310},
-    {"id": "k2", "text": "浦东还是浦西？", "like_count": 45}
+    { "id": "k1", "text": "同是新加坡人，太真实了", "like_count": 310 },
+    { "id": "k2", "text": "浦东还是浦西？", "like_count": 45 }
   ]
 }
