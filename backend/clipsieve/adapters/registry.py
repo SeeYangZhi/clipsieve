@@ -64,5 +64,13 @@ def load_adapters(settings: Settings) -> dict[str, Adapter]:
         if adapter is not None:
             adapters[adapter.platform] = adapter
 
+    if settings.clipsieve_fixture_dir is not None:
+        # Fake mode: the fixture posts replace folder/CSV import as `local`, whatever is registered.
+        from clipsieve.adapters.fixture import FixtureAdapter
+
+        adapter = _construct(FixtureAdapter, settings, source="fixture")
+        if adapter is not None:
+            adapters[adapter.platform] = adapter
+
     log.info("adapters_loaded", platforms=sorted(adapters))
     return adapters
