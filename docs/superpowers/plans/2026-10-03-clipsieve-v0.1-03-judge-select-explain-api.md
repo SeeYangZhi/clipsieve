@@ -1430,7 +1430,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Decision: backends return `Plan.run_id` and `Report.run_id` as whatever they have (`"FIXTURE"` for the fake, model output for the CLI); the caller overwrites `run_id`. Backends never know the run id.
 
-- [ ] **Step 1: Write the prompts in full**
+- [x] **Step 1: Write the prompts in full**
 
 `backend/clipsieve/explain/prompts/plan.md`:
 
@@ -1466,7 +1466,7 @@ Produce a Report object that matches the JSON schema you were given. Rules:
 9. Write in the language of `brief.text`. Output only the JSON object. No prose outside it.
 ```
 
-- [ ] **Step 2: Write the explain fixtures**
+- [x] **Step 2: Write the explain fixtures**
 
 `backend/tests/fixtures/explain/plan.json`:
 
@@ -1534,7 +1534,7 @@ Produce a Report object that matches the JSON schema you were given. Rules:
 }
 ```
 
-- [ ] **Step 3: Write the failing tests**
+- [x] **Step 3: Write the failing tests**
 
 `backend/tests/explain/test_base.py`:
 
@@ -1635,12 +1635,12 @@ def test_claude_api_explain_contract(fixture_posts):
     assert [c.post_id for c in report.clips] == [fixture_posts[0].id]
 ```
 
-- [ ] **Step 4: Run tests to verify they fail**
+- [x] **Step 4: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/explain -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.explain'`.
 
-- [ ] **Step 5: Implement `explain/base.py`**
+- [x] **Step 5: Implement `explain/base.py`**
 
 ```python
 """Explain backend contract: planning a run and explaining a shortlist."""
@@ -1729,7 +1729,7 @@ def get_backend(settings: Settings, fixture_dir: Path | None = None) -> ExplainB
     raise ExplainError(f"unknown explain backend {kind!r}")
 ```
 
-- [ ] **Step 6: Implement `explain/fake.py` and `explain/claude_api.py`**
+- [x] **Step 6: Implement `explain/fake.py` and `explain/claude_api.py`**
 
 `explain/fake.py`:
 
@@ -1808,12 +1808,12 @@ class ClaudeApiBackend(ExplainBackend):
 
 `explain/__init__.py`: empty.
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/explain -q`
 Expected: `5 passed, 1 xfailed`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/clipsieve/explain backend/tests/explain backend/tests/fixtures/explain
