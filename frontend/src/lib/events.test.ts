@@ -5,6 +5,7 @@ import {
   answersPerSecond,
   type DashboardState,
   initialState,
+  readyPlan,
   reduceAll,
   reduceEvent,
 } from "./events";
@@ -268,5 +269,27 @@ describe("answersPerSecond", () => {
   });
   it("returns 0 with no events", () => {
     expect(answersPerSecond([])).toBe(0);
+  });
+});
+
+describe("readyPlan", () => {
+  it("is null until a plan_ready arrives, then that event's plan", () => {
+    expect(readyPlan([])).toBeNull();
+    expect(readyPlan(fixtureEvents.slice(0, 1))).toBeNull();
+    const plan = readyPlan(fixtureEvents);
+    expect(plan?.queries).toEqual([
+      { lang: "en", platform: "local", query: "shanghai" },
+    ]);
+    expect(plan?.persona_fit_criteria).toHaveLength(5);
+  });
+
+  it("takes the latest plan_ready and ignores one without a plan", () => {
+    const [, first] = fixtureEvents;
+    const later = makeEvent(40, "plan_ready", "planning", {
+      plan: { ...(first.payload.plan as object), rubric_pack: "other" },
+    });
+    expect(readyPlan([first, later])?.rubric_pack).toBe("other");
+    const empty = makeEvent(41, "plan_ready", "planning", { plan: null });
+    expect(readyPlan([first, empty])?.rubric_pack).toBe("creator-hooks-v1");
   });
 });

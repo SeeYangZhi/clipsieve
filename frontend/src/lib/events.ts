@@ -1,4 +1,11 @@
-import type { Counters, JudgeResult, Post, RunEvent, Stage } from "./types";
+import type {
+  Counters,
+  JudgeResult,
+  Plan,
+  Post,
+  RunEvent,
+  Stage,
+} from "./types";
 
 export const JEV_USD_PER_MILLION_INPUT = 0.042;
 
@@ -245,6 +252,17 @@ export function reduceEvent(
 
 export function reduceAll(events: RunEvent[]): DashboardState {
   return events.reduce(reduceEvent, initialState());
+}
+
+/** The plan from the latest `plan_ready` event that carries one, or null. */
+export function readyPlan(events: RunEvent[]): Plan | null {
+  const ready = events.findLast(
+    (e) =>
+      e.type === "plan_ready" &&
+      typeof e.payload.plan === "object" &&
+      e.payload.plan !== null
+  );
+  return ready ? (ready.payload.plan as Plan) : null;
 }
 
 /** Judge answers per second over the `windowMs` before the last event's ts. */
