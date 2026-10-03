@@ -1904,7 +1904,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Contract decisions: run ids are `"run_" + uuid4().hex[:12]`; `get_post` raises `PostNotFound` (subclass of `KeyError`) when missing; `list_runs` is newest first by `created_at`; `list_posts` is ordered by `collected_at` then `post_id`.
 
-- [ ] **Step 1: Create the `Selection` model stub**
+- [x] **Step 1: Create the `Selection` model stub**
 
 `backend/clipsieve/select/__init__.py`: empty file.
 
@@ -1927,7 +1927,7 @@ class Selection(BaseModel):
     dropped: dict[str, str]
 ```
 
-- [ ] **Step 2: Write the failing repository test**
+- [x] **Step 2: Write the failing repository test**
 
 `backend/tests/test_repo.py`:
 
@@ -2080,12 +2080,12 @@ def test_reindex_rebuilds_rows_from_files(repo: RunRepository, fixtures_dir: Pat
     assert fresh.get_report(run.id) is not None
 ```
 
-- [ ] **Step 3: Run to verify failure**
+- [x] **Step 3: Run to verify failure**
 
 Run: `cd backend && uv run pytest -q tests/test_repo.py`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.store.repo'`.
 
-- [ ] **Step 4: Implement `store/repo.py`**
+- [x] **Step 4: Implement `store/repo.py`**
 
 Note (applied during execution): the SQLite index stores `created_at` and `collected_at` as ISO text and sorts them as text, so `save_run` and `upsert_post` must normalise with `.astimezone(UTC).isoformat()` before writing the row (the JSON file keeps the original offset). Otherwise a `+08:00` post collected earlier sorts after a later UTC post. `save_run` and `save_judge_result` re-validate the model (`type(m).model_validate(dict(m))`) because generated models do not validate on assignment and callers assign plain strings to enum fields.
 
@@ -2324,12 +2324,12 @@ class RunRepository:
 
 Note on generated enums: `run.stage`, `result.pass_name` are `Enum` members in the generated models, hence `.value`. Pydantic accepts the plain string on input (`stage="planning"`).
 
-- [ ] **Step 5: Run to verify pass**
+- [x] **Step 5: Run to verify pass**
 
 Run: `cd backend && uv run pytest -q tests/test_repo.py`
 Expected: `8 passed`. If `Post.model_dump_json` emits `\uXXXX` escapes, Pydantic's `model_dump_json` writes UTF-8 by default; the on-disk assertion in `test_posts_roundtrip_preserve_cjk_bytes` confirms it.
 
-- [ ] **Step 6: Lint, update `backend/AGENTS.md` layout table (already lists `store/` and `select/select.py`), commit**
+- [x] **Step 6: Lint, update `backend/AGENTS.md` layout table (already lists `store/` and `select/select.py`), commit**
 
 Run: `cd backend && uv run ruff check . && uv run ruff format --check .`
 Expected: `All checks passed!`.
