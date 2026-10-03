@@ -32,6 +32,9 @@ HASHTAG = re.compile(r"#([\w一-鿿]+)")
 DATA_API_SEARCH = "https://www.googleapis.com/youtube/v3/search"
 MAX_COMMENTS = 50
 DEFAULT_MAX_DURATION_S = 180
+# The flat yt-dlp search cannot filter by duration, so it asks for this many times the remaining
+# count; `search` still stops at the limit.
+SEARCH_OVERFETCH = 3
 # yt-dlp aborts the whole download when one caption track fails (auto-translated tracks often
 # 429), so a failure that mentions subtitles is retried once without captions.
 _SUBTITLE_ERROR = re.compile(r"subtitle|caption", re.IGNORECASE)
@@ -198,7 +201,7 @@ class YouTubeAdapter:
                     exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
                 )
                 log.warning("youtube_data_api_failed", error_type=type(exc).__name__, status=status)
-        entries = self._client.search(query.query, n)
+        entries = self._client.search(query.query, SEARCH_OVERFETCH * n)
         return [e["id"] for e in entries if e.get("id") and self._flat_entry_may_be_short(e)]
 
     def _data_api_ids(self, query: Query, n: int) -> list[str]:

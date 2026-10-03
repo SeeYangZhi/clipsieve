@@ -484,3 +484,41 @@ def test_real_client_disables_subtitles_for_an_empty_language_list(
     [opts] = seen
     assert opts["writesubtitles"] is writes and opts["writeautomaticsub"] is writes
     assert opts.get("subtitleslangs", []) == langs
+
+
+# -- final review: the flat yt-dlp search over-fetches, because long videos are dropped ----------
+
+
+class SearchRecordingClient(FakeYtDlpClient):
+    def __init__(self, fixture_dir: Path) -> None:
+        super().__init__(fixture_dir)
+        self.search_sizes: list[int] = []
+        self.info_calls: list[str] = []
+
+    def search(self, query: str, n: int) -> list[dict]:
+        self.search_sizes.append(n)
+        return super().search(query, n)
+
+    def info(self, url: str) -> dict:
+        self.info_calls.append(url)
+        return super().info(url)
+
+
+def test_ytdlp_search_over_fetches_three_times_and_stops_at_the_limit(settings, fixture_copy):
+    entries = json.loads((fixture_copy / "search.json").read_text(encoding="utf-8"))
+    # The long video comes first: asking for exactly `limit` entries would under-fill.
+    long_first = [entries[2], entries[0], entries[1]]
+    (fixture_copy / "search.json").write_text(json.dumps(long_first), encoding="utf-8")
+    client = SearchRecordingClient(fixture_copy)
+    adapter = YouTubeAdapter(client=client, data_dir=settings.clipsieve_data_dir, salt="salt")
+    posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], limit=2))
+    assert [p.id for p in posts] == ["youtube:aB3dEfGhIjK", "youtube:zH1sH4nGh41"]
+    assert client.search_sizes == [6]
+    assert not any("LoNgV1dEo00" in u for u in client.info_calls), "flat filter drops it"
+
+    client = SearchRecordingClient(fixture_copy)
+    adapter = YouTubeAdapter(client=client, data_dir=settings.clipsieve_data_dir, salt="salt")
+    posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], limit=1))
+    assert [p.id for p in posts] == ["youtube:aB3dEfGhIjK"]
+    assert client.search_sizes == [3]
+    assert len(client.info_calls) == 1, "no info fetch (and no raw payload) past the limit"
