@@ -24,6 +24,7 @@ Docs live at `frontend/node_modules/next/dist/docs/` (Bun isolated linker: `fron
 
 ## Tooling
 - Biome via ultracite; no eslint, no prettier. `biome.jsonc` has `"extends": "//"`, the root config (Biome 2.5 accepts `"//"` only as a string, not inside an array). The ultracite `react` and `next` presets are in the root `biome.jsonc`. Here, `files.includes` replaces the root list. It excludes the generated `src/lib/types.ts` and the shadcn `src/components/ui`.
+- `frontend/biome.jsonc` overrides `useFilenamingConvention` to allow kebab-case, camelCase and PascalCase frontend-wide, because the plan names components `LocaleSwitch.tsx`, `BriefForm.tsx` and hooks `useRunEvents.ts`. The override replaces the rule `options`, so it restates ultracite's `requireAscii: true` (its only other option); keep it in sync if ultracite changes.
 - shadcn style `radix-nova` (Radix primitives from `radix-ui`, `asChild` API), icons `lucide-react`. Components in `src/components/ui/` are generated: re-add with `bunx --bun shadcn@latest add <name>` instead of hand-editing. They import `cn` from the `cn` package. `src/lib/utils.ts` wraps it for the `@/lib/utils` alias. Tooltips need a `<TooltipProvider>` and toasts need `<Toaster />` from `ui/sonner`. Neither is mounted yet.
 - Vitest + Testing Library + jsdom for unit tests (`src/**/*.test.{ts,tsx}`, explicit `vitest` imports, no globals); Playwright for `e2e/run-flow.spec.ts`.
 - Install with `bun add` here; the single lockfile is the root `bun.lock`. Never create `frontend/bun.lock`.

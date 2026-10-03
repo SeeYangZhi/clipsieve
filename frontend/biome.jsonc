@@ -10,6 +10,7 @@
         "useFilenamingConvention": {
           "level": "error",
           "options": {
+            "requireAscii": true,
             "filenameCases": ["kebab-case", "camelCase", "PascalCase"]
           }
         }
