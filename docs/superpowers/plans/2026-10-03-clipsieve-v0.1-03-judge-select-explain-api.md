@@ -3015,13 +3015,13 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Decisions: fake mode is `settings.clipsieve_explain_backend == "fake"`; it requires `clipsieve_fixture_dir` and wires `RecordedJudge`, `FakeASR`, `FakeOCR`, `FakeFrames`, `FakeExplainBackend`, and the `FixtureAdapter` for `local`. Real mode wires `TypeSafeJudge(settings.typesafe_api_key)`, `WhisperASR`, `PaddleOCRBackend`, `FfmpegFrames` (imported lazily so missing optional extras fail at first use, not at import). Background work uses `asyncio.create_task`; a run's task handle lives in `ctx.tasks[run_id]`. SSE events are JSON with `ensure_ascii=False`.
 
-- [ ] **Step 1: Add dependencies**
+- [x] **Step 1: Add dependencies**
 
 ```bash
 cd backend && uv add fastapi "uvicorn[standard]" python-multipart
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `backend/tests/api/conftest.py`:
 
@@ -3244,12 +3244,12 @@ async def test_chinese_caption_roundtrip(client):
     assert run_brief == BODY["brief"]
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/api -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.api'`.
 
-- [ ] **Step 4: Implement `api/context.py`**
+- [x] **Step 4: Implement `api/context.py`**
 
 ```python
 from __future__ import annotations
@@ -3343,7 +3343,7 @@ def get_context() -> AppContext:
     return _CONTEXT
 ```
 
-- [ ] **Step 5: Implement `api/runs.py`**
+- [x] **Step 5: Implement `api/runs.py`**
 
 ```python
 from __future__ import annotations
@@ -3532,7 +3532,7 @@ async def reselect(run_id: str, body: ReselectBody, ctx: AppContext = Depends(ge
 
 ```
 
-- [ ] **Step 6: Implement `api/events.py` and `api/meta.py`**
+- [x] **Step 6: Implement `api/events.py` and `api/meta.py`**
 
 `api/events.py`:
 
@@ -3630,7 +3630,7 @@ async def media(run_id: str, post_id: str, filename: str, ctx: AppContext = Depe
     return FileResponse(target)
 ```
 
-- [ ] **Step 7: Implement `app.py`**
+- [x] **Step 7: Implement `app.py`**
 
 ```python
 from __future__ import annotations
@@ -3661,12 +3661,12 @@ app = create_app()
 
 `api/__init__.py`: empty. Note `app = create_app()` at import time calls `get_context()` lazily only on the first request, so importing the module in tests does not build a real context.
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [x] **Step 8: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/api -q`
 Expected: `11 passed`. If `test_stream_from_start_ends_at_done` hangs, confirm plan 01's `follow_events` stops on `done` and that `_finished` sees the terminal event written by the Runner before the generator starts following.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/clipsieve/api backend/clipsieve/app.py backend/tests/api backend/pyproject.toml backend/uv.lock
