@@ -91,7 +91,7 @@ clipsieve/
     src/lib/              api client, SSE hook, generated types import
   packages/schema/
     AGENTS.md
-    schemas/*.json        Post, Evidence, RunEvent, RubricPack, Plan, Report
+    schemas/*.json        Post, Evidence, RunEvent, RubricPack, Plan, Report, JudgeResult, Run
     generate.py           -> backend/clipsieve/models.py
     generate.ts           -> frontend/src/lib/types.ts
   rubrics/
@@ -137,7 +137,7 @@ SQLite holds an index over the same facts for queries. Files are canonical. Dele
 
 ## 4. Data contracts
 
-All six schemas live in `packages/schema/schemas/` as JSON Schema draft 2020-12. Generation produces Pydantic v2 models and TypeScript types. CI fails if generated files differ from committed ones.
+All eight schemas live in `packages/schema/schemas/` as JSON Schema draft 2020-12. Generation produces Pydantic v2 models and TypeScript types. CI fails if generated files differ from committed ones.
 
 ### 4.1 Post
 
@@ -282,6 +282,34 @@ Score answers are normalised to 0 to 1 as the position among the pack's levels, 
 
 Every `post_ids` entry must exist in the run. The backend validates this and rejects a report that cites unknown ids, emitting an `error` event and retrying once with the invalid ids listed in the prompt.
 
+### 4.7 JudgeResult
+
+| Field | Type | Notes |
+|---|---|---|
+| post_id | string | |
+| pass_name | enum | `pass_one`, `pass_two` |
+| model | string | Jev model id as returned |
+| input_tokens | integer | |
+| latency_ms | integer | |
+| answers | map question_id to JudgeAnswer | `{type, value, probabilities?, confidence?, legend?}`; `value` is the label for choice, the fractional score for score, the probability for noul |
+
+### 4.8 Run
+
+| Field | Type | Notes |
+|---|---|---|
+| id | string | |
+| created_at | datetime | |
+| stage | enum | Same values as RunEvent.stage |
+| brief | Brief | |
+| platforms | string[] | |
+| quantities | map platform to integer | |
+| rubric_pack | string | |
+| counters | Counters | `collected, pass_one_kept, judged, shortlisted, review, errors, jev_input_tokens, jev_cost_usd, elapsed_s` |
+| paused | boolean | |
+| error | string, optional | Set when stage is `failed` |
+
+Exact field shapes for all eight schemas, and the binding Python, HTTP and frontend signatures, are in `docs/superpowers/plans/2026-10-03-clipsieve-v0.1-00-overview.md`.
+
 ## 5. Adapters
 
 ### 5.1 Interface
@@ -308,11 +336,11 @@ yt-dlp for search (`ytsearchN:`), metadata, auto-captions and download. Captions
 
 ### 5.4 xhs_mediacrawler (contrib)
 
-A separate uv project in `contrib/adapter-xhs-mediacrawler/` that depends on MediaCrawler as a git dependency pinned to a commit. It runs MediaCrawler as a subprocess in CDP mode against the user's own logged-in Chrome, with `--type search --keywords <query>`, reads the JSON output directory, and maps notes and comments to `Post`. Image notes become `kind: image_note` with one `media` entry per image. Video notes download through MediaCrawler's media option.
+A separate uv project in `contrib/adapter-xhs-mediacrawler/`. MediaCrawler is not installable as a package (its `pyproject.toml` has no build system), so the adapter runs a pinned sibling checkout at `CLIPSIEVE_XHS_MEDIACRAWLER_DIR` and refuses to run if the checkout's commit differs from the pinned one. It invokes MediaCrawler as a subprocess in CDP mode against the user's own logged-in Chrome (`--platform xhs --type search --keywords <query> --get_comment --save_data_option jsonl`), with the working directory set to a per-run temp dir so output is isolated, then reads the JSONL output and maps notes and comments to `Post`. Image notes become `kind: image_note` with one `media` entry per image. Video notes get one `media` entry. The adapter downloads images and video itself with httpx.
 
-Its README and AGENTS.md carry MediaCrawler's learning-only disclaimer and state that the user is responsible for compliance with Xiaohongshu's terms. The core repo never imports it. It is listed in the root README as a community adapter.
+MediaCrawler is released under its Non-Commercial Learning License 1.1. The contrib README and AGENTS.md quote that licence and its learning-only disclaimer, and state that the user is responsible for compliance with Xiaohongshu's terms and local law. The core repo never imports the adapter. It is listed in the root README as a community adapter.
 
-Healthcheck verifies Chrome is reachable on the configured debugging port and MediaCrawler's login state is cached.
+Healthcheck verifies Chrome is reachable on the configured debugging port and the MediaCrawler checkout is at the pinned commit.
 
 ## 6. Evidence pipeline
 
@@ -480,7 +508,7 @@ CLIPSIEVE_XHS_CHROME_CDP_PORT=9222         # contrib adapter
 | Decision | Choice | Alternatives considered |
 |---|---|---|
 | First slice | YouTube Shorts and Xiaohongshu together | Local import only; YouTube only; Xiaohongshu only |
-| Xiaohongshu access | Wrap MediaCrawler in contrib now, own CDP adapter with Jev navigator later | Own Playwright adapter; direct signed API via xhs/xhshow; browser extension capture; fork jev-ultrafast |
+| Xiaohongshu access | Wrap a pinned MediaCrawler sibling checkout in contrib now, own CDP adapter with Jev navigator later | Own Playwright adapter; direct signed API via xhs/xhshow; browser extension capture; fork jev-ultrafast |
 | Explain default | `claude -p` on subscription | Claude API first; both |
 | Xiaohongshu items | Video and image notes | Video only |
 | Pipeline owner | Python backend, Next.js thin client | CLI with static dashboard; Next.js orchestrating Python workers |
