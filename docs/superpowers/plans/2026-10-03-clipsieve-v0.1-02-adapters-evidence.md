@@ -1863,7 +1863,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `FrameExtractor` Protocol, `FfmpegFrames(ffmpeg_bin: str = "ffmpeg", scene_threshold: float = 0.3, width: int = 640)`, `FakeFrames(count: int = 2)`, `build_hook_argv(...)`, `build_scene_argv(...)`, `PNG_1X1: bytes`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_frames.py`:
 
@@ -1930,12 +1930,12 @@ def test_protocol_conformance():
     assert isinstance(FfmpegFrames(), FrameExtractor)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_frames.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence.frames'`
 
-- [ ] **Step 3: Implement frames**
+- [x] **Step 3: Implement frames**
 
 `backend/clipsieve/evidence/frames.py`:
 
@@ -2016,12 +2016,12 @@ class FfmpegFrames:
         return frames
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/evidence/test_frames.py -v`
 Expected: 6 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/frames.py backend/tests/evidence/test_frames.py
