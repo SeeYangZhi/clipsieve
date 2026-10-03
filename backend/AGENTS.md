@@ -31,6 +31,7 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/judge/rubric.py` | rubric pack loading, per-pass question selection, TypeSafe primitive conversion, persona criteria |
 | `clipsieve/judge/base.py` | `Judge` protocol, `JudgeFailed`, Jev pricing (`cost_usd`) |
 | `clipsieve/judge/typesafe_client.py` | `TypeSafeJudge`: one batched, concurrency-bounded, retrying Jev request per post |
+| `clipsieve/judge/recorded.py` | `RecordedJudge` fake replaying `tests/fixtures/judge/*.json`, `FixtureMissing` |
 | `clipsieve/select/select.py` | `Selection` model (plan 01); selection functions (plan 03) |
 
 Later plans add the rest of `judge/`, then `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
@@ -91,3 +92,4 @@ Turns rubric packs into TypeSafe Jev requests and Jev answers into `JudgeAnswer`
 - The default client keeps the SDK's own retries for connection errors, timeouts and 408/5xx with 429 and 529 removed (`SDK_RETRY`: SDK defaults, 2 retries, 30 s budget). They run inside one of our attempts, so a network blip or a 503 never fails a post on its own. Anything the SDK gives up on that is not 429/529, and a 200 with a missing or malformed answer, raise `JudgeFailed` at once.
 - `asyncio.Semaphore(concurrency)` (default 16) bounds in-flight requests per `TypeSafeJudge`. A post backing off keeps its slot; other posts proceed in the rest (`test_one_post_rate_limited_others_proceed`). The client is built lazily from `client_factory` and closed by `aclose()`. Never log the API key; `jev_retry` logs post id, attempt, error class and delay.
 - Tests never call the TypeSafe API. `from_typesafe` tests use hand-built response objects; `TypeSafeJudge` tests use a fake client returning real `SystemOneResponse`s, plus the real SDK client over `httpx2.MockTransport`.
+- `RecordedJudge(fixture_dir)` reads `<fixture_dir>/judge/<safe_post_filename(post_id)>.<pass_name>.json`, filters answers to the questions asked, records `calls: list[(post_id, pass_name)]`, raises `FixtureMissing(FileNotFoundError)`. Fixtures (five posts x two passes) come from `tests/fixtures/judge/make_fixtures.py`, which reads labels, levels and legends from `creator-hooks-v1` and emits `from_typesafe`-shaped answers; rerun it after a pack change (a test compares committed files to its output).

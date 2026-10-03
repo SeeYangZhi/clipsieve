@@ -1,0 +1,109 @@
+{
+  "post_id": "local:fx-002",
+  "pass_name": "pass_two",
+  "model": "jev-1.13.0",
+  "input_tokens": 2900,
+  "latency_ms": 310,
+  "answers": {
+    "hook_type": {
+      "type": "choice",
+      "value": "bold_claim",
+      "confidence": 0.8,
+      "probabilities": {
+        "curiosity_gap": 0.0333,
+        "bold_claim": 0.8,
+        "result_first": 0.0333,
+        "problem": 0.0333,
+        "story": 0.0333,
+        "authority": 0.0333,
+        "none": 0.0333
+      }
+    },
+    "hook_strength": {
+      "type": "score",
+      "value": 2.9,
+      "confidence": 0.8,
+      "probabilities": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 0.1,
+        "3": 0.9,
+        "4": 0.0
+      },
+      "legend": {
+        "0": "No hook. Greeting, logo, or slow context.",
+        "1": "Topic stated, no reason to keep watching.",
+        "2": "Question or claim with some tension.",
+        "3": "Specific promise, surprising claim, or visible result in the first sentence.",
+        "4": "Immediate pattern interrupt plus a clear stake for this audience."
+      }
+    },
+    "format": {
+      "type": "choice",
+      "value": "talking_head",
+      "confidence": 0.8,
+      "probabilities": {
+        "talking_head": 0.8,
+        "vlog_montage": 0.0333,
+        "screen_demo": 0.0333,
+        "ugc_testimonial": 0.0333,
+        "image_carousel": 0.0333,
+        "meme": 0.0333,
+        "other": 0.0333
+      }
+    },
+    "persona_fit": {
+      "type": "score",
+      "value": 2.4,
+      "confidence": 0.8,
+      "probabilities": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 0.6,
+        "3": 0.4,
+        "4": 0.0
+      },
+      "legend": {
+        "0": "Unrelated creator and situation",
+        "1": "Adjacent niche or similar audience, different situation",
+        "2": "Same niche and situation, clearly different voice",
+        "3": "Close match in situation and voice",
+        "4": "Could be the user's own channel"
+      }
+    },
+    "risky_claim": {
+      "type": "noul",
+      "value": 0.82
+    },
+    "niche_relevance": {
+      "type": "score",
+      "value": 3.2,
+      "confidence": 0.8,
+      "probabilities": {
+        "0": 0.0,
+        "1": 0.0,
+        "2": 0.0,
+        "3": 0.8,
+        "4": 0.2
+      },
+      "legend": {
+        "0": "`brief.topic` does not appear; the post is about something unrelated",
+        "1": "`brief.topic` appears only as a single hashtag or aside; the post is about something else",
+        "2": "`brief.topic` is one of several subjects; much of the post is about something else",
+        "3": "The post is mainly about `brief.topic` but speaks to a general or different audience, not `brief.audience`",
+        "4": "The whole post is about `brief.topic`, addressed to `brief.audience`"
+      }
+    },
+    "format_guess": {
+      "type": "choice",
+      "value": "talking_head",
+      "confidence": 0.8,
+      "probabilities": {
+        "talking_head": 0.8,
+        "vlog_montage": 0.0667,
+        "image_carousel": 0.0667,
+        "unknown": 0.0667
+      }
+    }
+  }
+}
