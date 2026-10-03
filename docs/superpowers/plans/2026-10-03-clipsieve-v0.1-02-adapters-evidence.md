@@ -1127,7 +1127,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `YtDlpClient`, `FakeYtDlpClient`, `parse_vtt`, `vtt_lang_from_filename`, `hash_creator`, `incoming_dir`, `safe_post_filename`, `Settings`, models.
 - Produces: `YouTubeAdapter(client: YtDlpClient, data_dir: Path, salt: str, api_key: str = "", http: httpx.Client | None = None, max_duration_s: int = 180)` with `from_settings`, `search`, `fetch_media`, `healthcheck`; `map_info_to_post(info: dict, salt: str, raw_ref: str) -> Post`; `write_transcript_sidecar(media_path: Path, lang: str | None, segments) -> Path`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/adapters/test_youtube.py`:
 
@@ -1240,12 +1240,12 @@ def test_from_settings_builds_real_client(settings):
     assert adapter.platform == "youtube"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/adapters/test_youtube.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.adapters.youtube'`
 
-- [ ] **Step 3: Implement the adapter**
+- [x] **Step 3: Implement the adapter**
 
 `backend/clipsieve/adapters/youtube.py`:
 
@@ -1451,12 +1451,12 @@ class YouTubeAdapter:
 __all__ = ["YouTubeAdapter", "map_info_to_post", "write_transcript_sidecar", "FakeYtDlpClient"]
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/adapters -v`
 Expected: all tests in `test_base.py`, `test_registry.py` (now including the builtin test), `test_local_import.py`, `test_vtt.py`, `test_youtube.py` pass.
 
-- [ ] **Step 5: Lint and commit**
+- [x] **Step 5: Lint and commit**
 
 Run: `uv run ruff check . && uv run ruff format --check .`
 Expected: clean.
