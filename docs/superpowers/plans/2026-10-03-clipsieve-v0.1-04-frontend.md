@@ -2095,7 +2095,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `DashboardState, PostTile`, `answersPerSecond`, `reduceAll`, fixture events; `mediaUrl`; `api.pauseRun/resumeRun`; `t, tOr`.
 - Produces: `Counters({ counters, rate })`, `PostGrid({ runId, posts, total })`, `CurrentItem({ latest })`, `Aggregates({ aggregates })`, `ReviewBucket({ review, posts })`, `Dashboard({ runId, state, events, connected, controls? })`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 Create `frontend/src/components/dashboard/dashboard.test.tsx`:
 
@@ -2170,7 +2170,7 @@ describe("ReviewBucket", () => {
 Run: `cd frontend && bun run test src/components/dashboard`
 Expected: FAIL, modules not found.
 
-- [ ] **Step 2: Counters and PostGrid**
+- [x] **Step 2: Counters and PostGrid**
 
 Create `frontend/src/components/dashboard/Counters.tsx`:
 
@@ -2273,7 +2273,7 @@ export function PostGrid({ runId, posts, total }: { runId: string; posts: Record
 
 `total` is the sum of the plan's quantities when known, else the collected count; the page computes it.
 
-- [ ] **Step 3: CurrentItem, Aggregates, ReviewBucket**
+- [x] **Step 3: CurrentItem, Aggregates, ReviewBucket**
 
 Create `frontend/src/components/dashboard/CurrentItem.tsx`:
 
@@ -2440,7 +2440,7 @@ export function ReviewBucket({ review, posts }: { review: string[]; posts: Recor
 Run: `cd frontend && bun run test src/components/dashboard`
 Expected: 7 passed. If `Progress` lacks `role="progressbar"` in the installed shadcn version, add `role="progressbar"` to the `Progress` usage in `CurrentItem.tsx`.
 
-- [ ] **Step 4: Dashboard composition and the run page**
+- [x] **Step 4: Dashboard composition and the run page**
 
 Create `frontend/src/components/dashboard/Dashboard.tsx`:
 
@@ -2541,7 +2541,7 @@ export default function RunPage() {
 Run: `cd frontend && bun run typecheck && bun run test`
 Expected: clean, all tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/dashboard "frontend/src/app/runs/[id]/page.tsx"
