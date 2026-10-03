@@ -32,7 +32,9 @@ HASHTAG = re.compile(r"#([\w一-鿿]+)")
 DATA_API_SEARCH = "https://www.googleapis.com/youtube/v3/search"
 MAX_COMMENTS = 50
 DEFAULT_MAX_DURATION_S = 180
-CAPTION_LANGS = ("en", "zh-Hans", "zh-Hant", "zh")
+# yt-dlp aborts the whole download when one caption track fails (auto-translated tracks often
+# 429), so a failure that mentions subtitles is retried once without captions.
+_SUBTITLE_ERROR = re.compile(r"subtitle|caption", re.IGNORECASE)
 # The Data API wants zh-Hans / zh-Hant as given; every other language as its primary subtag.
 _DATA_API_FULL_LANGS = {"zh-Hans", "zh-Hant"}
 # Comment keys kept in the persisted raw payload. author, author_id, author_url, ... are dropped:
@@ -126,9 +128,16 @@ def write_transcript_sidecar(
 
 
 def _caption_langs(post_lang: str | None) -> list[str]:
-    """Caption languages in preference order: the post's own language first, then the defaults."""
-    head = [post_lang] if post_lang else []
-    return head + [lang for lang in CAPTION_LANGS if lang != post_lang]
+    """Caption tracks to request, in preference order: the post's language, its auto-generated
+    `-orig` track, then `en`. Kept short: every extra track is another chance to fail."""
+    langs = [post_lang, f"{post_lang}-orig"] if post_lang else []
+    return langs if "en" in langs else [*langs, "en"]
+
+
+def _caption_lang(vtt: Path) -> str | None:
+    """The language of a `video.<lang>.vtt` file; `en-orig` is plain `en`."""
+    lang = vtt_lang_from_filename(vtt)
+    return lang.removesuffix("-orig") if lang else None
 
 
 def _existing_video(dest: Path) -> Path | None:
@@ -286,11 +295,16 @@ class YouTubeAdapter:
         return post.model_copy(update={"media": media})
 
     def _download(self, post: Post, dest: Path) -> Path:
-        video_id = post.id.partition(":")[2]
+        url = _watch_url(post.id.partition(":")[2])
         try:
-            result = self._client.download(
-                _watch_url(video_id), dest, subtitle_langs=_caption_langs(post.lang)
-            )
+            try:
+                result = self._client.download(url, dest, subtitle_langs=_caption_langs(post.lang))
+            except Exception as exc:  # noqa: BLE001 - yt-dlp's DownloadError and anything else
+                if not _SUBTITLE_ERROR.search(str(exc)):
+                    raise
+                # Whisper covers the transcript instead of the failed caption track.
+                log.warning("youtube.subtitles_skipped", post_id=post.id, error=str(exc))
+                result = self._client.download(url, dest, subtitle_langs=[])
         except Exception as exc:  # noqa: BLE001 - yt-dlp's DownloadError and anything else
             log.warning("youtube_download_failed", post_id=post.id, error=str(exc))
             raise MediaDownloadError(f"yt-dlp download failed for {post.id}: {exc}") from exc
@@ -320,7 +334,7 @@ class YouTubeAdapter:
                 log.warning("youtube_captions_unparseable", file=vtt.name, error=str(exc))
                 continue
             if segments:
-                write_transcript_sidecar(video, vtt_lang_from_filename(vtt), segments)
+                write_transcript_sidecar(video, _caption_lang(vtt), segments)
                 return
 
     def healthcheck(self) -> AdapterHealth:

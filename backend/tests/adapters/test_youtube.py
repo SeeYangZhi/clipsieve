@@ -1,13 +1,16 @@
 import json
 import shutil
+import sys
+import types
 from pathlib import Path
 
 import httpx
 import pytest
 from structlog.testing import capture_logs
+from yt_dlp.utils import DownloadError
 
 from clipsieve.adapters.youtube import MediaDownloadError, YouTubeAdapter, map_info_to_post
-from clipsieve.adapters.ytdlp_client import FakeYtDlpClient
+from clipsieve.adapters.ytdlp_client import FakeYtDlpClient, RealYtDlpClient
 from clipsieve.config import Settings
 from clipsieve.models import Query
 from tests.adapters.contract import run_adapter_contract
@@ -313,6 +316,7 @@ class InfoPatchClient(FakeYtDlpClient):
 
 class FailingDownloadClient(FakeYtDlpClient):
     def download(self, url: str, dest: Path, subtitle_langs: list[str]) -> dict:
+        self.download_calls += 1
         raise RuntimeError("ERROR: [youtube] aB3dEfGhIjK: Video unavailable")
 
 
@@ -360,3 +364,123 @@ def test_fetch_media_wraps_client_download_failures(settings, tmp_path):
         adapter.fetch_media(post, tmp_path / "m")
     assert isinstance(info.value.__cause__, RuntimeError)
     assert "Video unavailable" in str(info.value)
+    assert adapter._client.download_calls == 1, "only a subtitle failure is retried"
+
+
+# -- final review: caption languages and the subtitle-failure fallback ---------------------------
+
+
+class RecordingClient(FakeYtDlpClient):
+    """Records the subtitle languages of every download call."""
+
+    def __init__(self, fixture_dir: Path) -> None:
+        super().__init__(fixture_dir)
+        self.subtitle_requests: list[list[str]] = []
+
+    def download(self, url: str, dest: Path, subtitle_langs: list[str]) -> dict:
+        self.subtitle_requests.append(list(subtitle_langs))
+        return super().download(url, dest, subtitle_langs)
+
+
+class SubtitleFailsClient(RecordingClient):
+    """yt-dlp raises DownloadError on a failed caption track (429 on auto-translated ones)."""
+
+    def __init__(self, fixture_dir: Path, failures: int = 1) -> None:
+        super().__init__(fixture_dir)
+        self._failures = failures
+
+    def download(self, url: str, dest: Path, subtitle_langs: list[str]) -> dict:
+        if self._failures > 0:
+            self._failures -= 1
+            self.subtitle_requests.append(list(subtitle_langs))
+            self.download_calls += 1
+            raise DownloadError(
+                "ERROR: Unable to download video subtitles for 'zh-Hans-orig': "
+                "HTTP Error 429: Too Many Requests"
+            )
+        return super().download(url, dest, subtitle_langs)
+
+
+@pytest.mark.parametrize(
+    ("lang", "expected"),
+    [
+        ("zh-Hans", ["zh-Hans", "zh-Hans-orig", "en"]),
+        ("en", ["en", "en-orig"]),
+        (None, ["en"]),
+    ],
+)
+def test_download_requests_only_the_post_language_its_orig_track_and_en(
+    settings, tmp_path, lang, expected
+):
+    client = RecordingClient(FIXTURES)
+    adapter = YouTubeAdapter(client=client, data_dir=settings.clipsieve_data_dir, salt="salt")
+    post = _first(adapter, "zH1sH4nGh41").model_copy(update={"lang": lang})
+    adapter.fetch_media(post, tmp_path / "m")
+    assert client.subtitle_requests == [expected]
+
+
+def test_subtitle_failure_retries_once_without_subtitles(settings, tmp_path):
+    client = SubtitleFailsClient(FIXTURES)
+    adapter = YouTubeAdapter(client=client, data_dir=settings.clipsieve_data_dir, salt="salt")
+    post = _first(adapter, "aB3dEfGhIjK")
+    dest = tmp_path / "m"
+    with capture_logs() as logs:
+        got = adapter.fetch_media(post, dest)
+    assert got.media[0].local_path == "video.mp4"
+    assert (dest / "video.mp4").is_file()
+    # Whisper covers the transcript instead.
+    assert not (dest / "video.mp4.transcript.json").exists()
+    assert client.download_calls == 2
+    assert client.subtitle_requests == [["en", "en-orig"], []]
+    assert any(e["event"] == "youtube.subtitles_skipped" for e in logs)
+
+
+def test_subtitle_failure_on_the_retry_raises_media_error(settings, tmp_path):
+    client = SubtitleFailsClient(FIXTURES, failures=2)
+    adapter = YouTubeAdapter(client=client, data_dir=settings.clipsieve_data_dir, salt="salt")
+    post = _first(adapter, "aB3dEfGhIjK")
+    with pytest.raises(MediaDownloadError):
+        adapter.fetch_media(post, tmp_path / "m")
+    assert client.download_calls == 2
+
+
+def test_orig_caption_track_writes_the_plain_language(settings, fixture_copy, tmp_path):
+    (fixture_copy / "aB3dEfGhIjK.en.vtt").rename(fixture_copy / "aB3dEfGhIjK.en-orig.vtt")
+    adapter = YouTubeAdapter(
+        client=FakeYtDlpClient(fixture_copy), data_dir=settings.clipsieve_data_dir, salt="salt"
+    )
+    post = _first(adapter, "aB3dEfGhIjK")
+    dest = tmp_path / "m"
+    adapter.fetch_media(post, dest)
+    sidecar = json.loads((dest / "video.mp4.transcript.json").read_text(encoding="utf-8"))
+    assert sidecar["lang"] == "en"
+
+
+@pytest.mark.parametrize(
+    ("langs", "writes"), [(["en", "en-orig"], True), ([], False)], ids=["with", "without"]
+)
+def test_real_client_disables_subtitles_for_an_empty_language_list(
+    tmp_path, monkeypatch, langs, writes
+):
+    seen: list[dict] = []
+    fake = types.ModuleType("yt_dlp")
+
+    class YoutubeDL:
+        def __init__(self, opts: dict) -> None:
+            seen.append(opts)
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc) -> None:
+            return None
+
+        def extract_info(self, url: str, download: bool) -> dict:
+            return {"id": "x"}
+
+    fake.YoutubeDL = YoutubeDL
+    monkeypatch.setitem(sys.modules, "yt_dlp", fake)
+    RealYtDlpClient().download("https://www.youtube.com/watch?v=x", tmp_path / "m", langs)
+    [opts] = seen
+    assert opts["writesubtitles"] is writes and opts["writeautomaticsub"] is writes
+    assert opts.get("subtitleslangs", []) == langs

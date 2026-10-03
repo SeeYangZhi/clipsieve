@@ -19,7 +19,9 @@ class YtDlpClient(Protocol):
 
     def info(self, url: str) -> dict[str, Any]: ...
 
-    def download(self, url: str, dest: Path, subtitle_langs: list[str]) -> dict[str, Any]: ...
+    def download(self, url: str, dest: Path, subtitle_langs: list[str]) -> dict[str, Any]:
+        """Download into `dest/video.<ext>`. An empty `subtitle_langs` writes no captions."""
+        ...
 
 
 class RealYtDlpClient:
@@ -47,16 +49,18 @@ class RealYtDlpClient:
 
     def download(self, url: str, dest: Path, subtitle_langs: list[str]) -> dict[str, Any]:
         dest.mkdir(parents=True, exist_ok=True)
-        opts = {
+        captions = bool(subtitle_langs)
+        opts: dict[str, Any] = {
             "outtmpl": str(dest / "video.%(ext)s"),
             "format": "bv*[height<=1080][ext=mp4]+ba[ext=m4a]/b[ext=mp4]/b",
             "merge_output_format": "mp4",
             "max_filesize": MAX_FILESIZE_BYTES,
-            "writeautomaticsub": True,
-            "writesubtitles": True,
-            "subtitleslangs": subtitle_langs,
-            "subtitlesformat": "vtt",
+            "writeautomaticsub": captions,
+            "writesubtitles": captions,
         }
+        if captions:
+            opts["subtitleslangs"] = subtitle_langs
+            opts["subtitlesformat"] = "vtt"
         with self._ydl(**opts) as ydl:
             return ydl.extract_info(url, download=True) or {}
 
@@ -100,8 +104,10 @@ class FakeYtDlpClient:
         meta = self.info(url)
         dest.mkdir(parents=True, exist_ok=True)
         (dest / "video.mp4").write_bytes(b"\x00" * 1024)
+        # Like yt-dlp, write only the requested caption tracks.
         for vtt in self._dir.glob(f"{meta['id']}.*.vtt"):
-            shutil.copy(vtt, dest / vtt.name.replace(meta["id"], "video"))
+            if vtt.name.split(".")[-2] in subtitle_langs:
+                shutil.copy(vtt, dest / vtt.name.replace(meta["id"], "video"))
         meta = dict(meta)
         meta["requested_downloads"] = [{"filepath": str(dest / "video.mp4")}]
         return meta
