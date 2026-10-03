@@ -245,7 +245,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `type Locale = "en" | "zh"`; `t(key, locale, vars?)`; `tOr(key, fallback, locale)`; `useLocale(): [Locale, (l: Locale) => void]`; `STORAGE_KEY = "clipsieve.locale"`; `detectLocale(language)`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 Create `frontend/src/lib/i18n.test.ts`:
 
@@ -297,7 +297,7 @@ describe("detectLocale", () => {
 Run: `cd frontend && bun run test`
 Expected: FAIL, cannot find `./i18n`.
 
-- [ ] **Step 2: Dictionaries**
+- [x] **Step 2: Dictionaries**
 
 Create `frontend/src/lib/i18n/en.ts` with every key used by later tasks:
 
@@ -464,7 +464,7 @@ export const en: Record<string, string> = {
 
 Create `frontend/src/lib/i18n/zh.ts` with the same keys, Chinese values. Required exact values used by tests: `"brief.submit": "开始研究"`, `"grid.progress": "{done} / {total}"`. Translate every other key; for example `"app.tagline": "从成千上万条内容中筛出值得研究的几条"`, `"brief.title": "你在研究什么？"`, `"plan.approve": "批准并运行"`, `"run.stage.collecting": "采集中"`, `"counters.cost": "Jev 花费"`, `"review.title": "难以判断"`, `"report.concepts": "待测试的内容概念"`, `"replay.play": "播放"`, `"label.curiosity_gap": "好奇缺口"`. The dictionary-parity tests enforce completeness.
 
-- [ ] **Step 3: i18n module**
+- [x] **Step 3: i18n module**
 
 Create `frontend/src/lib/i18n.ts`:
 
@@ -560,7 +560,7 @@ export function LocaleSwitch() {
 Run: `cd frontend && bun run test`
 Expected: all i18n tests pass. Fix any parity failures by adding the missing key to the other dictionary.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/lib/i18n.ts frontend/src/lib/i18n frontend/src/lib/i18n.test.ts frontend/src/components/LocaleSwitch.tsx
