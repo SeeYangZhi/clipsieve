@@ -29,6 +29,8 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/adapters/` | `Adapter` protocol, `registry`, `local_import`, `youtube`, `ytdlp_client`, `vtt` |
 | `clipsieve/evidence/` | `asr`, `ocr`, `frames`, `comments`, `packet`, `extract` |
 | `clipsieve/judge/rubric.py` | rubric pack loading, per-pass question selection, TypeSafe primitive conversion, persona criteria |
+| `clipsieve/judge/base.py` | `Judge` protocol, `JudgeFailed`, Jev pricing (`cost_usd`) |
+| `clipsieve/judge/typesafe_client.py` | `TypeSafeJudge`: one batched, concurrency-bounded, retrying Jev request per post |
 | `clipsieve/select/select.py` | `Selection` model (plan 01); selection functions (plan 03) |
 
 Later plans add the rest of `judge/`, then `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
@@ -83,4 +85,8 @@ Turns rubric packs into TypeSafe Jev requests and Jev answers into `JudgeAnswer`
 - `find_pack(name, rubrics_dir)` reads `<rubrics_dir>/<name>.yaml` and raises `PackNotFound` for a missing file or a name that is not a plain file stem (letters, digits, `.`, `_`, `-`).
 - `questions_for_pass`: `pass_one` returns the `metadata_pass` questions in that order; `pass_two` returns every question.
 - `with_persona_criteria(pack, criteria)` returns a deep copy with `persona_fit` replaced by a validated 5-level `ScoreQuestion`; the input pack is never mutated.
-- Tests never call the TypeSafe API; `from_typesafe` tests use hand-built response objects.
+- `base.py`: `Judge.judge(post_id, pass_name, state, questions, model) -> JudgeResult`. A failed Jev call (client construction, request, or a missing or malformed answer) surfaces as `JudgeFailed(post_id, attempts, cause)`, never a raw SDK error. `cost_usd(input_tokens)` prices input tokens at `JEV_USD_PER_MILLION_INPUT = 0.042`.
+- `TypeSafeJudge` sends every question for one post in ONE `AsyncTypeSafeClient.system_one(state=..., questions=..., model=...)` call and fills `JudgeResult.model`/`input_tokens` from the response, `latency_ms` from the successful attempt. `state` is the packet dict, not `state_json` output: the SDK encodes it compact with non-ASCII literal, so the wire size matches the `packet` token estimate; a string would be sent as text state.
+- Retries belong to `TypeSafeJudge`; the default client is built with `RetryPolicy(max_retries=0)` so the SDK never retries underneath. Retryable: status 429 or 529 (`status_code`, or the SDK's `status`), or an exception class name containing `ratelimit` or `overloaded`. Backoff is `0.5 s * 2^(n-1)` capped at 8 s plus up to 0.1 s jitter, through the injected `sleeper`. `max_retries` counts attempts in total (5 means at most 5 requests), then `JudgeFailed`. Anything else, including a 200 with a missing or malformed answer, raises `JudgeFailed` at once.
+- `asyncio.Semaphore(concurrency)` (default 16) bounds in-flight requests per `TypeSafeJudge`. A post backing off keeps its slot; other posts proceed in the rest (`test_one_post_rate_limited_others_proceed`). The client is built lazily from `client_factory` and closed by `aclose()`. Never log the API key; `jev_retry` logs post id, attempt, error class and delay.
+- Tests never call the TypeSafe API. `from_typesafe` tests use hand-built response objects; `TypeSafeJudge` tests use a fake client returning real `SystemOneResponse`s, plus the real SDK client over `httpx2.MockTransport`.
