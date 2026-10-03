@@ -1,0 +1,93 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clipsieve.dev/schema/common.json",
+  "title": "Common",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {},
+  "$defs": {
+    "Platform": {
+      "type": "string",
+      "enum": ["youtube", "xiaohongshu", "local"]
+    },
+    "Stage": {
+      "type": "string",
+      "enum": [
+        "planning",
+        "collecting",
+        "pass_one",
+        "extracting",
+        "pass_two",
+        "selecting",
+        "explaining",
+        "done",
+        "failed"
+      ]
+    },
+    "RunEventType": {
+      "type": "string",
+      "enum": [
+        "run_created",
+        "plan_ready",
+        "plan_approved",
+        "post_collected",
+        "pass_one_judged",
+        "evidence_ready",
+        "judged",
+        "selected",
+        "explained",
+        "error",
+        "stage_changed",
+        "done"
+      ]
+    },
+    "Brief": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["text", "topic", "audience", "persona"],
+      "properties": {
+        "text": { "type": "string" },
+        "topic": { "type": "string" },
+        "audience": { "type": "string" },
+        "persona": { "type": "string" },
+        "language_hint": { "type": "string" }
+      }
+    },
+    "Query": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["platform", "query", "lang"],
+      "properties": {
+        "platform": { "type": "string" },
+        "query": { "type": "string" },
+        "lang": { "type": "string" }
+      }
+    },
+    "Counters": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "collected",
+        "pass_one_kept",
+        "judged",
+        "shortlisted",
+        "review",
+        "errors",
+        "jev_input_tokens",
+        "jev_cost_usd",
+        "elapsed_s"
+      ],
+      "properties": {
+        "collected": { "type": "integer", "minimum": 0 },
+        "pass_one_kept": { "type": "integer", "minimum": 0 },
+        "judged": { "type": "integer", "minimum": 0 },
+        "shortlisted": { "type": "integer", "minimum": 0 },
+        "review": { "type": "integer", "minimum": 0 },
+        "errors": { "type": "integer", "minimum": 0 },
+        "jev_input_tokens": { "type": "integer", "minimum": 0 },
+        "jev_cost_usd": { "type": "number", "minimum": 0 },
+        "elapsed_s": { "type": "number", "minimum": 0 }
+      }
+    }
+  }
+}

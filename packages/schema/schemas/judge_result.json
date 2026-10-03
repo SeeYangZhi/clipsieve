@@ -1,0 +1,49 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clipsieve.dev/schema/judge_result.json",
+  "title": "JudgeResult",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "post_id",
+    "pass_name",
+    "model",
+    "input_tokens",
+    "latency_ms",
+    "answers"
+  ],
+  "properties": {
+    "post_id": { "type": "string" },
+    "pass_name": { "type": "string", "enum": ["pass_one", "pass_two"] },
+    "model": { "type": "string" },
+    "input_tokens": { "type": "integer", "minimum": 0 },
+    "latency_ms": { "type": "integer", "minimum": 0 },
+    "answers": {
+      "type": "object",
+      "additionalProperties": { "$ref": "#/$defs/JudgeAnswer" }
+    }
+  },
+  "$defs": {
+    "JudgeAnswer": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "value"],
+      "properties": {
+        "type": { "type": "string", "enum": ["choice", "score", "noul"] },
+        "value": {
+          "anyOf": [{ "type": "string" }, { "type": "number" }],
+          "description": "label for choice, fractional score for score, probability for noul"
+        },
+        "probabilities": {
+          "type": "object",
+          "additionalProperties": { "type": "number" }
+        },
+        "confidence": { "type": "number", "minimum": 0, "maximum": 1 },
+        "legend": {
+          "type": "object",
+          "additionalProperties": { "type": "string" }
+        }
+      }
+    }
+  }
+}

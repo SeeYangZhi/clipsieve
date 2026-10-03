@@ -1,0 +1,32 @@
+{
+  "id": "local:fx-002",
+  "platform": "local",
+  "url": "file:///fixtures/fx-002.mp4",
+  "creator_hash": "9b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c",
+  "creator_display": "坡坡在沪",
+  "posted_at": "2026-09-02T12:15:00Z",
+  "kind": "video",
+  "text": {
+    "title": "新加坡人在上海的第一周｜租房避坑指南",
+    "caption": "押一付三是什么？中介费怎么谈？我用一周踩了所有的坑，你们不用再踩了。",
+    "hashtags": ["新加坡人在上海", "上海租房", "留学生活", "vlog"]
+  },
+  "media": [
+    { "type": "video", "duration_s": 74.0, "width": 1080, "height": 1920 }
+  ],
+  "metrics": {
+    "views": 96300,
+    "likes": 8100,
+    "comments": 512,
+    "shares": 640,
+    "saves": 4100
+  },
+  "comments": [
+    { "text": "押一付三真的离谱，我也是被吓到了", "likes": 356 },
+    { "text": "求中介联系方式！", "likes": 120 },
+    { "text": "新加坡口音好可爱哈哈", "likes": 88 }
+  ],
+  "lang": "zh",
+  "raw_ref": "raw/local__fx-002.json",
+  "collected_at": "2026-10-03T08:00:01Z"
+}

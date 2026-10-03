@@ -1,0 +1,32 @@
+{
+  "id": "local:fx-004",
+  "platform": "local",
+  "url": "file:///fixtures/fx-004.mp4",
+  "creator_hash": "7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b9c8d7e6f",
+  "creator_display": "阿Ken上海日记",
+  "posted_at": "2026-07-21T14:00:00Z",
+  "kind": "video",
+  "text": {
+    "title": "作为新加坡人，我为什么选上海而不是北京",
+    "caption": "三个理由，第二个很多人不同意。",
+    "hashtags": ["新加坡人在上海", "上海vs北京", "城市选择"]
+  },
+  "media": [
+    { "type": "video", "duration_s": 92.5, "width": 1080, "height": 1920 }
+  ],
+  "metrics": {
+    "views": 220400,
+    "likes": 15600,
+    "comments": 1340,
+    "shares": 2100,
+    "saves": 3300
+  },
+  "comments": [
+    { "text": "第二点我不同意，北京的文化氛围完全不一样", "likes": 890 },
+    { "text": "说得对，上海更国际化", "likes": 430 },
+    { "text": "下一期讲讲工作签证吧", "likes": 150 }
+  ],
+  "lang": "zh",
+  "raw_ref": "raw/local__fx-004.json",
+  "collected_at": "2026-10-03T08:00:03Z"
+}

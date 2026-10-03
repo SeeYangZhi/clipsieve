@@ -4,6 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "generate": "echo 'schema generator arrives in Task 3'"
+    "generate": "bun run generate.ts"
+  },
+  "dependencies": {
+    "json-schema-to-typescript": "^15.0.4"
   }
 }

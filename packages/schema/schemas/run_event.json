@@ -1,0 +1,17 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clipsieve.dev/schema/run_event.json",
+  "title": "RunEvent",
+  "description": "One line of events.jsonl. Payload shape depends on type; see the overview plan table. Validated by clipsieve.events.writer.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["run_id", "seq", "ts", "type", "stage", "payload"],
+  "properties": {
+    "run_id": { "type": "string" },
+    "seq": { "type": "integer", "minimum": 1 },
+    "ts": { "type": "string", "format": "date-time" },
+    "type": { "$ref": "common.json#/$defs/RunEventType" },
+    "stage": { "$ref": "common.json#/$defs/Stage" },
+    "payload": { "type": "object", "additionalProperties": true }
+  }
+}

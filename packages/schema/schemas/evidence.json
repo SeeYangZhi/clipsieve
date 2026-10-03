@@ -1,0 +1,65 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://clipsieve.dev/schema/evidence.json",
+  "title": "Evidence",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "post_id",
+    "transcript",
+    "ocr",
+    "keyframes",
+    "comment_summary",
+    "token_estimate",
+    "truncated"
+  ],
+  "properties": {
+    "post_id": { "type": "string" },
+    "transcript": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/TranscriptSegment" }
+    },
+    "transcript_lang": { "type": "string" },
+    "ocr": { "type": "array", "items": { "$ref": "#/$defs/OcrItem" } },
+    "keyframes": {
+      "type": "array",
+      "maxItems": 8,
+      "items": { "type": "string" }
+    },
+    "comment_summary": { "$ref": "#/$defs/CommentSummary" },
+    "token_estimate": { "type": "integer", "minimum": 0 },
+    "truncated": { "type": "boolean" }
+  },
+  "$defs": {
+    "TranscriptSegment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["start_s", "end_s", "text"],
+      "properties": {
+        "start_s": { "type": "number" },
+        "end_s": { "type": "number" },
+        "text": { "type": "string" }
+      }
+    },
+    "OcrItem": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source", "index", "text"],
+      "properties": {
+        "source": { "type": "string", "enum": ["keyframe", "image"] },
+        "index": { "type": "integer" },
+        "text": { "type": "string" }
+      }
+    },
+    "CommentSummary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["count", "top_terms", "sample"],
+      "properties": {
+        "count": { "type": "integer", "minimum": 0 },
+        "top_terms": { "type": "array", "items": { "type": "string" } },
+        "sample": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  }
+}

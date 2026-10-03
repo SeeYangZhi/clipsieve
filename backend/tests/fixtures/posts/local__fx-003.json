@@ -1,0 +1,28 @@
+{
+  "id": "local:fx-003",
+  "platform": "local",
+  "url": "file:///fixtures/fx-003",
+  "creator_hash": "1a0b9c8d7e6f5a4b3c2d1e0f9a8b7c6d5e4f3a2b1c0d9e8f7a6b5c4d3e2f1a0b",
+  "creator_display": "狮城小李",
+  "posted_at": "2026-09-10T03:45:00Z",
+  "kind": "image_note",
+  "text": {
+    "title": "上海超市物价大公开 🇸🇬→🇨🇳",
+    "caption": "同样一篮子东西，新加坡 vs 上海，差价吓到我了。第4张是重点。",
+    "hashtags": ["上海生活", "物价对比", "新加坡人", "超市"]
+  },
+  "media": [
+    { "type": "image", "index": 0, "width": 1080, "height": 1440 },
+    { "type": "image", "index": 1, "width": 1080, "height": 1440 },
+    { "type": "image", "index": 2, "width": 1080, "height": 1440 },
+    { "type": "image", "index": 3, "width": 1080, "height": 1440 }
+  ],
+  "metrics": { "views": 41200, "likes": 3900, "comments": 210, "saves": 2800 },
+  "comments": [
+    { "text": "第4张真的绝了", "likes": 201 },
+    { "text": "牛奶居然这么便宜？", "likes": 64 }
+  ],
+  "lang": "zh",
+  "raw_ref": "raw/local__fx-003.json",
+  "collected_at": "2026-10-03T08:00:02Z"
+}
