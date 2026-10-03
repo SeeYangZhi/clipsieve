@@ -32,7 +32,9 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/judge/base.py` | `Judge` protocol, `JudgeFailed`, Jev pricing (`cost_usd`) |
 | `clipsieve/judge/typesafe_client.py` | `TypeSafeJudge`: one batched, concurrency-bounded, retrying Jev request per post |
 | `clipsieve/judge/recorded.py` | `RecordedJudge` fake replaying `tests/fixtures/judge/*.json`, `FixtureMissing` |
-| `clipsieve/select/select.py` | `Selection` model (plan 01); selection functions (plan 03) |
+| `clipsieve/select/scoring.py` | Pure scoring: `normalize_score`, `answer_confidence`, `composite`, `passes_hard_filters`, `needs_review` |
+| `clipsieve/select/quotas.py` | `violates_quota`: diversity cap per choice label, at least one per label |
+| `clipsieve/select/select.py` | `Selection` model; `select()` (hard filter, rank by composite, quotas; review posts skip the shortlist; dropped reasons `hard_filter`/`quota`/`not_selected`) and `pass_one_keep()` (top fraction, ceil, min one, metadata questions only) |
 
 Later plans add the rest of `judge/`, then `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
 
