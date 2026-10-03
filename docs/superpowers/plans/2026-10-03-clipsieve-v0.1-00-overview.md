@@ -579,6 +579,12 @@ export function useLocale(): [Locale, (l: Locale) => void];   // localStorage "c
 9. **API:** `create_app(ctx=None)` factory; extra `GET /api/health`; 201 on create, 409 on double approve or on editing an approved plan, 422 for unknown platforms.
 10. **CLI exit codes:** 0 ok, 1 run failed or not found, 2 usage error or declined plan.
 
+11. **Runner emits `run_created`.** The `Runner` constructor emits `run_created` when the run's event log is empty; `POST /runs` and `sieve run` do not emit it. **Planning failure** emits a recoverable `error` event with `where: "planner"` (stage `planning`); the plan page should surface it instead of waiting for `plan_ready` forever.
+12. **SSE reconnect precedence.** `GET /runs/{id}/events` honours both `?after=N` and the `Last-Event-ID` header and streams events with `seq > max(after, Last-Event-ID)`. A 409 is returned for `PUT /plan` and `POST /approve` while the planner is still running, and for `POST /reselect` while the pipeline is busy or before a selection exists. `GET /posts` `limit` must be 1..1000. `GET /runs/{id}` returns `"plan": null` while planning (the one explicit null on the wire).
+13. **App context is built once per process** under a lock (`api/context.py`); fake mode (E.7) never constructs `TypeSafeJudge`.
+
+14. **Plan 03 final-review outcomes (binding for plans 04 and 05).** (a) A run whose shortlist is empty (nothing collected, every post judge-failed, filtered or sent to review) FAILS at `explaining` without calling the explain backend: `error {where: explain, recoverable: false}` then `stage_changed -> failed`; the frontend must render this state. (b) `ExplainPacket.posts` is `list[ExplainPost]` — a `Post` without `comments`; transcript and OCR text are capped at `EXPLAIN_TEXT_CAP = 4000` characters per post on a copy of the evidence (`truncated: true` on the copy; stored evidence untouched). (c) `pack_summaries` skips any `rubrics/*.yaml` that does not load as a pack (plan 05's `*.zh-examples.yaml` sidecar) and logs `rubric_pack_skipped` with the reason; `find_pack` raises `PackNotFound` for such files, surfaced as 422 / CLI exit 2 with the load error in the message. (d) The "already judged" check reads the SQLite judge row; `sieve reindex` rebuilds rows from `judge/*.json`.
+
 ## Addendum F: reconciliation of plans 01 to 05 (applied 2026-10-03)
 
 Patches made so the five plans agree with this contract and with each other:

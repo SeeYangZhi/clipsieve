@@ -69,7 +69,7 @@ If any of these names is missing when you start a task, stop and fix the earlier
   - `with_persona_criteria(pack: RubricPack, criteria: list[str]) -> RubricPack`
   - `class PackNotFound(Exception)`
 
-- [ ] **Step 1: Add dependencies**
+- [x] **Step 1: Add dependencies**
 
 ```bash
 cd backend && uv add pyyaml typesafe-sdk && uv add --dev types-PyYAML
@@ -77,7 +77,7 @@ cd backend && uv add pyyaml typesafe-sdk && uv add --dev types-PyYAML
 
 Expected: `pyproject.toml` gains `pyyaml>=6` and `typesafe-sdk` under `[project] dependencies`; `uv.lock` updated.
 
-- [ ] **Step 2: Write the rubric pack in full**
+- [x] **Step 2: Write the rubric pack in full**
 
 `rubrics/creator-hooks-v1.yaml`:
 
@@ -167,7 +167,7 @@ selection:
       max_share: 0.5
 ```
 
-- [ ] **Step 3: Write the calibration template and DOX docs**
+- [x] **Step 3: Write the calibration template and DOX docs**
 
 `rubrics/creator-hooks-v1.calibration.md`:
 
@@ -226,7 +226,7 @@ None.
 
 Root `AGENTS.md`: replace the Child DOX Index line for rubrics so the list reads `rubrics/` as present (keep the others as "when created").
 
-- [ ] **Step 4: Write the failing tests**
+- [x] **Step 4: Write the failing tests**
 
 `backend/tests/judge/__init__.py` (empty) and `backend/tests/judge/test_rubric.py`:
 
@@ -314,12 +314,12 @@ def test_with_persona_criteria_requires_five():
         with_persona_criteria(pack, ["only", "four", "levels", "here"])
 ```
 
-- [ ] **Step 5: Run tests to verify they fail**
+- [x] **Step 5: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/judge/test_rubric.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.judge'`.
 
-- [ ] **Step 6: Implement `judge/rubric.py`**
+- [x] **Step 6: Implement `judge/rubric.py`**
 
 `backend/clipsieve/judge/__init__.py`: empty.
 
@@ -422,12 +422,12 @@ def with_persona_criteria(pack: RubricPack, criteria: list[str]) -> RubricPack:
     return pack.model_copy(update={"questions": {**pack.questions, "persona_fit": new_q}}, deep=True)
 ```
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/judge/test_rubric.py -q`
 Expected: `6 passed`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add rubrics backend/clipsieve/judge backend/tests/judge backend/pyproject.toml backend/uv.lock AGENTS.md
@@ -452,7 +452,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
   - `class JudgeFailed(Exception)` with attributes `post_id: str`, `attempts: int`
   - `class TypeSafeJudge(Judge)` with `__init__(self, api_key: str, concurrency: int = 16, max_retries: int = 5, client_factory: Callable[[], Any] | None = None, sleeper: Callable[[float], Awaitable[None]] = asyncio.sleep)` and `async aclose()`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/judge/test_typesafe_client.py`:
 
@@ -591,12 +591,12 @@ async def test_non_retryable_error_raises_immediately():
     assert ei.value.attempts == 1 and client.calls.count("local:bad") == 1
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/judge/test_typesafe_client.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.judge.base'`.
 
-- [ ] **Step 3: Implement `judge/base.py`**
+- [x] **Step 3: Implement `judge/base.py`**
 
 ```python
 """Judge protocol shared by the TypeSafe client and the recorded fake."""
@@ -633,7 +633,7 @@ class Judge(Protocol):
     ) -> JudgeResult: ...
 ```
 
-- [ ] **Step 4: Implement `judge/typesafe_client.py`**
+- [x] **Step 4: Implement `judge/typesafe_client.py`**
 
 ```python
 """TypeSafe Jev judge: one batched system_one request per post, bounded concurrency, backoff."""
@@ -737,12 +737,12 @@ class TypeSafeJudge(Judge):
                 )
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/judge/test_typesafe_client.py -q`
 Expected: `6 passed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/judge backend/tests/judge
@@ -765,7 +765,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `clipsieve.store.paths.safe_post_filename`, `clipsieve.models.JudgeResult`.
 - Produces: `class RecordedJudge(Judge)` with `__init__(self, fixture_dir: Path)`, `calls: list[tuple[str, str]]` (post_id, pass_name) for test assertions; `class FixtureMissing(FileNotFoundError)`.
 
-- [ ] **Step 1: Write the fixture generator**
+- [x] **Step 1: Write the fixture generator**
 
 `backend/tests/fixtures/judge/make_fixtures.py`. The table encodes the intended story: fx-001 and fx-004 are strong Shanghai-expat vlogs, fx-002 is a talking-head visa explainer with a risky claim, fx-003 is an off-topic food carousel, fx-005 is an on-topic image carousel with a weak hook and low confidence (lands in review).
 
@@ -826,7 +826,7 @@ print("wrote", len(TABLE) * 2, "fixtures")
 Run: `cd backend && uv run python tests/fixtures/judge/make_fixtures.py`
 Expected: `wrote 10 fixtures` and ten JSON files beside the script.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `backend/tests/judge/test_recorded.py`:
 
@@ -868,12 +868,12 @@ async def test_missing_fixture_raises():
         await judge.judge("local:nope", "pass_one", {}, {}, "jev-1.13.0")
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/judge/test_recorded.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.judge.recorded'`.
 
-- [ ] **Step 4: Implement `judge/recorded.py`**
+- [x] **Step 4: Implement `judge/recorded.py`**
 
 ```python
 """Judge fake that replays JudgeResult fixtures by post id and pass."""
@@ -910,12 +910,12 @@ class RecordedJudge(Judge):
         return result.model_copy(update={"answers": answers})
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/judge -q`
 Expected: `15 passed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/judge/recorded.py backend/tests/judge backend/tests/fixtures/judge
@@ -943,7 +943,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Decision: when `legend` is absent, levels are assumed 0-indexed, matching the TypeSafe composite-scoring cookbook (`score / 4` for five levels). When present, the minimum integer key in `legend` is the first level.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/select/test_scoring.py`:
 
@@ -1041,12 +1041,12 @@ def test_needs_review_only_over_weighted_questions():
     assert needs_review(low, pack) is True
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/select/test_scoring.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.select.scoring'`.
 
-- [ ] **Step 3: Implement `select/scoring.py`**
+- [x] **Step 3: Implement `select/scoring.py`**
 
 ```python
 """Pure scoring helpers over JudgeResults. No I/O, no model calls."""
@@ -1142,12 +1142,12 @@ def needs_review(result: JudgeResult, pack: RubricPack, weights: dict[str, float
 from clipsieve.select.scoring import answer_confidence, composite, needs_review, normalize_score, passes_hard_filters  # noqa: F401
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/select/test_scoring.py -q`
 Expected: `16 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/select backend/tests/select
@@ -1173,7 +1173,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
   - `pass_one_keep(results: list[JudgeResult], pack: RubricPack) -> set[str]`
   - `dropped` reasons are exactly: `"hard_filter"`, `"quota"`, `"not_selected"`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
+
+Note (applied during execution): the quota rule is `cap = max(1, floor(max_share * shortlist_size + 1e-9))`; a candidate violates when its label already appears `cap` times among the chosen. The brief's `same + 1 > max_share * size` blocked every post when `max_share * size < 1` (its own tests 3-5 failed). The test helper `r()` derives default `format`/`hook_type` labels from `post_id` so quotas do not block the brief's expected shortlists (tests 1-2 failed with identical defaults).
 
 `backend/tests/select/test_select.py`:
 
@@ -1286,12 +1288,12 @@ def test_pass_one_keep_keeps_top_fraction_min_one():
     assert pass_one_keep([], pack) == set()
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/select/test_select.py -q`
 Expected: FAIL with `ImportError: cannot import name 'select' from 'clipsieve.select.select'`.
 
-- [ ] **Step 3: Implement `select/quotas.py`**
+- [x] **Step 3: Implement `select/quotas.py`**
 
 ```python
 """Diversity quotas over choice answers."""
@@ -1321,7 +1323,7 @@ def violates_quota(candidate: JudgeResult, chosen: list[JudgeResult], pack: Rubr
     return False
 ```
 
-- [ ] **Step 4: Append to `select/select.py`**
+- [x] **Step 4: Append to `select/select.py`**
 
 Keep plan 01's `Selection` class untouched and append:
 
@@ -1383,12 +1385,12 @@ def pass_one_keep(results: list[JudgeResult], pack: RubricPack) -> set[str]:
 
 Note `PASS_ONE` is imported for callers' convenience; ruff will flag it unused, so either re-export it in `select/__init__.py` or drop the import. Drop it if unused.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/select -q`
 Expected: `22 passed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/select backend/tests/select
@@ -1428,7 +1430,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Decision: backends return `Plan.run_id` and `Report.run_id` as whatever they have (`"FIXTURE"` for the fake, model output for the CLI); the caller overwrites `run_id`. Backends never know the run id.
 
-- [ ] **Step 1: Write the prompts in full**
+- [x] **Step 1: Write the prompts in full**
 
 `backend/clipsieve/explain/prompts/plan.md`:
 
@@ -1464,7 +1466,7 @@ Produce a Report object that matches the JSON schema you were given. Rules:
 9. Write in the language of `brief.text`. Output only the JSON object. No prose outside it.
 ```
 
-- [ ] **Step 2: Write the explain fixtures**
+- [x] **Step 2: Write the explain fixtures**
 
 `backend/tests/fixtures/explain/plan.json`:
 
@@ -1532,7 +1534,7 @@ Produce a Report object that matches the JSON schema you were given. Rules:
 }
 ```
 
-- [ ] **Step 3: Write the failing tests**
+- [x] **Step 3: Write the failing tests**
 
 `backend/tests/explain/test_base.py`:
 
@@ -1633,12 +1635,12 @@ def test_claude_api_explain_contract(fixture_posts):
     assert [c.post_id for c in report.clips] == [fixture_posts[0].id]
 ```
 
-- [ ] **Step 4: Run tests to verify they fail**
+- [x] **Step 4: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/explain -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.explain'`.
 
-- [ ] **Step 5: Implement `explain/base.py`**
+- [x] **Step 5: Implement `explain/base.py`**
 
 ```python
 """Explain backend contract: planning a run and explaining a shortlist."""
@@ -1727,7 +1729,7 @@ def get_backend(settings: Settings, fixture_dir: Path | None = None) -> ExplainB
     raise ExplainError(f"unknown explain backend {kind!r}")
 ```
 
-- [ ] **Step 6: Implement `explain/fake.py` and `explain/claude_api.py`**
+- [x] **Step 6: Implement `explain/fake.py` and `explain/claude_api.py`**
 
 `explain/fake.py`:
 
@@ -1806,12 +1808,12 @@ class ClaudeApiBackend(ExplainBackend):
 
 `explain/__init__.py`: empty.
 
-- [ ] **Step 7: Run tests to verify they pass**
+- [x] **Step 7: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/explain -q`
 Expected: `5 passed, 1 xfailed`.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/clipsieve/explain backend/tests/explain backend/tests/fixtures/explain
@@ -1833,7 +1835,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Produces: `class ClaudeCliBackend(ExplainBackend)` with `__init__(self, bin: str, max_budget_usd: float, model: str = "opus", effort: str = "high", timeout_s: int = 900)`, `plan(...)`, `explain(...)`, and the module constants `PLAN_TASK = "Create the research plan for the brief in the JSON on stdin."`, `EXPLAIN_TASK = "Analyze the shortlisted posts in the JSON on stdin and return the report."`.
 - Shim env contract (test only): `CLIPSIEVE_SHIM_STATE` (path to a counter file) and `CLIPSIEVE_SHIM_BAD_FIRST=1` make the shim return a report citing `local:does-not-exist` on the first explain call and the fixture report afterwards. `CLIPSIEVE_SHIM_FAIL=1` makes it print `{"is_error": true, "result": "shim failure"}`. The shim records every argv line to `$CLIPSIEVE_SHIM_STATE.argv` when that variable is set.
 
-- [ ] **Step 1: Write the shim**
+- [x] **Step 1: Write the shim**
 
 `backend/tests/fixtures/claude-shim/claude`:
 
@@ -1863,7 +1865,7 @@ python3 -c 'import json,sys; print(json.dumps({"is_error": False, "structured_ou
 Run: `chmod +x backend/tests/fixtures/claude-shim/claude && echo '{"mode": "plan"}' | backend/tests/fixtures/claude-shim/claude | head -c 80`
 Expected: `{"is_error": false, "structured_output": {"run_id": "FIXTURE", ...`
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `backend/tests/explain/test_claude_cli.py`:
 
@@ -1949,12 +1951,12 @@ def test_missing_binary_raises(packet):
         ClaudeCliBackend(bin="/definitely/not/claude", max_budget_usd=3).explain(packet)
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/explain/test_claude_cli.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.explain.claude_cli'`.
 
-- [ ] **Step 4: Implement `explain/claude_cli.py`**
+- [x] **Step 4: Implement `explain/claude_cli.py`**
 
 ```python
 """Explain backend that shells out to `claude -p` with structured output.
@@ -2063,12 +2065,12 @@ class ClaudeCliBackend(ExplainBackend):
         raise ExplainError("unreachable")
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/explain -q`
 Expected: `11 passed, 1 xfailed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/explain/claude_cli.py backend/tests/explain/test_claude_cli.py backend/tests/fixtures/claude-shim
@@ -2095,7 +2097,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Decision: `run_id` is an argument (the overview signature omitted it); the planner, not the backend, owns `Plan.run_id`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/planner/test_plan.py`:
 
@@ -2160,12 +2162,12 @@ def test_build_plan_falls_back_to_pack_persona_criteria_when_not_five():
     assert plan.persona_fit_criteria[0] == "Unrelated creator and situation"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/planner -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.planner'`.
 
-- [ ] **Step 3: Implement `planner/plan.py`**
+- [x] **Step 3: Implement `planner/plan.py`**
 
 ```python
 """Turn a brief into an approved-able Plan using the explain backend, then enforce invariants in code."""
@@ -2239,12 +2241,12 @@ def build_plan(
     )
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/planner -q`
 Expected: `5 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/planner backend/tests/planner
@@ -2280,11 +2282,11 @@ Decisions made here:
 - `elapsed_s` is measured from `run.created_at` to now, in seconds, rounded to 1 decimal.
 - Aggregates for the explain packet count `choice` labels over all `pass_two` results, keyed by question id.
 
-- [ ] **Step 1: Add the setting and env var**
+- [x] **Step 1: Add the setting and env var**
 
 In `config.py` add `clipsieve_fixture_dir: Path | None = None` to `Settings`. In `.env.example` append `CLIPSIEVE_FIXTURE_DIR=`.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `backend/tests/pipeline/test_runner.py`:
 
@@ -2476,7 +2478,7 @@ def test_post_state_mapping():
 
 Note: `test_pause_then_resume_completes` uses `runner.resume_flag()`, a method that clears the pause flag. Add it to `Runner` (it is not in the overview; it is a convenience used by the API's resume route).
 
-- [ ] **Step 3: Implement `adapters/fixture.py`**
+- [x] **Step 3: Implement `adapters/fixture.py`**
 
 ```python
 """Adapter that serves the five fixture posts. Used by tests, `CLIPSIEVE_EXPLAIN_BACKEND=fake`, and the Playwright flow."""
@@ -2546,7 +2548,7 @@ In `adapters/registry.py`, after loading built-ins, add:
 
 so fake mode replaces `LocalImportAdapter` for the `local` platform.
 
-- [ ] **Step 4: Implement `pipeline/state.py`**
+- [x] **Step 4: Implement `pipeline/state.py`**
 
 ```python
 from __future__ import annotations
@@ -2583,7 +2585,7 @@ def save_state(paths: RunPaths, state: RunState) -> None:
     tmp.replace(_path(paths))
 ```
 
-- [ ] **Step 5: Implement `pipeline/runner.py`**
+- [x] **Step 5: Implement `pipeline/runner.py`**
 
 ```python
 """Drives a run through its stages, emitting RunEvents. Idempotent per post; resumable from the log."""
@@ -2975,12 +2977,12 @@ class Runner:
 
 `pipeline/__init__.py`: empty.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/pipeline -q`
 Expected: `8 passed`. If `test_end_to_end_fixture_run` fails on `kept` size, check plan 02's fixture evidence folder names match `safe_post_filename`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/clipsieve/adapters/fixture.py backend/clipsieve/adapters/registry.py backend/clipsieve/config.py backend/clipsieve/pipeline backend/tests/pipeline .env.example
@@ -3013,13 +3015,13 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Decisions: fake mode is `settings.clipsieve_explain_backend == "fake"`; it requires `clipsieve_fixture_dir` and wires `RecordedJudge`, `FakeASR`, `FakeOCR`, `FakeFrames`, `FakeExplainBackend`, and the `FixtureAdapter` for `local`. Real mode wires `TypeSafeJudge(settings.typesafe_api_key)`, `WhisperASR`, `PaddleOCRBackend`, `FfmpegFrames` (imported lazily so missing optional extras fail at first use, not at import). Background work uses `asyncio.create_task`; a run's task handle lives in `ctx.tasks[run_id]`. SSE events are JSON with `ensure_ascii=False`.
 
-- [ ] **Step 1: Add dependencies**
+- [x] **Step 1: Add dependencies**
 
 ```bash
 cd backend && uv add fastapi "uvicorn[standard]" python-multipart
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `backend/tests/api/conftest.py`:
 
@@ -3242,12 +3244,12 @@ async def test_chinese_caption_roundtrip(client):
     assert run_brief == BODY["brief"]
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/api -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.api'`.
 
-- [ ] **Step 4: Implement `api/context.py`**
+- [x] **Step 4: Implement `api/context.py`**
 
 ```python
 from __future__ import annotations
@@ -3341,7 +3343,7 @@ def get_context() -> AppContext:
     return _CONTEXT
 ```
 
-- [ ] **Step 5: Implement `api/runs.py`**
+- [x] **Step 5: Implement `api/runs.py`**
 
 ```python
 from __future__ import annotations
@@ -3421,8 +3423,7 @@ async def create_run(body: CreateRunBody, ctx: AppContext = Depends(get_context)
         raise HTTPException(422, f"no adapter for platforms: {unknown}")
     brief = Brief(text=body.brief, topic="", audience="", persona="", language_hint=body.language_hint)
     run = ctx.repo.create_run(brief, body.platforms, {p: body.quantities.get(p, 500) for p in body.platforms}, body.rubric_pack)
-    runner = ctx.runner_for(run.id)
-    runner.events.emit("run_created", "planning", {"brief": brief.model_dump(mode="json"), "platforms": run.platforms, "quantities": run.quantities})
+    runner = ctx.runner_for(run.id)  # the Runner constructor emits run_created when the log is empty (Task 9); do not emit it here
     _spawn(ctx, run.id, runner.plan())
     return run
 
@@ -3531,7 +3532,7 @@ async def reselect(run_id: str, body: ReselectBody, ctx: AppContext = Depends(ge
 
 ```
 
-- [ ] **Step 6: Implement `api/events.py` and `api/meta.py`**
+- [x] **Step 6: Implement `api/events.py` and `api/meta.py`**
 
 `api/events.py`:
 
@@ -3629,7 +3630,7 @@ async def media(run_id: str, post_id: str, filename: str, ctx: AppContext = Depe
     return FileResponse(target)
 ```
 
-- [ ] **Step 7: Implement `app.py`**
+- [x] **Step 7: Implement `app.py`**
 
 ```python
 from __future__ import annotations
@@ -3660,12 +3661,12 @@ app = create_app()
 
 `api/__init__.py`: empty. Note `app = create_app()` at import time calls `get_context()` lazily only on the first request, so importing the module in tests does not build a real context.
 
-- [ ] **Step 8: Run tests to verify they pass**
+- [x] **Step 8: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/api -q`
 Expected: `11 passed`. If `test_stream_from_start_ends_at_done` hangs, confirm plan 01's `follow_events` stops on `done` and that `_finished` sees the terminal event written by the Runner before the generator starts following.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/clipsieve/api backend/clipsieve/app.py backend/tests/api backend/pyproject.toml backend/uv.lock
@@ -3687,13 +3688,13 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Produces: typer app `app` with commands `run`, `replay`, `reselect`, `reindex`, `eval` (stub). Exit codes: 0 success, 1 run failed, 2 usage or not implemented.
 - `print` is permitted in this module only (output helpers `_say`, `_json`).
 
-- [ ] **Step 1: Add dependency**
+- [x] **Step 1: Add dependency**
 
 ```bash
 cd backend && uv add typer
 ```
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `backend/tests/test_cli.py`:
 
@@ -3765,12 +3766,12 @@ def test_unknown_run_exits_1(tmp_path):
     assert result.exit_code == 1 and "not found" in result.output
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/test_cli.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.cli'` (or an ImportError if plan 01 left a placeholder `cli.py`; replace it).
 
-- [ ] **Step 4: Implement `cli.py`**
+- [x] **Step 4: Implement `cli.py`**
 
 ```python
 """`sieve` command line. The only module in clipsieve/ allowed to print."""
@@ -3837,8 +3838,7 @@ def run(
         raise typer.Exit(2)
     brief_model = Brief(text=brief, topic="", audience="", persona="", language_hint=language_hint)
     run_obj = ctx.repo.create_run(brief_model, plats, {p: limit for p in plats}, pack)
-    runner = ctx.runner_for(run_obj.id)
-    runner.events.emit("run_created", "planning", {"brief": brief_model.model_dump(mode="json"), "platforms": plats, "quantities": run_obj.quantities})
+    runner = ctx.runner_for(run_obj.id)  # the Runner constructor emits run_created when the log is empty (Task 9); do not emit it here
     _say(f"run_id: {run_obj.id}")
 
     plan = asyncio.run(runner.plan())
@@ -3913,12 +3913,12 @@ def eval(pack: str = typer.Option(..., "--pack"), golden: Path = typer.Option(..
 
 If plan 01 generated `Settings` with `frozen=True`, replace the `model_copy` in `_settings` with `Settings(clipsieve_data_dir=data_dir)` plus `_env_file` defaults; the test passes `CLIPSIEVE_DATA_DIR` through the environment either way.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/test_cli.py -q`
 Expected: `6 passed`. Then `cd backend && uv run sieve --help` prints the five commands.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/cli.py backend/tests/test_cli.py backend/pyproject.toml backend/uv.lock
@@ -3939,7 +3939,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Interfaces:** none new.
 
-- [ ] **Step 1: Update `backend/AGENTS.md`**
+- [x] **Step 1: Update `backend/AGENTS.md`**
 
 Append these sections (keep plan 01 and 02 content above them):
 
@@ -3982,7 +3982,7 @@ Append these sections (keep plan 01 and 02 content above them):
 - The only module allowed to `print`. All commands build the same `AppContext` as the API.
 ```
 
-- [ ] **Step 2: README "Running a fixture run"**
+- [x] **Step 2: README "Running a fixture run"**
 
 Append to the root `README.md`:
 
@@ -4002,14 +4002,14 @@ To use real services, set `TYPESAFE_API_KEY` in `.env`, log in to Claude Code on
 
 `backend/README.md`: add a module map table listing `judge/`, `select/`, `explain/`, `pipeline/`, `api/`, `cli.py` with one line each, copied from the AGENTS.md section headers above.
 
-- [ ] **Step 3: Run the full check**
+- [x] **Step 3: Run the full check**
 
 Run: `bun run check`
 Expected: schema drift check passes (no generated file changed in this plan), ruff clean, Biome clean, `pytest` reports all tests from tasks 1 to 11 passing plus plan 01 and 02 tests, frontend placeholder scripts succeed.
 
 If ruff flags `BLE001` on the broad `except Exception` lines in `pipeline/runner.py`, keep the `# noqa: BLE001` comments shown in Task 9; they are deliberate boundaries where one post's failure must not stop the run.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add AGENTS.md backend/AGENTS.md README.md backend/README.md
