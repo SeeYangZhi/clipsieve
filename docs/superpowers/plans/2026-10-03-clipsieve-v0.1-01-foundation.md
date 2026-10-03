@@ -2087,6 +2087,8 @@ Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.store.repo'
 
 - [ ] **Step 4: Implement `store/repo.py`**
 
+Note (applied during execution): the SQLite index stores `created_at` and `collected_at` as ISO text and sorts them as text, so `save_run` and `upsert_post` must normalise with `.astimezone(UTC).isoformat()` before writing the row (the JSON file keeps the original offset). Otherwise a `+08:00` post collected earlier sorts after a later UTC post. `save_run` and `save_judge_result` re-validate the model (`type(m).model_validate(dict(m))`) because generated models do not validate on assignment and callers assign plain strings to enum fields.
+
 ```python
 """Files-first run repository. Writes JSON files under data/runs/<run_id>/ then mirrors them to SQLite."""
 
