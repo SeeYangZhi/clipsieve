@@ -52,7 +52,7 @@ Plan-04 specific:
 - Consumes: root `biome.jsonc` with `"root": true` (plan 01); root `package.json` workspaces including `frontend` (plan 01).
 - Produces: a `frontend` workspace package with scripts `dev`, `build`, `typecheck`, `test`, `e2e`; shadcn components under `src/components/ui/`; `@/` alias to `src/`.
 
-- [ ] **Step 1: Create the app**
+- [x] **Step 1: Create the app**
 
 Run from repo root:
 
@@ -62,7 +62,7 @@ bunx --bun create-next-app@latest frontend --ts --tailwind --app --src-dir --use
 
 If the CLI prompts for a linter, choose **Biome**. If it prompts for Turbopack, accept. Expected: `frontend/` exists with `src/app/layout.tsx`, `src/app/page.tsx`, `next.config.ts`, `tsconfig.json`.
 
-- [ ] **Step 2: Read the Next 16 docs that ship with the package and note the facts**
+- [x] **Step 2: Read the Next 16 docs that ship with the package and note the facts**
 
 ```bash
 ls frontend/node_modules/next/dist/docs/
@@ -72,7 +72,7 @@ grep -ril "useParams" frontend/node_modules/next/dist/docs/ | head -3
 
 Open the files found and confirm three things, then write them into `frontend/AGENTS.md` in Step 8: the `rewrites()` signature in `next.config.ts`; that `params` in server page components is a `Promise` in Next 16 and client pages should use `useParams()`; how `"use client"` route files are declared. If any Step below contradicts the shipped docs, the docs win: adjust the code and record the difference in `frontend/AGENTS.md`.
 
-- [ ] **Step 3: Remove any eslint remnants and set Biome**
+- [x] **Step 3: Remove any eslint remnants and set Biome**
 
 ```bash
 cd frontend && rm -f eslint.config.mjs .eslintrc.json && bun remove eslint eslint-config-next 2>/dev/null; cd ..
@@ -87,7 +87,7 @@ Create `frontend/biome.jsonc`:
 }
 ```
 
-- [ ] **Step 4: Configure the API rewrite**
+- [x] **Step 4: Configure the API rewrite**
 
 Replace `frontend/next.config.ts`:
 
@@ -105,7 +105,7 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 ```
 
-- [ ] **Step 5: Install test tooling and shadcn**
+- [x] **Step 5: Install test tooling and shadcn**
 
 ```bash
 cd frontend
@@ -118,7 +118,7 @@ cd ..
 
 Expected: `frontend/components.json` exists; `frontend/src/components/ui/button.tsx` and the others exist.
 
-- [ ] **Step 6: Scripts and Vitest config**
+- [x] **Step 6: Scripts and Vitest config**
 
 Edit `frontend/package.json` so `name` is `"frontend"` and `scripts` is exactly:
 
@@ -162,7 +162,7 @@ import "@testing-library/jest-dom/vitest";
 
 In `frontend/tsconfig.json`, ensure `"strict": true` and add `"vitest.setup.ts"` to `include`. Add `"types": ["vitest/globals"]` only if a later step needs it (it does not; tests import from `vitest`).
 
-- [ ] **Step 7: Write the first test and watch it fail**
+- [x] **Step 7: Write the first test and watch it fail**
 
 Create `frontend/src/lib/smoke.test.ts`:
 
@@ -192,7 +192,7 @@ Expected: `1 passed`.
 Run: `cd frontend && bun run typecheck && bunx ultracite check`
 Expected: no errors. If ultracite flags generated shadcn files, add `"files": { "includes": ["**", "!src/components/ui/**"] }` to `frontend/biome.jsonc` and note it in `frontend/AGENTS.md`.
 
-- [ ] **Step 8: DOX child and root index**
+- [x] **Step 8: DOX child and root index**
 
 Create `frontend/AGENTS.md`:
 
@@ -225,7 +225,7 @@ None.
 
 Edit root `AGENTS.md` Child DOX Index: replace `None yet. ...` list so it includes a line `- frontend/ — Next.js client; see frontend/AGENTS.md`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add frontend package.json bun.lock AGENTS.md
