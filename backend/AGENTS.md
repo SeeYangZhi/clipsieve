@@ -43,7 +43,11 @@ Platform adapters turn a `Query` into `Post` records and download media on reque
 - Captions, when available, are written as `<media>.transcript.json` (temp file then replace) so ASR is skipped.
 - Creator ids are hashed with `hash_creator(id, salt)`, salt from `ensure_creator_salt(settings)`, at mapping time. Never put the raw id in a `Post`; raw payloads keep platform ids as local provenance, but comment author identifiers are stripped. `creator_display` may hold a display name.
 - Comments are capped at 50, most-liked first.
-- `local_import`: folder or CSV. A non-empty `creator` CSV column sets per-row `creator_hash` and `creator_display`; otherwise the hash is of the CSV path.
+- `registry._iter_entry_points()` is the module-level seam tests (and plan 05) monkeypatch. A failing plugin is logged (`adapter_entry_point_import_failed`, `adapter_load_failed`, `adapter_not_protocol`) and skipped, never fatal.
+- Raw payloads are placed with `incoming_dir(data_dir, platform)` from `base.py`.
+- Recorded YouTube fixtures live in `tests/fixtures/youtube/` (`search.json`, `<id>.json`, `<id>.<lang>.vtt`); `FakeYtDlpClient(fixture_dir)` replays them.
+- The only setting the YouTube adapter reads is `youtube_api_key`: Data API search when set, else yt-dlp search.
+- `local_import`: folder or CSV. Folder posts get `local:<sha1[:12]>` ids and hidden files are skipped; CSV rows have `media=[]`, so `fetch_media` is a no-op for them. A non-empty `creator` CSV column sets per-row `creator_hash` and `creator_display`; otherwise the hash is of the CSV path.
 - `youtube`: live, upcoming and post-live videos are rejected. Shorts filter is duration < 180 s; a missing duration at the full-info stage means "not a Short". Optional Data API key is sent in the `x-goog-api-key` header. Downloads are capped at 200 MB.
 - `vtt.py`: tags are stripped, then character references are unescaped; the cue split tolerates YouTube's `" "` placeholder lines.
 - `adapters/` never imports from `evidence/`.
@@ -51,15 +55,16 @@ Platform adapters turn a `Query` into `Post` records and download media on reque
 
 ## evidence/
 
-Turns a post's media into text. Pure local computation; no network.
+Turns a post's media into text. No per-post network calls; Whisper and PaddleOCR download model weights on first use.
 
 - Interfaces with fakes: `ASR` (`WhisperASR`, `FakeASR`), `OCR` (`PaddleOCRBackend`, `FakeOCR`), `FrameExtractor` (`FfmpegFrames`, `FakeFrames`). Heavy libraries are optional extras (`uv sync --extra asr --extra ocr`) imported lazily inside the class; the `paddleocr` extra is pinned `<3` (2.x API).
-- Fakes read sidecars: `<media>.transcript.json`, `<image>.ocr.json`. Real backends honour the transcript sidecar too. A corrupt sidecar raises.
-- `FfmpegFrames`: the scene pass tolerates ffmpeg exit 234 (no scene changes). Hook frame first. `PNG_1X1` (used by `FakeFrames`) is a valid 1x1 PNG.
+- Fakes read sidecars: `<media>.transcript.json`, `<image>.ocr.json`. Real backends honour the transcript sidecar too. A corrupt sidecar raises. Formats: `<media>.transcript.json` = `{"lang"?: str, "segments": [{start_s, end_s, text}]}`; `<image>.ocr.json` = JSON list of strings.
+- `FfmpegFrames`: the scene pass runs with `check=False` and tolerates any non-zero exit when no scene files were written (ffmpeg returns 234 for no scene changes); the hook pass still raises. Hook frame first. `PNG_1X1` (used by `FakeFrames`) is a valid 1x1 PNG.
 - `extract_evidence(post, paths, asr, ocr, frames)` writes `Evidence` to `paths.evidence_json(post.id)`. It assumes one video per post (frames share one `frames/` dir). Keyframes are run-relative paths `media/<safe_id>/frames/<name>`, hook frame first, at most 8.
 - A failing ASR, OCR or frame step is caught and logged as `evidence_step_failed`; only that section is left empty and the post still gets evidence.
 - Evidence JSON is written `exclude_none` via temp file then replace (optional means absent).
-- `extract_evidence` also writes `media/<safe_id>/thumb.jpg` (256px wide, Pillow) from the first keyframe or first image; the dashboard requests it via `GET /api/runs/{id}/media/{post_id}/thumb.jpg`. Never re-written if present.
-- `packet.build_state` is the only place that assembles Jev state. `MAX_STATE_TOKENS = 28000`, measured on the serialised state; `estimate_tokens` counts CJK characters as one token each. Truncation order is fixed: comments (sample, then top_terms), OCR from the end, transcript tail (whole segments, then within the head segment), and only then caption, hashtags, title. A brief alone over the cap is logged `packet.over_cap` and returned.
+- `extract_evidence` also writes `media/<safe_id>/thumb.jpg` (256px wide, Pillow) from the first keyframe or first image; plan 03 serves it at `GET /api/runs/{id}/media/{post_id}/thumb.jpg`. Never re-written if present.
+- `packet.build_metadata_state` (pass one) and `packet.build_state` (pass two) are the only places that assemble Jev state; `state_json` serialises it. `MAX_STATE_TOKENS = 28000`, measured on the serialised state; `estimate_tokens` counts CJK characters as one token each. Truncation order is fixed: comments (sample, then top_terms), OCR from the end, transcript tail (whole segments, then within the head segment), and only then caption, hashtags, title. If the brief plus the post block (id, platform, kind, any remaining post text) still exceeds the cap after all truncation, `packet.over_cap` is logged and the state is returned anyway.
 - `Evidence.truncated` is `False` at extraction; the Runner sets it from `build_state`.
+- Helpers: `ocr_lang_for_post` (zh to `ch`, else `en`), `read_sidecar_transcript` (`asr.py`), `write_thumbnail`, `resolve_media`, `run_relative` (`extract.py`).
 - `evidence/` never imports from `adapters/`.
