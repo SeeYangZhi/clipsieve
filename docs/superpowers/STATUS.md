@@ -1,17 +1,23 @@
 # clipsieve build status
 
-Updated: 2026-10-03T12:21:13Z by iteration 1
+Updated: 2026-10-03T17:33:03Z by iteration 1
 
 ## Plans
 | Plan | Branch | Tasks done / total | Merged | Last commit |
 |---|---|---|---|---|
 | 01 foundation | plan/01-foundation (merged, branch deleted locally) | 8 / 8 | yes (574e57d) | d7b28e8 |
-| 02 adapters-evidence | plan/02-adapters-evidence (worktree .worktrees/plan-02-adapters-evidence) | 0 / 12 | no | b349970 (task 1 in flight) |
-| 03 judge-select-explain-api | | 0 / 12 | no | |
-| 04 frontend | plan/04-frontend (worktree .worktrees/plan-04-frontend) | 0 / 12 | no | b349970 (task 1 in flight) |
+| 02 adapters-evidence | plan/02-adapters-evidence (merged, branch deleted locally) | 12 / 12 | yes (7c3beb5) | 44206fc |
+| 03 judge-select-explain-api | plan/03-judge-select-explain-api (worktree .worktrees/plan-03-judge-select-explain-api) | 0 / 12 | no | 7c3beb5 (task 1 about to start) |
+| 04 frontend | plan/04-frontend (worktree .worktrees/plan-04-frontend) | 9 / 12 (task 10 committed, review pending) | no | 7a85117 |
 | 05 contrib-xhs-evals | | 0 / 7 | no | |
 
-## Last iteration did
+## Last iteration did (continued)
+- Plan 02 complete: 12 tasks, fix rounds on tasks 3, 4, 5, 7, 12; whole-branch review found 1 Critical (local fetch_media read the relocated raw_ref) + 4 Important, all fixed in one wave and re-reviewed clean; merged --no-ff into main (7c3beb5); main `bun run check` exit 0 with 192 backend tests; pushed.
+- Overview gained Addenda B.10-B.14 (fetch_media after raw relocation + contract helper relocates; shared MediaDownloadError in adapters/base; optional sidecar lang; Whisper hint normalisation + per-instance locks; state_json note).
+- Plan 04: tasks 1-9 complete and ticked; task 10 (replay page) committed, review pending.
+- Created plan 03 worktree from main 7c3beb5 with briefs for tasks 1-12.
+
+## Last iteration did (earlier)
 - Plan 01 complete: 8 tasks via fresh implementer + reviewer each, fix rounds on tasks 3, 6, 7; whole-branch review (opus) found 5 Important items, fixed in one wave and re-reviewed clean; merged --no-ff into main (574e57d); `bun run check` exit 0 on main (65 backend tests); pushed.
 - Overview gained Addenda A.11-A.14 (repo-root .env/data_dir resolution, creator salt helper, optional-means-absent wire rule, shared test fixtures). Plan 03 failure path reordered (error first, stage_changed(failed) last).
 - Created worktrees for plans 02 and 04 from main b349970; dispatched Task 1 implementers for both in parallel. Their reviews have NOT run yet.
@@ -20,6 +26,7 @@ Updated: 2026-10-03T12:21:13Z by iteration 1
 ## Next iteration should
 - For each of plan 02 and plan 04: check `git log` in the worktree for a Task 1 commit and the report at `.superpowers/sdd/<plan>/task-1-report.md`; dispatch the task reviewer (review-package b349970..HEAD), fix, tick, then continue tasks 2..12 sequentially per plan, running the two plans in parallel.
 - Plan 03 starts after plan 02 merges; plan 05 after plan 03.
+- Plan 05 note: the XHS fetch_media sketch reads the incoming raw file, which conflicts with B.10 (Runner relocates raw before fetch_media); Media has no url field. Reconcile before executing plan 05 (add Media.url to the schema or a run-keyed cache) and import MediaDownloadError from adapters.base (B.11).
 - Plan 03 notes: call `ensure_creator_salt` in build_context and CLI (A.12); API routes use `response_model_exclude_none=True` (A.13); test near plan line 2435 must use `payload.get("post_id")`; explain failure emits error before stage_changed(failed).
 - Plan 04 notes: biome.jsonc schema 2.5.15 and ultracite/biome/react + next presets; treat JSON null as absent defensively; `frontend/node_modules/next/dist/docs/` may be hoisted to root `node_modules/`.
 
