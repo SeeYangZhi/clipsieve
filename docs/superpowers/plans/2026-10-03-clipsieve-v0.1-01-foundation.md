@@ -92,14 +92,16 @@ packages/schema/.build/
 
 ```jsonc
 {
-  "$schema": "https://biomejs.dev/schemas/2.3.0/schema.json",
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
   "root": true,
-  "extends": ["ultracite"],
+  "extends": ["ultracite/biome/core"],
   "files": {
-    "includes": ["**", "!**/node_modules", "!**/.next", "!frontend/src/lib/types.ts", "!packages/schema/.build"]
+    "includes": ["!**/node_modules", "!**/.next", "!frontend/src/lib/types.ts", "!packages/schema/.build"]
   }
 }
 ```
+
+Note: ultracite 7 exports only `ultracite/biome/*` presets (no bare `ultracite`), so `extends` names the `core` preset; plan 04 adds `ultracite/biome/react` and `ultracite/biome/next` in `frontend/biome.jsonc`. Biome's `noBiomeFirstException` rule rejects a leading `"**"` in `files.includes`, so the list holds only exclusions. The `$schema` version tracks the Biome that ultracite installs.
 
 - [ ] **Step 4: Create the placeholder frontend workspace**
 

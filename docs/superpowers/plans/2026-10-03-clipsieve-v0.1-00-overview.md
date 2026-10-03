@@ -35,7 +35,7 @@
 ```text
 clipsieve/
   package.json                      bun workspaces: ["frontend", "packages/schema"]; root scripts
-  biome.jsonc                       { "extends": ["ultracite"] }
+  biome.jsonc                       { "root": true, "extends": ["ultracite/biome/core"], ... }  (ultracite 7 has no bare "ultracite" export)
   .github/workflows/check.yml
   .env.example
   backend/
