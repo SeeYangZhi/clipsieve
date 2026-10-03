@@ -2358,7 +2358,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Contract decisions: payload models live in `events/payloads.py` so the API layer can import them without importing the writer; `follow_events` tracks a byte offset and ignores a trailing partial line until its newline arrives; `emit` raises `ValueError` (wrapping the Pydantic error) on a payload that does not match its type.
 
-- [ ] **Step 1: Write the failing events test**
+- [x] **Step 1: Write the failing events test**
 
 `backend/tests/test_events.py`:
 
@@ -2482,12 +2482,12 @@ async def test_follow_events_ignores_partial_trailing_line(paths: RunPaths):
     assert seen == [1, 2]
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `cd backend && uv run pytest -q tests/test_events.py`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.events'`.
 
-- [ ] **Step 3: Implement `events/__init__.py` and `events/payloads.py`**
+- [x] **Step 3: Implement `events/__init__.py` and `events/payloads.py`**
 
 `backend/clipsieve/events/__init__.py`: empty file.
 
@@ -2582,7 +2582,7 @@ PAYLOAD_MODELS: dict[RunEventType, type[BaseModel]] = {
 
 If the generated enum member names differ (datamodel-codegen may emit `RunEventType.run_created` as shown, since the values are already valid identifiers), adjust to the generated names; check with `grep -A14 "class RunEventType" backend/clipsieve/models.py`.
 
-- [ ] **Step 4: Implement `events/writer.py`**
+- [x] **Step 4: Implement `events/writer.py`**
 
 ```python
 """Append-only JSONL event writer. One writer per run per process."""
@@ -2653,7 +2653,7 @@ class EventWriter:
         return event
 ```
 
-- [ ] **Step 5: Implement `events/reader.py`**
+- [x] **Step 5: Implement `events/reader.py`**
 
 ```python
 """Read and tail a run's events.jsonl."""
@@ -2722,19 +2722,19 @@ async def follow_events(paths: RunPaths, after: int = 0, poll_s: float = 0.25) -
 
 Note: `fh.tell()` after a text-mode read returns an opaque cookie that is valid for `seek` on the same file reopened in text mode, which is how it is used here.
 
-- [ ] **Step 6: Run to verify pass**
+- [x] **Step 6: Run to verify pass**
 
 Run: `cd backend && uv run pytest -q tests/test_events.py`
 Expected: `8 passed`.
 
 If `test_follow_events_ignores_partial_trailing_line` is flaky because the text-mode offset lands mid-codepoint, switch `follow_events` to binary mode: open with `"rb"`, decode `chunk.decode("utf-8", errors="ignore")` only for complete lines by splitting on `b"\n"` before decoding, and keep the remainder as bytes. Re-run until green.
 
-- [ ] **Step 7: Lint and run the whole backend suite**
+- [x] **Step 7: Lint and run the whole backend suite**
 
 Run: `cd backend && uv run ruff check . && uv run ruff format --check . && uv run pytest -q`
 Expected: `All checks passed!` and `35 passed` (11 schemas, 4 config, 3 paths, 2 db, 8 repo, 8 events, 1 logging; adjust if your parametrisation count differs).
 
-- [ ] **Step 8: Update `backend/AGENTS.md` layout table and commit**
+- [x] **Step 8: Update `backend/AGENTS.md` layout table and commit**
 
 Add to the layout table in `backend/AGENTS.md`:
 
