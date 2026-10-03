@@ -66,7 +66,7 @@ These fill gaps the overview leaves open. Plan 03 (Runner) must honour the first
 - Consumes: `clipsieve.models.Post`, `clipsieve.models.Query` (plan 01).
 - Produces: `AdapterHealth`, `Adapter` Protocol, `hash_creator(platform_creator_id: str, salt: str) -> str`, test helper `run_adapter_contract(adapter, query, tmp_path) -> list[Post]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `backend/tests/adapters/test_base.py`:
 
@@ -95,12 +95,12 @@ def test_adapter_health_dataclass():
     assert h.ok is False and h.message == "no chrome"
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/adapters/test_base.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.adapters'`
 
-- [ ] **Step 3: Write the protocol and hashing**
+- [x] **Step 3: Write the protocol and hashing**
 
 `backend/clipsieve/adapters/__init__.py`:
 
@@ -150,7 +150,7 @@ def incoming_dir(data_dir: Path, platform: str) -> Path:
     return d
 ```
 
-- [ ] **Step 4: Write the reusable contract helper**
+- [x] **Step 4: Write the reusable contract helper**
 
 `backend/tests/adapters/__init__.py` is empty.
 
@@ -207,12 +207,12 @@ def run_adapter_contract(adapter: Adapter, query: Query, tmp_path: Path, limit: 
     return posts
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `uv run pytest tests/adapters/test_base.py -v`
 Expected: 4 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/adapters/__init__.py backend/clipsieve/adapters/base.py backend/tests/adapters/__init__.py backend/tests/adapters/contract.py backend/tests/adapters/test_base.py
