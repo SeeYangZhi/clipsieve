@@ -2724,7 +2724,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: everything above.
 - Produces: documentation only.
 
-- [ ] **Step 1: Add the adapters and evidence sections to `backend/AGENTS.md`**
+- [x] **Step 1: Add the adapters and evidence sections to `backend/AGENTS.md`**
 
 Append to `backend/AGENTS.md` after its existing sections:
 
@@ -2756,7 +2756,7 @@ Turns a post's media into text. Pure local computation; no network.
 - `evidence/` never imports from `adapters/`.
 ```
 
-- [ ] **Step 2: Keep `.env.example` and README current**
+- [x] **Step 2: Keep `.env.example` and README current**
 
 Confirm `.env.example` contains `YOUTUBE_API_KEY=`; add it if absent. Append to `README.md` under Principles:
 
@@ -2766,12 +2766,12 @@ Confirm `.env.example` contains `YOUTUBE_API_KEY=`; add it if absent. Append to 
 Built in: `local` (folder of media or a CSV export) and `youtube` (yt-dlp, Shorts under 180 s, auto-captions). Community adapters that drive a logged-in browser live in `contrib/` with their own terms. See `backend/AGENTS.md` for the adapter contract.
 ```
 
-- [ ] **Step 3: Run the full repo check from the repo root**
+- [x] **Step 3: Run the full repo check from the repo root**
 
 Run (from repo root): `bun run check`
 Expected: schema drift check passes (no generated files changed in this plan), lint clean for TS and Python, typecheck passes, backend tests pass, frontend tests pass.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add backend/AGENTS.md .env.example README.md
