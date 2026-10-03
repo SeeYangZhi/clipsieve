@@ -2282,11 +2282,11 @@ Decisions made here:
 - `elapsed_s` is measured from `run.created_at` to now, in seconds, rounded to 1 decimal.
 - Aggregates for the explain packet count `choice` labels over all `pass_two` results, keyed by question id.
 
-- [ ] **Step 1: Add the setting and env var**
+- [x] **Step 1: Add the setting and env var**
 
 In `config.py` add `clipsieve_fixture_dir: Path | None = None` to `Settings`. In `.env.example` append `CLIPSIEVE_FIXTURE_DIR=`.
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 `backend/tests/pipeline/test_runner.py`:
 
@@ -2478,7 +2478,7 @@ def test_post_state_mapping():
 
 Note: `test_pause_then_resume_completes` uses `runner.resume_flag()`, a method that clears the pause flag. Add it to `Runner` (it is not in the overview; it is a convenience used by the API's resume route).
 
-- [ ] **Step 3: Implement `adapters/fixture.py`**
+- [x] **Step 3: Implement `adapters/fixture.py`**
 
 ```python
 """Adapter that serves the five fixture posts. Used by tests, `CLIPSIEVE_EXPLAIN_BACKEND=fake`, and the Playwright flow."""
@@ -2548,7 +2548,7 @@ In `adapters/registry.py`, after loading built-ins, add:
 
 so fake mode replaces `LocalImportAdapter` for the `local` platform.
 
-- [ ] **Step 4: Implement `pipeline/state.py`**
+- [x] **Step 4: Implement `pipeline/state.py`**
 
 ```python
 from __future__ import annotations
@@ -2585,7 +2585,7 @@ def save_state(paths: RunPaths, state: RunState) -> None:
     tmp.replace(_path(paths))
 ```
 
-- [ ] **Step 5: Implement `pipeline/runner.py`**
+- [x] **Step 5: Implement `pipeline/runner.py`**
 
 ```python
 """Drives a run through its stages, emitting RunEvents. Idempotent per post; resumable from the log."""
@@ -2977,12 +2977,12 @@ class Runner:
 
 `pipeline/__init__.py`: empty.
 
-- [ ] **Step 6: Run tests to verify they pass**
+- [x] **Step 6: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/pipeline -q`
 Expected: `8 passed`. If `test_end_to_end_fixture_run` fails on `kept` size, check plan 02's fixture evidence folder names match `safe_post_filename`.
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add backend/clipsieve/adapters/fixture.py backend/clipsieve/adapters/registry.py backend/clipsieve/config.py backend/clipsieve/pipeline backend/tests/pipeline .env.example
@@ -3423,8 +3423,7 @@ async def create_run(body: CreateRunBody, ctx: AppContext = Depends(get_context)
         raise HTTPException(422, f"no adapter for platforms: {unknown}")
     brief = Brief(text=body.brief, topic="", audience="", persona="", language_hint=body.language_hint)
     run = ctx.repo.create_run(brief, body.platforms, {p: body.quantities.get(p, 500) for p in body.platforms}, body.rubric_pack)
-    runner = ctx.runner_for(run.id)
-    runner.events.emit("run_created", "planning", {"brief": brief.model_dump(mode="json"), "platforms": run.platforms, "quantities": run.quantities})
+    runner = ctx.runner_for(run.id)  # the Runner constructor emits run_created when the log is empty (Task 9); do not emit it here
     _spawn(ctx, run.id, runner.plan())
     return run
 
@@ -3839,8 +3838,7 @@ def run(
         raise typer.Exit(2)
     brief_model = Brief(text=brief, topic="", audience="", persona="", language_hint=language_hint)
     run_obj = ctx.repo.create_run(brief_model, plats, {p: limit for p in plats}, pack)
-    runner = ctx.runner_for(run_obj.id)
-    runner.events.emit("run_created", "planning", {"brief": brief_model.model_dump(mode="json"), "platforms": plats, "quantities": run_obj.quantities})
+    runner = ctx.runner_for(run_obj.id)  # the Runner constructor emits run_created when the log is empty (Task 9); do not emit it here
     _say(f"run_id: {run_obj.id}")
 
     plan = asyncio.run(runner.plan())
