@@ -1,0 +1,28 @@
+# secrets and local config
+.env
+.env.*
+!.env.example
+
+# run data (posts, media, evidence, event logs)
+data/
+runs/
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.ruff_cache/
+.pytest_cache/
+*.egg-info/
+
+# node
+node_modules/
+.next/
+out/
+bun.lock.tmp
+
+# os / editors
+.DS_Store
+.idea/
+.vscode/
+*.log
