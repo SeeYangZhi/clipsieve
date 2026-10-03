@@ -70,7 +70,7 @@ Implementation plan: `docs/superpowers/plans/`.
 
 | Path | Owns |
 |---|---|
-| `backend/AGENTS.md` | Python package `clipsieve`: config, logging, store, events (plan 01); adapters, evidence, judge, select, explain, pipeline, API, CLI (plans 02, 03) |
+| `backend/AGENTS.md` | Python package `clipsieve`: config, logging, store, events (plan 01); adapters, evidence (plan 02); judge, select, explain, pipeline, API, CLI (plan 03) |
 | `packages/schema/AGENTS.md` | JSON Schemas and the two generators |
 
 `frontend/` currently holds a placeholder `package.json` so root scripts resolve; plan 04 replaces it and adds `frontend/AGENTS.md`. `rubrics/`, `contrib/adapter-xhs-mediacrawler/` and `evals/` get their AGENTS.md in plans 03 and 05.

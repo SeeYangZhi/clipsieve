@@ -4,7 +4,7 @@ Sift thousands of social clips, reels, shorts and notes down to the few worth st
 
 clipsieve is a local-first research tool for creators and marketers. You describe what you are researching in a sentence. It turns that into search queries, collects posts from the platforms you tick, converts each one into text evidence (transcript, on-screen text, caption, comments, metrics), scores every post against a typed rubric with [Jev](https://typesafe.ai), keeps the top few percent with diversity across formats, and has Claude explain the patterns and draft concepts in your voice.
 
-Status: plan 01 (schemas, run store, event log) is implemented; the API, pipeline and frontend arrive with plans 02 to 04. See `docs/superpowers/specs/` for the v0.1 design and `docs/superpowers/plans/` for the implementation plans.
+Status: plans 01 (schemas, run store, event log) and 02 (adapters, evidence) are implemented; the API, pipeline and frontend arrive with plans 03 and 04. See `docs/superpowers/specs/` for the v0.1 design and `docs/superpowers/plans/` for the implementation plans.
 
 ## Principles
 
@@ -13,6 +13,10 @@ Status: plan 01 (schemas, run store, event log) is implemented; the API, pipelin
 - Typed judgments at scale, reasoning only on survivors. Jev answers fixed rubric questions on every post for cents; Claude reads only the shortlist.
 - Policy in code. Weights, thresholds and selection are configuration you can change without re-running inference.
 - Platform adapters behind one interface. Official-API and import adapters live here. Browser-session adapters live in `contrib/` with their own terms.
+
+## Adapters
+
+Built in: `local` (folder of media or a CSV export) and `youtube` (yt-dlp, Shorts under 180 s, auto-captions). Community adapters that drive a logged-in browser live in `contrib/` with their own terms. See `backend/AGENTS.md` for the adapter contract.
 
 ## Development
 
