@@ -32,7 +32,10 @@ class FakeOCR:
 
 
 class PaddleOCRBackend:
-    """PaddleOCR with one lazily built engine per language. Lines below `min_confidence` drop."""
+    """PaddleOCR with one lazily built engine per language. Lines below `min_confidence` drop.
+
+    Targets the paddleocr 2.x API; the `ocr` extra pins `paddleocr<3`.
+    """
 
     def __init__(self, min_confidence: float = 0.6) -> None:
         self._min_confidence = min_confidence

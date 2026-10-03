@@ -227,7 +227,7 @@ requires-dist = [
     { name = "faster-whisper", marker = "(platform_machine != 'arm64' and extra == 'asr') or (sys_platform != 'darwin' and extra == 'asr')", specifier = ">=1.1" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "mlx-whisper", marker = "platform_machine == 'arm64' and sys_platform == 'darwin' and extra == 'asr'", specifier = ">=0.4" },
-    { name = "paddleocr", marker = "extra == 'ocr'", specifier = ">=2.9" },
+    { name = "paddleocr", marker = "extra == 'ocr'", specifier = ">=2.9,<3" },
     { name = "paddlepaddle", marker = "extra == 'ocr'", specifier = ">=3.0" },
     { name = "pillow", specifier = ">=10.4" },
     { name = "pydantic", specifier = ">=2.8" },
