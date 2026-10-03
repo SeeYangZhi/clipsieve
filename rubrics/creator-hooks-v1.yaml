@@ -9,7 +9,7 @@ pass_one_keep: 0.30
 questions:
   hook_type:
     type: choice
-    instructions: "Which opening hook does the first sentence or first on-screen text use? Judge from `transcript[0]` if present, otherwise from the first `ocr` item, otherwise from `post.text.caption`."
+    instructions: "Which opening hook does the first sentence or first on-screen text use? Judge from `transcript[0].text` if present, otherwise from `ocr[0].text`, otherwise from `post.title` and then `post.caption`."
     criteria:
       curiosity_gap: "Withholds a key fact the viewer wants and promises to reveal it"
       bold_claim: "Asserts something surprising, contrarian or absolute"
@@ -29,7 +29,7 @@ questions:
       - "Immediate pattern interrupt plus a clear stake for this audience."
   format:
     type: choice
-    instructions: "Dominant format of the post, judged from `post.kind`, `transcript`, `ocr` and `post.text.caption`."
+    instructions: "Dominant format of the post, judged from `post.kind`, `post.duration_s`, `transcript`, `ocr`, `post.title` and `post.caption`."
     criteria:
       talking_head: "One person speaking to camera for most of the post"
       vlog_montage: "Cut sequence of real-life scenes, often with voiceover or music"
@@ -52,21 +52,21 @@ questions:
     instructions: "Does the post make a health, financial, legal or regulated claim without support? Visa, tax, medical, investment and housing-law claims count. Personal anecdotes stated as personal experience do not."
   niche_relevance:
     type: score
-    instructions: "Is this post about `brief.topic`, judging from `post.text.caption`, `post.text.hashtags` and `comments`?"
+    instructions: "How much of this post is about `brief.topic` for `brief.audience`? Judge from `post.title`, `post.caption`, `post.hashtags` and `comments`."
     criteria:
-      - "Unrelated"
-      - "Mentions in passing"
-      - "Partly about it"
-      - "Mainly about it"
-      - "Entirely about it"
+      - "`brief.topic` does not appear; the post is about something unrelated"
+      - "`brief.topic` appears only as a single hashtag or aside; the post is about something else"
+      - "`brief.topic` is one of several subjects; much of the post is about something else"
+      - "The post is mainly about `brief.topic` but speaks to a general or different audience, not `brief.audience`"
+      - "The whole post is about `brief.topic`, addressed to `brief.audience`"
   format_guess:
     type: choice
-    instructions: "Best guess at format from `post.kind`, `post.text.caption` and `post.text.hashtags` only. No transcript is available for this question."
+    instructions: "Best guess at the post's format. Judge from the metadata fields only (`post.title`, `post.caption`, `post.hashtags`, `post.kind`, `post.duration_s`); ignore any transcript or OCR."
     criteria:
-      talking_head: "Caption suggests a person speaking to camera, explaining or advising"
-      vlog_montage: "Caption suggests a day-in-the-life, trip or scene sequence"
+      talking_head: "Title or caption suggests a person speaking to camera, explaining or advising"
+      vlog_montage: "Title or caption suggests a day-in-the-life, trip or scene sequence"
       image_carousel: "Post is a multi-image note"
-      unknown: "Not enough signal from caption and hashtags"
+      unknown: "Not enough signal from the title, caption, hashtags, kind and duration"
 selection:
   weights:
     hook_strength: 0.4

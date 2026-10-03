@@ -1,4 +1,5 @@
 import json
+import re
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -6,6 +7,7 @@ import pytest
 import yaml
 from typesafe_sdk import SystemOneResponse
 
+from clipsieve.evidence.packet import build_metadata_state, build_state
 from clipsieve.judge.rubric import (
     PackNotFound,
     find_pack,
@@ -15,7 +17,7 @@ from clipsieve.judge.rubric import (
     to_typesafe,
     with_persona_criteria,
 )
-from clipsieve.models import ChoiceQuestion, NoulQuestion, ScoreQuestion
+from clipsieve.models import Brief, ChoiceQuestion, Evidence, NoulQuestion, ScoreQuestion
 
 RUBRICS = Path(__file__).resolve().parents[3] / "rubrics"
 
@@ -201,3 +203,73 @@ def test_with_persona_criteria_does_not_alias_input():
     assert new.questions is not pack.questions
     with pytest.raises(ValueError):
         with_persona_criteria(pack, ["a", "b", "c", "d", "e", "f"])
+
+
+# --- rubric text names only real Jev state paths (clipsieve.evidence.packet) ---
+
+_BACKTICKED = re.compile(r"`([^`]+)`")
+_PATH = re.compile(r"[A-Za-z_]+(\[\d+\])?(\.[A-Za-z_]+(\[\d+\])?)*")
+_SEGMENT = re.compile(r"[A-Za-z_]+|\[\d+\]")
+
+
+def _texts(question) -> list[str]:
+    texts = [question.instructions]
+    if isinstance(question, ChoiceQuestion):
+        texts += list(question.criteria.values())
+    elif isinstance(question, ScoreQuestion):
+        texts += list(question.criteria)
+    return texts
+
+
+def _resolves(state: dict, path: str) -> bool:
+    """Walk `post.caption`, `transcript[0].text`, `ocr` ... through the state dict."""
+    if not _PATH.fullmatch(path):
+        return False  # not a plain state path
+    node = state
+    for seg in _SEGMENT.findall(path):
+        if seg.startswith("["):
+            index = int(seg[1:-1])
+            if not isinstance(node, list) or index >= len(node):
+                return False
+            node = node[index]
+        elif isinstance(node, dict) and seg in node:
+            node = node[seg]
+        else:
+            return False
+    return True
+
+
+def test_rubric_paths_exist_in_jev_state(fixtures_dir, fixture_posts):
+    """Every backticked path in an instruction or level resolves in the state Jev is sent.
+
+    Pass-one (metadata_pass) questions must resolve in build_metadata_state and build_state;
+    the rest in build_state. local:fx-001 has every optional post field plus transcript and OCR.
+    """
+    pack = load_pack(RUBRICS / "creator-hooks-v1.yaml")
+    brief = Brief(
+        text="Singaporean moving to Shanghai, vlog style",
+        topic="Shanghai expat life",
+        audience="Singaporeans in China",
+        persona="Singaporean vlogger new to Shanghai",
+    )
+    post = next(p for p in fixture_posts if p.id == "local:fx-001")
+    evidence = Evidence.model_validate_json(
+        (fixtures_dir / "evidence" / "local__fx-001.json").read_text(encoding="utf-8")
+    )
+    metadata_state = build_metadata_state(brief, post)
+    full_state, _ = build_state(brief, post, evidence)
+    assert full_state["transcript"] and full_state["ocr"]
+
+    missing = []
+    for qid, question in pack.questions.items():
+        states = {"pass_two": full_state}
+        if qid in pack.metadata_pass:
+            states["pass_one"] = metadata_state
+        for text in _texts(question):
+            for path in _BACKTICKED.findall(text):
+                missing += [
+                    (qid, pass_name, path)
+                    for pass_name, state in states.items()
+                    if not _resolves(state, path)
+                ]
+    assert missing == []
