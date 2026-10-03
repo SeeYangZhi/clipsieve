@@ -40,9 +40,18 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/explain/fake.py` | `FakeExplainBackend` replaying `tests/fixtures/explain/plan.json` and `report.json` |
 | `clipsieve/explain/claude_cli.py` | `ClaudeCliBackend`: `claude -p` with structured output, one retry on a schema failure or an unknown citation; `PLAN_TASK`, `EXPLAIN_TASK` |
 | `clipsieve/explain/claude_api.py` | `ClaudeApiBackend` stub: both methods raise `NotImplementedError` (v0.2 follow-up) |
+| `clipsieve/planner/plan.py` | `build_plan`, `pack_summaries`, `default_lang`: brief to approvable `Plan` through an `ExplainBackend` |
 | `tests/fixtures/claude-shim/claude` | Test-only bash stand-in for the `claude` binary (executable, mode 100755) |
 
 Later tasks add `pipeline/`, `api/`, `cli.py` and extend this table.
+
+## planner/
+
+Turns a brief into a `Plan` (not yet approved: `approved_at` is `None`).
+
+- `build_plan(run_id, brief_text, platforms, quantities, rubric_pack, language_hint, backend, rubrics_dir)` sends the backend a seed brief (empty topic/audience/persona) plus `pack_summaries(rubrics_dir)` and the ticked platforms, then enforces invariants in code. The planner owns `run_id`, `quantities` (the run's own; a ticked platform without one raises `ValueError`), `rubric_pack` (the user's choice, resolved with `find_pack`, so an unknown pack raises `PackNotFound`), `brief.text` and `brief.language_hint`. The backend fills topic, audience, persona, queries, persona criteria.
+- Queries: only ticked platforms; an empty `lang` becomes `default_lang` (`xiaohongshu`/`douyin`/`bilibili` -> `zh`, else hint or `en`), a non-empty one is kept. A ticked non-`local` platform with no query gets one from `brief.topic` (else the brief text). `local` is never invented: its query is a folder or CSV path, so without a backend-given path it has no query.
+- `persona_fit_criteria` must be five non-blank strings; otherwise the pack's own `persona_fit` criteria are used (logs `plan_persona_criteria_fallback`), and `ExplainError` is raised if the pack cannot supply five.
 
 ## adapters/
 
