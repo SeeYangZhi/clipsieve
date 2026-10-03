@@ -48,6 +48,9 @@ export const zh: Record<string, string> = {
 
   "current.title": "刚刚回答",
   "current.tokens": "{tokens} 个 token · {ms} 毫秒",
+  "duration.hours": "{h} 小时 {m} 分",
+  "duration.minutes": "{m} 分 {s} 秒",
+  "duration.seconds": "{s} 秒",
   "grid.progress": "{done} / {total}",
   "grid.state.collected": "已采集",
   "grid.state.dropped_pass_one": "第一轮淘汰",
@@ -101,6 +104,8 @@ export const zh: Record<string, string> = {
   "plan.validation.criteria": "请填写全部五个人设匹配等级",
   "plan.validation.queries": "请至少添加一条搜索关键词",
   "plan.validation.query_text": "每条搜索关键词都需要填写内容",
+  "post.kind.image_note": "图文笔记",
+  "post.kind.video": "视频",
   "question.format": "形式",
   "question.format_guess": "形式推测",
   "question.hook_strength": "钩子强度",

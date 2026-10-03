@@ -48,6 +48,9 @@ export const en: Record<string, string> = {
 
   "current.title": "Now answered",
   "current.tokens": "{tokens} tokens · {ms} ms",
+  "duration.hours": "{h}h {m}m",
+  "duration.minutes": "{m}m {s}s",
+  "duration.seconds": "{s}s",
   "grid.progress": "{done} / {total}",
   "grid.state.collected": "collected",
   "grid.state.dropped_pass_one": "dropped in pass one",
@@ -101,6 +104,8 @@ export const en: Record<string, string> = {
   "plan.validation.criteria": "Describe all five persona fit levels",
   "plan.validation.queries": "Add at least one search query",
   "plan.validation.query_text": "Every search query needs text",
+  "post.kind.image_note": "image note",
+  "post.kind.video": "video",
   "question.format": "Format",
   "question.format_guess": "Format guess",
   "question.hook_strength": "Hook strength",
