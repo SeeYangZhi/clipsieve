@@ -1693,7 +1693,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `OCR` Protocol, `PaddleOCRBackend(min_confidence: float = 0.6)`, `FakeOCR()`, `ocr_lang_for_post(lang: str | None) -> str` returning `"ch"` for any `zh*` language else `"en"`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_ocr.py`:
 
@@ -1773,12 +1773,12 @@ def test_protocol_conformance():
     assert isinstance(PaddleOCRBackend(), OCR)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_ocr.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence.ocr'`
 
-- [ ] **Step 3: Implement OCR**
+- [x] **Step 3: Implement OCR**
 
 `backend/clipsieve/evidence/ocr.py`:
 
@@ -1838,12 +1838,12 @@ class PaddleOCRBackend:
         return lines
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/evidence/test_ocr.py -v`
 Expected: 6 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/ocr.py backend/tests/evidence/test_ocr.py
