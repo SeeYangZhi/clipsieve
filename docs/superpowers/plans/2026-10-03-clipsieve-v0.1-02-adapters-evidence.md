@@ -234,7 +234,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `clipsieve.config.Settings` (plan 01), `Adapter`.
 - Produces: `ENTRY_POINT_GROUP = "clipsieve.adapters"`, `load_adapters(settings: Settings) -> dict[str, Adapter]`, `BUILTIN_ADAPTERS: dict[str, str]`.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `backend/tests/adapters/test_registry.py`:
 
@@ -304,12 +304,12 @@ def test_broken_entry_point_is_skipped_not_fatal(monkeypatch, settings):
     assert "local" in adapters
 ```
 
-- [ ] **Step 2: Run test to verify it fails**
+- [x] **Step 2: Run test to verify it fails**
 
 Run: `uv run pytest tests/adapters/test_registry.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.adapters.registry'`
 
-- [ ] **Step 3: Write the registry**
+- [x] **Step 3: Write the registry**
 
 `backend/clipsieve/adapters/registry.py`:
 
@@ -385,7 +385,7 @@ def load_adapters(settings: Settings) -> dict[str, Adapter]:
     return adapters
 ```
 
-- [ ] **Step 4: Register entry points and core dependencies in pyproject**
+- [x] **Step 4: Register entry points and core dependencies in pyproject**
 
 Modify `backend/pyproject.toml`. Add under `[project]` dependencies (keep plan 01's list, append):
 
@@ -415,14 +415,14 @@ youtube = "clipsieve.adapters.youtube:YouTubeAdapter"
 Run: `uv sync`
 Expected: resolves and installs yt-dlp and httpx; no error.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 The two built-in modules do not exist yet, so `test_builtins_are_loaded_without_entry_points` and `test_broken_entry_point_is_skipped_not_fatal` will still fail on `local`. That is expected until Task 3. Run only the discovery test now:
 
 Run: `uv run pytest tests/adapters/test_registry.py::test_entry_point_adapter_is_discovered -v`
 Expected: 1 passed
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/adapters/registry.py backend/pyproject.toml backend/uv.lock backend/tests/adapters/test_registry.py
