@@ -68,4 +68,9 @@ Implementation plan: `docs/superpowers/plans/`.
 
 ## Child DOX Index
 
-None yet. `backend/`, `frontend/`, `packages/schema/`, `rubrics/`, `contrib/adapter-xhs-mediacrawler/` and `evals/` each get an AGENTS.md when created by the implementation plan.
+| Path | Owns |
+|---|---|
+| `backend/AGENTS.md` | Python package `clipsieve`: config, logging, store, events (plan 01); adapters, evidence, judge, select, explain, pipeline, API, CLI (plans 02, 03) |
+| `packages/schema/AGENTS.md` | JSON Schemas and the two generators |
+
+`frontend/` currently holds a placeholder `package.json` so root scripts resolve; plan 04 replaces it and adds `frontend/AGENTS.md`. `rubrics/`, `contrib/adapter-xhs-mediacrawler/` and `evals/` get their AGENTS.md in plans 03 and 05.

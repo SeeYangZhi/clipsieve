@@ -14,6 +14,16 @@ Status: design stage. See `docs/superpowers/specs/` for the v0.1 design and `doc
 - Policy in code. Weights, thresholds and selection are configuration you can change without re-running inference.
 - Platform adapters behind one interface. Official-API and import adapters live here. Browser-session adapters live in `contrib/` with their own terms.
 
+## Development
+
+Requirements: Bun 1.3+, uv, Python 3.12 (uv installs it), ffmpeg.
+
+    bun install && (cd backend && uv sync)   # once
+    bun run dev                              # API on :8000, web on :3000
+    bun run check                            # schema drift, lint, typecheck, tests
+
+After editing anything in `packages/schema/schemas/`, run `bun run schema` and commit the regenerated `backend/clipsieve/models.py` and `frontend/src/lib/types.ts`.
+
 ## Licence
 
 Apache-2.0. See `LICENSE`.
