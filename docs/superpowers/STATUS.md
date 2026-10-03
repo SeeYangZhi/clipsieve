@@ -5,7 +5,7 @@ Updated: 2026-10-03T11:49:41Z by iteration 1
 ## Plans
 | Plan | Branch | Tasks done / total | Merged | Last commit |
 |---|---|---|---|---|
-| 01 foundation | plan/01-foundation (worktree .worktrees/plan-01-foundation) | 7 / 8 (task 8 implemented, review pending) | no | 04fa74f 04fa74f |
+| 01 foundation | plan/01-foundation (worktree .worktrees/plan-01-foundation) | 7 / 8 (task 8 implemented, review pending) | no | 04fa74f |
 | 02 adapters-evidence | | 0 / 12 | no | |
 | 03 judge-select-explain-api | | 0 / 12 | no | |
 | 04 frontend | | 0 / 12 | no | |
