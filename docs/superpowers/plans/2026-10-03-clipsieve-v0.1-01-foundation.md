@@ -231,7 +231,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: nothing.
 - Produces: `clipsieve.logging.configure_logging(level: str = "INFO") -> None` and `clipsieve.logging.get_logger(name: str) -> structlog.stdlib.BoundLogger`.
 
-- [ ] **Step 1: Create `backend/pyproject.toml`**
+- [x] **Step 1: Create `backend/pyproject.toml`**
 
 ```toml
 [project]
@@ -293,7 +293,7 @@ testpaths = ["tests"]
 
 Note: `[project.scripts] sieve` points at `clipsieve.cli:app`, created in plan 03. uv does not import it at sync time, so this is safe now.
 
-- [ ] **Step 2: Create `backend/README.md`**
+- [x] **Step 2: Create `backend/README.md`**
 
 ```markdown
 # clipsieve backend
@@ -307,7 +307,7 @@ Python 3.12, FastAPI, uv.
 See `AGENTS.md` for the contract of this directory.
 ```
 
-- [ ] **Step 3: Create `backend/AGENTS.md`**
+- [x] **Step 3: Create `backend/AGENTS.md`**
 
 ```markdown
 # backend/ — AGENTS.md
@@ -338,7 +338,7 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 Later plans add `adapters/`, `evidence/`, `judge/`, `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
 ```
 
-- [ ] **Step 4: Create the package init and logging module**
+- [x] **Step 4: Create the package init and logging module**
 
 `backend/clipsieve/__init__.py`:
 
@@ -386,7 +386,7 @@ def get_logger(name: str) -> structlog.stdlib.BoundLogger:
     return structlog.get_logger(name)
 ```
 
-- [ ] **Step 5: Create the tests package and a failing logging test**
+- [x] **Step 5: Create the tests package and a failing logging test**
 
 `backend/tests/__init__.py`: empty file.
 
@@ -434,17 +434,17 @@ def test_configure_logging_binds_and_renders(capsys):
     structlog.contextvars.clear_contextvars()
 ```
 
-- [ ] **Step 6: Sync and run the test to verify it fails before the module exists**
+- [x] **Step 6: Sync and run the test to verify it fails before the module exists**
 
 Run: `cd backend && uv sync && uv run pytest -q tests/test_logging.py`
 Expected first run: PASS, because Step 4 already created the module. If you created the test before the module, expected: `ModuleNotFoundError: clipsieve.logging`. Either order is acceptable here since this task's deliverable is the toolchain.
 
-- [ ] **Step 7: Lint**
+- [x] **Step 7: Lint**
 
 Run: `cd backend && uv run ruff check . && uv run ruff format --check .`
 Expected: `All checks passed!` and `N files already formatted`. If format fails, run `uv run ruff format .` and re-check.
 
-- [ ] **Step 8: Commit**
+- [x] **Step 8: Commit**
 
 ```bash
 git add backend/pyproject.toml backend/uv.lock backend/README.md backend/AGENTS.md backend/clipsieve backend/tests
