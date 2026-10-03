@@ -2832,7 +2832,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `Dashboard`, `useRunEvents` replay mode.
 - Produces: `ReplayControls({ playing, speed, progress, done, total, onToggle, onSpeed })`; `SPEEDS = [1, 4, 16]`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 Create `frontend/src/components/dashboard/ReplayControls.test.tsx`:
 
@@ -2860,7 +2860,7 @@ describe("ReplayControls", () => {
 Run: `cd frontend && bun run test src/components/dashboard/ReplayControls.test.tsx`
 Expected: FAIL.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Create `frontend/src/components/dashboard/ReplayControls.tsx`:
 
@@ -2930,7 +2930,7 @@ export default function ReplayPage() {
 Run: `cd frontend && bun run test && bun run typecheck`
 Expected: all pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/components/dashboard/ReplayControls.tsx frontend/src/components/dashboard/ReplayControls.test.tsx "frontend/src/app/runs/[id]/replay"
