@@ -26,3 +26,6 @@ bun.lock.tmp
 .idea/
 .vscode/
 *.log
+
+# git worktrees for plan branches
+.worktrees/
