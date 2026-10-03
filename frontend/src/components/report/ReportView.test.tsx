@@ -45,6 +45,24 @@ describe("ReportView", () => {
     expect(btn).toHaveAttribute("title", "Post not found in this run");
   });
 
+  it("lets a disabled citation take the pointer so its tooltip shows", () => {
+    const broken: Report = {
+      ...report,
+      gaps: [{ post_ids: ["local:fx-999"], rationale: "x", title: "Missing" }],
+    };
+    render(<ReportView posts={posts} report={broken} />);
+    const btn = screen.getByRole("button", { name: "local:fx-999" });
+    expect(btn).toHaveClass(
+      "disabled:pointer-events-auto",
+      "disabled:cursor-not-allowed"
+    );
+    expect(btn).not.toHaveClass("disabled:pointer-events-none");
+    // A known citation keeps the stock button classes.
+    expect(
+      screen.getAllByRole("button", { name: "local:fx-002" })[0]
+    ).not.toHaveClass("disabled:pointer-events-auto");
+  });
+
   it("never opens a dialog for an unknown citation, even a prototype key", () => {
     const broken: Report = {
       ...report,

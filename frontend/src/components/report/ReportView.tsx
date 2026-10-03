@@ -57,10 +57,16 @@ function Citation({
   onOpen: (id: string) => void;
 }) {
   const open = useCallback(() => onOpen(id), [id, onOpen]);
-  // A post the run did not return cannot open; the title says why.
+  // A post the run did not return cannot open; the title says why. The stock
+  // `disabled:pointer-events-none` would swallow the hover, so the tooltip
+  // never showed; a disabled button still fires no click.
   return (
     <Button
-      className="font-mono"
+      className={
+        known
+          ? "font-mono"
+          : "font-mono disabled:pointer-events-auto disabled:cursor-not-allowed"
+      }
       disabled={!known}
       onClick={open}
       size="xs"
