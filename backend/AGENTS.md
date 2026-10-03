@@ -20,7 +20,8 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/logging.py` | structlog configuration |
 | `clipsieve/models.py` | generated models (do not edit) |
 | `clipsieve/store/` | `RunPaths`, SQLite engine and tables, `RunRepository` |
-| `clipsieve/events/` | `EventWriter`, `read_events`, `follow_events` |
+| `clipsieve/events/` | `EventWriter`, `read_events`, `follow_events`; readers parse bytes and hold a trailing partial line until its newline |
+| `clipsieve/events/payloads.py` | `PAYLOAD_MODELS`, one Pydantic model per `RunEventType` |
 | `clipsieve/select/select.py` | `Selection` model (plan 01); selection functions (plan 03) |
 
 Later plans add `adapters/`, `evidence/`, `judge/`, `explain/`, `pipeline/`, `api/`, `cli.py` and extend this table.
