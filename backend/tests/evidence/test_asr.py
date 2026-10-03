@@ -3,7 +3,15 @@ import sys
 import types
 from pathlib import Path
 
-from clipsieve.evidence.asr import ASR, FakeASR, WhisperASR, read_sidecar_transcript
+import pytest
+
+from clipsieve.evidence.asr import (
+    ASR,
+    FakeASR,
+    WhisperASR,
+    normalize_lang_hint,
+    read_sidecar_transcript,
+)
 
 
 def _write_sidecar(media: Path, with_lang: bool = True) -> None:
@@ -69,13 +77,18 @@ def test_whisper_asr_prefers_sidecar_and_never_loads_model(tmp_path, monkeypatch
     assert lang == "zh-Hans" and len(segments) == 1
 
 
-def test_whisper_asr_uses_mlx_when_importable(tmp_path, monkeypatch):
+@pytest.mark.parametrize(
+    ("hint", "language"), [("en-US", "en"), ("xx", None), (None, None)], ids=str
+)
+def test_whisper_asr_uses_mlx_when_importable(tmp_path, monkeypatch, hint, language):
     media = tmp_path / "video.mp4"
     media.write_bytes(b"\x00")
     fake_mlx = types.ModuleType("mlx_whisper")
+    received: list[str | None] = []
 
     def transcribe(path, path_or_hf_repo, word_timestamps, language):
         assert word_timestamps is True
+        received.append(language)
         return {
             "language": "en",
             "segments": [{"start": 0.0, "end": 1.5, "text": " hello there "}],
@@ -83,8 +96,9 @@ def test_whisper_asr_uses_mlx_when_importable(tmp_path, monkeypatch):
 
     fake_mlx.transcribe = transcribe
     monkeypatch.setitem(sys.modules, "mlx_whisper", fake_mlx)
-    segments, lang = WhisperASR().transcribe(media, None)
+    segments, lang = WhisperASR().transcribe(media, hint)
     assert lang == "en" and segments[0].text == "hello there" and segments[0].end_s == 1.5
+    assert received == [language], "mlx-whisper gets the normalised language hint"
 
 
 def test_whisper_asr_falls_back_to_faster_whisper(tmp_path, monkeypatch):
@@ -92,12 +106,14 @@ def test_whisper_asr_falls_back_to_faster_whisper(tmp_path, monkeypatch):
     media.write_bytes(b"\x00")
     monkeypatch.setitem(sys.modules, "mlx_whisper", None)  # import raises ImportError
     fake_fw = types.ModuleType("faster_whisper")
+    received: list[str | None] = []
 
     class WhisperModel:
         def __init__(self, name, device="auto", compute_type="auto"):
             assert name == "large-v3"
 
         def transcribe(self, path, word_timestamps, language):
+            received.append(language)
             Seg = types.SimpleNamespace
             return iter([Seg(start=0.0, end=2.0, text=" 你好 ")]), types.SimpleNamespace(
                 language="zh"
@@ -105,10 +121,31 @@ def test_whisper_asr_falls_back_to_faster_whisper(tmp_path, monkeypatch):
 
     fake_fw.WhisperModel = WhisperModel
     monkeypatch.setitem(sys.modules, "faster_whisper", fake_fw)
-    segments, lang = WhisperASR().transcribe(media, "zh")
+    segments, lang = WhisperASR().transcribe(media, "zh-Hans")
     assert lang == "zh" and segments[0].text == "你好"
+    assert received == ["zh"], "faster-whisper gets the normalised language hint"
 
 
 def test_protocol_conformance():
     assert isinstance(FakeASR(), ASR)
     assert isinstance(WhisperASR(), ASR)
+
+
+@pytest.mark.parametrize(
+    ("hint", "expected"),
+    [
+        ("zh-Hans", "zh"),
+        ("zh-Hant-TW", "zh"),
+        ("en-US", "en"),
+        ("EN", "en"),
+        ("pt_BR", "pt"),
+        ("yue", "yue"),
+        ("haw", "haw"),
+        ("iw", "he"),
+        ("xx", None),
+        ("", None),
+        (None, None),
+    ],
+)
+def test_normalize_lang_hint(hint, expected):
+    assert normalize_lang_hint(hint) == expected
