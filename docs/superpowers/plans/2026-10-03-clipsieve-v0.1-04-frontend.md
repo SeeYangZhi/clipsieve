@@ -765,7 +765,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `RunEvent, Post, JudgeResult, Counters, Stage` from `@/lib/types`.
 - Produces: `DashboardState` (contract fields plus `lastSeq: number` and `startedAt: string | null`), `PostTile`, `initialState()`, `reduceEvent(state, event)`, `reduceAll(events)`, `answersPerSecond(events, windowMs = 5000)`, `emptyCounters()`, `JEV_USD_PER_MILLION_INPUT = 0.042`; fixture exports `fixturePosts: Post[]` and `fixtureEvents: RunEvent[]` (about 40 events, run id `FIXTURE`).
 
-- [ ] **Step 1: Fixture posts**
+- [x] **Step 1: Fixture posts**
 
 Create `frontend/src/lib/__fixtures__/posts.ts`:
 
@@ -840,7 +840,7 @@ export const fixturePosts: Post[] = [
 ];
 ```
 
-- [ ] **Step 2: Fixture event builder**
+- [x] **Step 2: Fixture event builder**
 
 Create `frontend/src/lib/__fixtures__/run-events.ts`:
 
@@ -942,7 +942,7 @@ console.log("wrote run-events.json");
 Run: `cd frontend && bun run scripts/write-fixture-events.ts`
 Expected: `wrote run-events.json`; the file has 30 or more events. If `@/` alias fails under `bun run`, change the import to a relative path.
 
-- [ ] **Step 3: Failing reducer tests**
+- [x] **Step 3: Failing reducer tests**
 
 Create `frontend/src/lib/events.test.ts`:
 
@@ -1039,7 +1039,7 @@ describe("answersPerSecond", () => {
 Run: `cd frontend && bun run test src/lib/events.test.ts`
 Expected: FAIL, cannot find `./events`.
 
-- [ ] **Step 4: Implement the reducer**
+- [x] **Step 4: Implement the reducer**
 
 Create `frontend/src/lib/events.ts`:
 
@@ -1199,7 +1199,7 @@ export function answersPerSecond(events: RunEvent[], windowMs = 5000): number {
 Run: `cd frontend && bun run test src/lib/events.test.ts`
 Expected: 11 passed. If `aggregates.persona_fit["4"]` fails, check `Math.round(3.6)` is 4; adjust the fixture, not the reducer.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/lib/events.ts frontend/src/lib/events.test.ts frontend/src/lib/__fixtures__ frontend/scripts/write-fixture-events.ts
