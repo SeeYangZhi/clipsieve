@@ -484,7 +484,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Contract decision: the overview lists eight schema files. Shared types (`Brief`, `Query`, `Counters`, `Stage`, `RunEventType`, `Platform`) live in a ninth file `common.json` so that neither generator emits duplicate `Brief1`-style classes. Each schema file refers to them with `"$ref": "common.json#/$defs/Name"`. `merge.py` folds all files into one root schema under `$defs` before generation.
 
-- [ ] **Step 1: Create `packages/schema/package.json`**
+- [x] **Step 1: Create `packages/schema/package.json`**
 
 ```json
 {
@@ -504,7 +504,7 @@ Contract decision: the overview lists eight schema files. Shared types (`Brief`,
 Run: `bun install`
 Expected: lockfile updated with json-schema-to-typescript.
 
-- [ ] **Step 2: Create `packages/schema/schemas/common.json`**
+- [x] **Step 2: Create `packages/schema/schemas/common.json`**
 
 ```json
 {
@@ -566,7 +566,7 @@ Expected: lockfile updated with json-schema-to-typescript.
 }
 ```
 
-- [ ] **Step 3: Create `post.json`**
+- [x] **Step 3: Create `post.json`**
 
 ```json
 {
@@ -640,7 +640,7 @@ Expected: lockfile updated with json-schema-to-typescript.
 }
 ```
 
-- [ ] **Step 4: Create `evidence.json`**
+- [x] **Step 4: Create `evidence.json`**
 
 ```json
 {
@@ -695,7 +695,7 @@ Expected: lockfile updated with json-schema-to-typescript.
 }
 ```
 
-- [ ] **Step 5: Create `run_event.json`**
+- [x] **Step 5: Create `run_event.json`**
 
 ```json
 {
@@ -717,7 +717,7 @@ Expected: lockfile updated with json-schema-to-typescript.
 }
 ```
 
-- [ ] **Step 6: Create `rubric_pack.json`**
+- [x] **Step 6: Create `rubric_pack.json`**
 
 Note (applied during execution): `questions.additionalProperties` must `$ref` a named `$defs.Question` holding the `oneOf` of the three question types, so both generators emit a `Question` alias that plans 03 and 05 import. Generated Python `Question` is a plain union alias (not a `RootModel`) so `isinstance(q, ChoiceQuestion)` works on dict values.
 
@@ -806,7 +806,7 @@ Note (applied during execution): `questions.additionalProperties` must `$ref` a 
 }
 ```
 
-- [ ] **Step 7: Create `plan.json`, `report.json`, `judge_result.json`, `run.json`**
+- [x] **Step 7: Create `plan.json`, `report.json`, `judge_result.json`, `run.json`**
 
 `plan.json`:
 
@@ -946,7 +946,7 @@ Note (applied during execution): `questions.additionalProperties` must `$ref` a 
 }
 ```
 
-- [ ] **Step 8: Create `packages/schema/merge.py`, shared by the Python generator and the test**
+- [x] **Step 8: Create `packages/schema/merge.py`, shared by the Python generator and the test**
 
 ```python
 """Fold the per-file schemas into one root schema with a flat $defs table.
@@ -1027,7 +1027,7 @@ if __name__ == "__main__":
     print(json.dumps(merge(), indent=2, ensure_ascii=False))
 ```
 
-- [ ] **Step 9: Create `packages/schema/generate.py`**
+- [x] **Step 9: Create `packages/schema/generate.py`**
 
 ```python
 """Generate backend/clipsieve/models.py from packages/schema/schemas/*.json.
@@ -1095,7 +1095,7 @@ if __name__ == "__main__":
     raise SystemExit(main())
 ```
 
-- [ ] **Step 10: Create `packages/schema/generate.ts`**
+- [x] **Step 10: Create `packages/schema/generate.ts`**
 
 Note (applied during execution): compile options include `ignoreMinAndMaxItems: true`, otherwise bounded arrays (`persona_fit_criteria` 5 items, `keyframes` maxItems 8, Score `criteria` 2..10) become TS tuple unions and plan 04's `persona_fit_criteria.map(...)` fails typecheck. Pydantic still enforces the lengths at runtime.
 
@@ -1202,7 +1202,7 @@ writeFileSync(output, ts, "utf-8");
 console.log(`wrote ${output}`);
 ```
 
-- [ ] **Step 11: Create `packages/schema/AGENTS.md`**
+- [x] **Step 11: Create `packages/schema/AGENTS.md`**
 
 ```markdown
 # packages/schema/ — AGENTS.md
@@ -1232,7 +1232,7 @@ Single source of truth for every data contract. JSON Schema draft 2020-12, one f
 | `schemas/run.json` | `Run` |
 ```
 
-- [ ] **Step 12: Create the five fixture posts and their raw payloads**
+- [x] **Step 12: Create the five fixture posts and their raw payloads**
 
 `backend/tests/fixtures/posts/local__fx-001.json`:
 
@@ -1392,7 +1392,7 @@ Raw payloads mimic a local-import CSV row. Create `backend/tests/fixtures/raw/lo
 { "source": "local_import", "file": "fx-001.mp4", "title": "I moved from Singapore to Shanghai. Nobody warned me about this.", "views": 184200, "likes": 12400, "comments": 388 }
 ```
 
-- [ ] **Step 13: Write the failing schema test**
+- [x] **Step 13: Write the failing schema test**
 
 `backend/tests/test_schemas.py`:
 
@@ -1468,12 +1468,12 @@ def test_cjk_fixture_roundtrip_is_bytewise(fixtures_dir: Path):
     assert len(post.media) == 4
 ```
 
-- [ ] **Step 14: Run the test to verify it fails because nothing is generated yet**
+- [x] **Step 14: Run the test to verify it fails because nothing is generated yet**
 
 Run: `cd backend && uv run pytest -q tests/test_schemas.py`
 Expected: FAIL. `test_generated_models_have_banner_and_classes` with `FileNotFoundError` on `models.py`; fixture tests with `ModuleNotFoundError: clipsieve.models`.
 
-- [ ] **Step 15: Generate both outputs**
+- [x] **Step 15: Generate both outputs**
 
 Run: `bun run schema`
 Expected: `wrote backend/clipsieve/models.py` and `wrote .../frontend/src/lib/types.ts`.
@@ -1482,12 +1482,12 @@ If `datamodel-codegen` rejects `--extra-fields`, run `cd backend && uv add --dev
 
 Inspect: `head -5 backend/clipsieve/models.py` shows the banner then imports. `grep -c "^class " backend/clipsieve/models.py` is at least 28.
 
-- [ ] **Step 16: Run the schema test and verify it passes**
+- [x] **Step 16: Run the schema test and verify it passes**
 
 Run: `cd backend && uv run pytest -q tests/test_schemas.py`
 Expected: `11 passed`.
 
-- [ ] **Step 17: Prove the drift check fails on an unregenerated edit, then restore**
+- [x] **Step 17: Prove the drift check fails on an unregenerated edit, then restore**
 
 Run:
 
@@ -1501,7 +1501,7 @@ git diff --exit-code -- backend/clipsieve/models.py frontend/src/lib/types.ts; e
 
 Expected: first `exit=1` (diff printed for both generated files), second `exit=0`.
 
-- [ ] **Step 18: Lint and commit**
+- [x] **Step 18: Lint and commit**
 
 Run: `bun run lint`
 Expected: exits 0. If Biome complains about `generate.ts`, run `bunx ultracite fix` and re-run.
