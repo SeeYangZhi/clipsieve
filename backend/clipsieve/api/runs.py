@@ -11,7 +11,7 @@ from typing import Annotated, Any, Literal
 from fastapi import APIRouter, Depends, HTTPException, Query
 from pydantic import BaseModel, ConfigDict, Field, model_serializer
 
-from clipsieve.api.context import AppContext, get_context
+from clipsieve.api.context import AppContext, context_dependency
 from clipsieve.judge.rubric import (
     PASS_ONE,
     PASS_TWO,
@@ -30,7 +30,7 @@ from clipsieve.store.repo import RunNotFound
 log = get_logger(__name__)
 router = APIRouter()
 
-Ctx = Annotated[AppContext, Depends(get_context)]
+Ctx = Annotated[AppContext, Depends(context_dependency)]
 DEFAULT_QUANTITY = 500
 MAX_ERROR_MESSAGE = 1000
 MAX_LATE_PAUSE_RERUNS = 10

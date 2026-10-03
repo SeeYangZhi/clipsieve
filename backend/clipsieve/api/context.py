@@ -1,6 +1,7 @@
 """Process-wide wiring for the API: settings, repository, adapters and one shared backend each.
 
-`build_context(settings)` picks fake or real backends; `get_context()` is the FastAPI dependency.
+`build_context(settings)` picks fake or real backends; `get_context()` returns the process context,
+built once under a lock, and `context_dependency` is the FastAPI dependency.
 One `Runner` per run id is cached in `runners`, and the background task driving that run lives in
 `tasks[run_id]`. `run()` is serialised per run by `lock_for(run_id)`.
 """
@@ -8,6 +9,7 @@ One `Runner` per run id is cached in `runners`, and the background task driving 
 from __future__ import annotations
 
 import asyncio
+import threading
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -123,16 +125,32 @@ def build_context(settings: Settings) -> AppContext:
 
 
 _CONTEXT: AppContext | None = None
+_CONTEXT_LOCK = threading.Lock()
 
 
 def set_context(ctx: AppContext) -> None:
     global _CONTEXT
-    _CONTEXT = ctx
+    with _CONTEXT_LOCK:
+        _CONTEXT = ctx
 
 
 def get_context() -> AppContext:
-    """FastAPI dependency. Builds the context from `get_settings()` on first use."""
+    """The process context, built from `get_settings()` on first use, exactly once.
+
+    Double-checked under `_CONTEXT_LOCK`: concurrent first callers (threads, or requests at
+    startup) wait for one build instead of each creating a salt, a database and backends.
+    """
     global _CONTEXT
-    if _CONTEXT is None:
-        _CONTEXT = build_context(get_settings())
-    return _CONTEXT
+    ctx = _CONTEXT
+    if ctx is not None:
+        return ctx
+    with _CONTEXT_LOCK:
+        if _CONTEXT is None:
+            _CONTEXT = build_context(get_settings())
+        return _CONTEXT
+
+
+async def context_dependency() -> AppContext:
+    """FastAPI dependency. Async so it runs on the event loop, not in the threadpool; the lock in
+    `get_context` still guards any thread that calls it directly."""
+    return get_context()

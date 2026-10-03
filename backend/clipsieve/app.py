@@ -10,7 +10,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 
 from clipsieve.api import events, meta, runs
-from clipsieve.api.context import AppContext, get_context, set_context
+from clipsieve.api.context import AppContext, set_context
 from clipsieve.logging import configure_logging
 
 
@@ -43,8 +43,8 @@ def create_app(ctx: AppContext | None = None) -> FastAPI:
     app.include_router(meta.router, prefix="/api")
 
     @app.get("/api/health", response_model_exclude_none=True)
-    async def health() -> dict[str, str]:
-        return {"status": "ok", "backend": get_context().settings.clipsieve_explain_backend}
+    async def health(ctx: runs.Ctx) -> dict[str, str]:
+        return {"status": "ok", "backend": ctx.settings.clipsieve_explain_backend}
 
     return app
 
