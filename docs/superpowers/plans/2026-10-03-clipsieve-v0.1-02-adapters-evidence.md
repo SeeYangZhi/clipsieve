@@ -2042,7 +2042,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `clipsieve.models.Comment`, `clipsieve.models.CommentSummary`.
 - Produces: `summarize_comments(comments: list[Comment], lang: str | None) -> CommentSummary`, `tokenize(text: str, lang: str | None) -> list[str]`, `is_cjk(text: str) -> bool`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_comments.py`:
 
@@ -2097,12 +2097,12 @@ def test_mixed_language_auto_detects_cjk_when_lang_missing():
     assert "上海" in s.top_terms
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_comments.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence.comments'`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `backend/clipsieve/evidence/comments.py`:
 
@@ -2170,12 +2170,12 @@ def summarize_comments(comments: list[Comment], lang: str | None) -> CommentSumm
     return CommentSummary(count=len(comments), top_terms=top_terms, sample=sample)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/evidence/test_comments.py -v`
 Expected: 6 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/comments.py backend/tests/evidence/test_comments.py
