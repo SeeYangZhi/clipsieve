@@ -120,6 +120,20 @@ packages/schema/.build/
 
 Create the empty file `frontend/src/lib/.gitkeep` so the TypeScript generator has a target directory.
 
+Also create a placeholder `packages/schema/package.json` so `bun install` can resolve the second workspace member before Task 3 fills the package in (Task 3 Step 1 replaces this file wholesale):
+
+```json
+{
+  "name": "@clipsieve/schema",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "scripts": {
+    "generate": "echo 'schema generator arrives in Task 3'"
+  }
+}
+```
+
 - [ ] **Step 5: Create `.env.example`**
 
 ```dotenv
