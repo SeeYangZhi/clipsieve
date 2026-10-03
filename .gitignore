@@ -32,3 +32,6 @@ bun.lock.tmp
 
 # schema package build output
 packages/schema/.build/
+
+# Claude Code local state (ralph loop etc.)
+.claude/*.local.md
