@@ -75,8 +75,9 @@ class EventWriter:
             ts=datetime.now(UTC),
             type=etype,
             stage=Stage(stage),
-            payload=validated.model_dump(mode="json", by_alias=True),
+            payload=validated.model_dump(mode="json", by_alias=True, exclude_none=True),
         )
-        self._append((event.model_dump_json(by_alias=True) + "\n").encode("utf-8"))
+        line = event.model_dump_json(by_alias=True, exclude_none=True) + "\n"
+        self._append(line.encode("utf-8"))
         self._last_seq = event.seq
         return event

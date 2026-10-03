@@ -8,9 +8,10 @@ import pytest
 from structlog.testing import capture_logs
 
 from clipsieve.events import writer as writer_module
+from clipsieve.events.payloads import PAYLOAD_MODELS
 from clipsieve.events.reader import follow_events, read_events
 from clipsieve.events.writer import EventWriter
-from clipsieve.models import Post
+from clipsieve.models import Post, RunEventType
 from clipsieve.store.paths import RunPaths
 
 BRIEF = {"text": "b", "topic": "t", "audience": "a", "persona": "p"}
@@ -47,6 +48,27 @@ def test_emit_assigns_seq_and_appends_lines(paths: RunPaths):
     lines = paths.events_jsonl.read_text(encoding="utf-8").splitlines()
     assert len(lines) == 2
     assert json.loads(lines[1])["payload"] == {"from": "planning", "to": "collecting"}
+
+
+def test_payload_models_cover_every_event_type():
+    assert set(PAYLOAD_MODELS) == set(RunEventType)
+
+
+def test_emit_omits_none_fields(paths: RunPaths, fixtures_dir: Path):
+    """Optional means absent (Addendum A.13), in the envelope and in the payload."""
+    w = EventWriter(paths, "run_ev")
+    w.emit("error", "collecting", {"where": "adapter.local", "message": "m", "recoverable": True})
+    post = Post.model_validate_json(
+        (fixtures_dir / "posts/local__fx-003.json").read_text(encoding="utf-8")
+    )
+    w.emit("post_collected", "collecting", {"post": post.model_dump(mode="json")})
+    error_line, post_line = paths.events_jsonl.read_text(encoding="utf-8").splitlines()
+    assert '"post_id"' not in error_line
+    assert "null" not in error_line
+    assert ":null" not in post_line
+    events = read_events(paths)
+    assert "post_id" not in events[0].payload
+    assert Post.model_validate(events[1].payload["post"]) == post
 
 
 def test_emit_rejects_bad_payload(paths: RunPaths):
@@ -89,7 +111,11 @@ def test_post_collected_payload_keeps_cjk(paths: RunPaths, fixtures_dir: Path):
     w = EventWriter(paths, "run_ev")
     w.emit("post_collected", "collecting", {"post": post.model_dump(mode="json")})
     raw = paths.events_jsonl.read_text(encoding="utf-8")
-    assert "上海超市物价大公开" in raw
+    [line] = raw.splitlines()
+    assert "上海超市物价大公开 🇸🇬→🇨🇳" in line
+    assert "同样一篮子东西，新加坡 vs 上海，差价吓到我了。第4张是重点。" in line
+    assert "第4张真的绝了" in line
+    assert "\\u" not in line
     ev = read_events(paths)[0]
     assert ev.payload["post"]["text"]["title"] == "上海超市物价大公开 🇸🇬→🇨🇳"
 

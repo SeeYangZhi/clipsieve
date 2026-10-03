@@ -36,9 +36,12 @@ class PostNotFound(KeyError):
 
 
 def _write_json(path: Path, model: BaseModel) -> None:
+    """Optional fields that are None are omitted, so files validate against the JSON Schemas."""
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + ".tmp")
-    tmp.write_text(model.model_dump_json(indent=2, by_alias=True), encoding="utf-8")
+    tmp.write_text(
+        model.model_dump_json(indent=2, by_alias=True, exclude_none=True), encoding="utf-8"
+    )
     tmp.replace(path)
 
 
@@ -52,7 +55,7 @@ def _revalidate[M: BaseModel](model: M) -> M:
 
 
 def _dump(model: BaseModel) -> str:
-    return model.model_dump_json(by_alias=True)
+    return model.model_dump_json(by_alias=True, exclude_none=True)
 
 
 def new_run_id() -> str:
