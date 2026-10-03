@@ -443,7 +443,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `Adapter`, `hash_creator`, `incoming_dir`, `clipsieve.store.paths.safe_post_filename`, `Settings`, models `Post, PostText, Media, Metrics, Comment, Query`.
 - Produces: `LocalImportAdapter` with `from_settings`, `search`, `fetch_media`, `healthcheck`. Platform `"local"`. Post ids `local:<sha1 of absolute source path>[:12]`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/adapters/test_local_import.py`:
 
@@ -550,12 +550,12 @@ def test_missing_source_yields_nothing(settings, tmp_path):
     assert list(adapter.search([Query(platform="local", query=str(tmp_path / "nope"), lang="en")], 5)) == []
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/adapters/test_local_import.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.adapters.local_import'`
 
-- [ ] **Step 3: Implement the adapter**
+- [x] **Step 3: Implement the adapter**
 
 `backend/clipsieve/adapters/local_import.py`:
 
@@ -716,12 +716,12 @@ class LocalImportAdapter:
         return AdapterHealth(ok=True, message="local import ready")
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/adapters/test_local_import.py tests/adapters/test_registry.py -v`
 Expected: 7 passed in `test_local_import.py`; in `test_registry.py` the builtin test still fails only on `youtube` (next task). Confirm the failure message names `youtube`, not `local`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/adapters/local_import.py backend/tests/adapters/test_local_import.py
