@@ -452,7 +452,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
   - `class JudgeFailed(Exception)` with attributes `post_id: str`, `attempts: int`
   - `class TypeSafeJudge(Judge)` with `__init__(self, api_key: str, concurrency: int = 16, max_retries: int = 5, client_factory: Callable[[], Any] | None = None, sleeper: Callable[[float], Awaitable[None]] = asyncio.sleep)` and `async aclose()`
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/judge/test_typesafe_client.py`:
 
@@ -591,12 +591,12 @@ async def test_non_retryable_error_raises_immediately():
     assert ei.value.attempts == 1 and client.calls.count("local:bad") == 1
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/judge/test_typesafe_client.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.judge.base'`.
 
-- [ ] **Step 3: Implement `judge/base.py`**
+- [x] **Step 3: Implement `judge/base.py`**
 
 ```python
 """Judge protocol shared by the TypeSafe client and the recorded fake."""
@@ -633,7 +633,7 @@ class Judge(Protocol):
     ) -> JudgeResult: ...
 ```
 
-- [ ] **Step 4: Implement `judge/typesafe_client.py`**
+- [x] **Step 4: Implement `judge/typesafe_client.py`**
 
 ```python
 """TypeSafe Jev judge: one batched system_one request per post, bounded concurrency, backoff."""
@@ -737,12 +737,12 @@ class TypeSafeJudge(Judge):
                 )
 ```
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/judge/test_typesafe_client.py -q`
 Expected: `6 passed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/judge backend/tests/judge
