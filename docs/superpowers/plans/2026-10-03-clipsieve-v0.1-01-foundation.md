@@ -1525,7 +1525,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: nothing.
 - Produces: `clipsieve.config.Settings`, `clipsieve.config.get_settings() -> Settings` (lru_cached), exactly the fields in the overview.
 
-- [ ] **Step 1: Write the failing test**
+- [x] **Step 1: Write the failing test**
 
 `backend/tests/test_config.py`:
 
@@ -1583,12 +1583,12 @@ def test_get_settings_is_cached(monkeypatch):
     get_settings.cache_clear()
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `cd backend && uv run pytest -q tests/test_config.py`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.config'`.
 
-- [ ] **Step 3: Implement `backend/clipsieve/config.py`**
+- [x] **Step 3: Implement `backend/clipsieve/config.py`**
 
 ```python
 """Application settings. The only place that reads environment variables."""
@@ -1621,12 +1621,12 @@ def get_settings() -> Settings:
     return Settings()
 ```
 
-- [ ] **Step 4: Run to verify pass**
+- [x] **Step 4: Run to verify pass**
 
 Run: `cd backend && uv run pytest -q tests/test_config.py`
 Expected: `4 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/config.py backend/tests/test_config.py
