@@ -2761,7 +2761,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: everything above.
 - Produces: `bun run check` passes from a clean checkout; root `AGENTS.md` indexes `backend/` and `packages/schema/`.
 
-- [ ] **Step 1: Replace the Child DOX Index in root `AGENTS.md`**
+- [x] **Step 1: Replace the Child DOX Index in root `AGENTS.md`**
 
 Replace the section starting `## Child DOX Index` with:
 
@@ -2776,7 +2776,7 @@ Replace the section starting `## Child DOX Index` with:
 `frontend/` currently holds a placeholder `package.json` so root scripts resolve; plan 04 replaces it and adds `frontend/AGENTS.md`. `rubrics/`, `contrib/adapter-xhs-mediacrawler/` and `evals/` get their AGENTS.md in plans 03 and 05.
 ```
 
-- [ ] **Step 2: Add a Development section to `README.md`**
+- [x] **Step 2: Add a Development section to `README.md`**
 
 Insert before `## Licence`:
 
@@ -2792,12 +2792,12 @@ Requirements: Bun 1.3+, uv, Python 3.12 (uv installs it), ffmpeg.
 After editing anything in `packages/schema/schemas/`, run `bun run schema` and commit the regenerated `backend/clipsieve/models.py` and `frontend/src/lib/types.ts`.
 ```
 
-- [ ] **Step 3: Run the full check**
+- [x] **Step 3: Run the full check**
 
 Run: `bun run check`
 Expected: schema regeneration produces no diff, ultracite and ruff pass, placeholder typecheck echoes, pytest reports all passed, frontend test placeholder echoes. Exit 0.
 
-- [ ] **Step 4: Verify from a clean clone that CI will pass**
+- [x] **Step 4: Verify from a clean clone that CI will pass**
 
 Run:
 
@@ -2807,7 +2807,7 @@ tmp=$(mktemp -d) && git clone -q . "$tmp/clipsieve" && cd "$tmp/clipsieve" && bu
 
 Expected: `exit=0`. If `--frozen-lockfile` fails, run `bun install` in the repo, commit the updated `bun.lock`, and repeat.
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```bash
 git add AGENTS.md README.md
