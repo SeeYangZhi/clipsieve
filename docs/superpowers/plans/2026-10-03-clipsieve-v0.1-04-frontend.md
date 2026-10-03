@@ -1839,7 +1839,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `Plan, Query` types; `api.getRun`, `api.savePlan`, `api.approveRun`; `useRunEvents` (to notice `plan_ready` while planning).
 - Produces: `PlanEditor({ plan, onSave, onApprove, busy })`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 Create `frontend/src/components/plan/PlanEditor.test.tsx`:
 
@@ -1899,7 +1899,7 @@ describe("PlanEditor", () => {
 Run: `cd frontend && bun run test src/components/plan`
 Expected: FAIL, cannot find `./PlanEditor`.
 
-- [ ] **Step 2: Implement PlanEditor**
+- [x] **Step 2: Implement PlanEditor**
 
 Create `frontend/src/components/plan/PlanEditor.tsx`:
 
@@ -2008,7 +2008,7 @@ export function PlanEditor({ plan, onSave, onApprove, busy }: Props) {
 }
 ```
 
-- [ ] **Step 3: Plan page**
+- [x] **Step 3: Plan page**
 
 Create `frontend/src/app/runs/[id]/plan/page.tsx`:
 
@@ -2074,7 +2074,7 @@ export default function PlanPage() {
 Run: `cd frontend && bun run test src/components/plan && bun run typecheck`
 Expected: 3 passed, typecheck clean.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/components/plan frontend/src/app/runs
