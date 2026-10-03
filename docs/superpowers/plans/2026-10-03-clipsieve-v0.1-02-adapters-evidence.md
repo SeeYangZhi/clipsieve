@@ -1482,7 +1482,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `clipsieve.models.TranscriptSegment`.
 - Produces: `ASR` Protocol, `WhisperASR(model_name: str = "large-v3")`, `FakeASR()`, `read_sidecar_transcript(media: Path) -> tuple[list[TranscriptSegment], str | None] | None`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_asr.py`:
 
@@ -1571,12 +1571,12 @@ def test_protocol_conformance():
     assert isinstance(WhisperASR(), ASR)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_asr.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence'`
 
-- [ ] **Step 3: Implement ASR**
+- [x] **Step 3: Implement ASR**
 
 `backend/clipsieve/evidence/__init__.py`:
 
@@ -1668,12 +1668,12 @@ class WhisperASR:
         return segments, getattr(info, "language", None)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/evidence/test_asr.py -v`
 Expected: 7 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/__init__.py backend/clipsieve/evidence/asr.py backend/tests/evidence/__init__.py backend/tests/evidence/test_asr.py
