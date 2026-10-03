@@ -1173,7 +1173,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
   - `pass_one_keep(results: list[JudgeResult], pack: RubricPack) -> set[str]`
   - `dropped` reasons are exactly: `"hard_filter"`, `"quota"`, `"not_selected"`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
+
+Note (applied during execution): the quota rule is `cap = max(1, floor(max_share * shortlist_size + 1e-9))`; a candidate violates when its label already appears `cap` times among the chosen. The brief's `same + 1 > max_share * size` blocked every post when `max_share * size < 1` (its own tests 3-5 failed). The test helper `r()` derives default `format`/`hook_type` labels from `post_id` so quotas do not block the brief's expected shortlists (tests 1-2 failed with identical defaults).
 
 `backend/tests/select/test_select.py`:
 
@@ -1286,12 +1288,12 @@ def test_pass_one_keep_keeps_top_fraction_min_one():
     assert pass_one_keep([], pack) == set()
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/select/test_select.py -q`
 Expected: FAIL with `ImportError: cannot import name 'select' from 'clipsieve.select.select'`.
 
-- [ ] **Step 3: Implement `select/quotas.py`**
+- [x] **Step 3: Implement `select/quotas.py`**
 
 ```python
 """Diversity quotas over choice answers."""
@@ -1321,7 +1323,7 @@ def violates_quota(candidate: JudgeResult, chosen: list[JudgeResult], pack: Rubr
     return False
 ```
 
-- [ ] **Step 4: Append to `select/select.py`**
+- [x] **Step 4: Append to `select/select.py`**
 
 Keep plan 01's `Selection` class untouched and append:
 
@@ -1383,12 +1385,12 @@ def pass_one_keep(results: list[JudgeResult], pack: RubricPack) -> set[str]:
 
 Note `PASS_ONE` is imported for callers' convenience; ruff will flag it unused, so either re-export it in `select/__init__.py` or drop the import. Drop it if unused.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/select -q`
 Expected: `22 passed`.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add backend/clipsieve/select backend/tests/select
