@@ -30,6 +30,11 @@ class PackNotFound(Exception):
     pass
 
 
+# What `load_pack` raises for a file that is not a valid pack: bad YAML, or data that fails the
+# schema or the cross-field rules (pydantic's ValidationError is a ValueError).
+PACK_LOAD_ERRORS: tuple[type[Exception], ...] = (ValueError, yaml.YAMLError)
+
+
 def load_pack(path: Path) -> RubricPack:
     data = yaml.safe_load(path.read_text(encoding="utf-8"))
     pack = RubricPack.model_validate(data)
@@ -62,7 +67,10 @@ def find_pack(name: str, rubrics_dir: Path) -> RubricPack:
     path = rubrics_dir / f"{name}.yaml"
     if not path.is_file():
         raise PackNotFound(f"no rubric pack named {name!r} in {rubrics_dir}")
-    return load_pack(path)
+    try:
+        return load_pack(path)
+    except PACK_LOAD_ERRORS as exc:  # a sidecar such as `<pack>.zh-examples.yaml`, or a broken pack
+        raise PackNotFound(f"{path.name} is not a rubric pack: {exc}") from exc
 
 
 def questions_for_pass(pack: RubricPack, pass_name: str) -> dict[str, Question]:

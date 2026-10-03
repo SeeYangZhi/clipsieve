@@ -1,9 +1,12 @@
+import shutil
 from pathlib import Path
 
 import pytest
+from structlog.testing import capture_logs
 
 from clipsieve.explain.base import ExplainError, RubricPackSummary
 from clipsieve.explain.fake import FakeExplainBackend
+from clipsieve.judge.rubric import PackNotFound
 from clipsieve.models import Brief, Plan, Query
 from clipsieve.planner.plan import build_plan, default_lang, pack_summaries
 
@@ -12,6 +15,23 @@ RUBRICS = Path(__file__).resolve().parents[3] / "rubrics"
 BRIEF = "Singaporean moving to Shanghai, vlog style; analyse hooks."
 ALL = ["youtube", "xiaohongshu", "local"]
 QTY = {"youtube": 10, "xiaohongshu": 20, "local": 5}
+SIDECAR = """# Chinese examples appended to creator-hooks-v1 criteria in bilingual language_mode.
+hook_type:
+  story: "例：「落地第一天，行李丢了」"
+  none: "例：开头只有问候或片头"
+hook_strength:
+  1: "例：开头是「大家好，欢迎回来」"
+  5: "例：「你敢信吗？」加上强烈画面对比和明确利益点"
+"""
+
+
+def _rubrics_with_sidecar(tmp_path: Path) -> Path:
+    """The real pack plus a plan 05 style `*.zh-examples.yaml` that is YAML but not a pack."""
+    d = tmp_path / "rubrics"
+    d.mkdir()
+    shutil.copy(RUBRICS / "creator-hooks-v1.yaml", d)
+    (d / "foo.zh-examples.yaml").write_text(SIDECAR, encoding="utf-8")
+    return d
 
 
 def _plan(backend, platforms=None, quantities=None, hint=None, pack="creator-hooks-v1"):
@@ -45,6 +65,41 @@ def test_pack_summaries_lists_real_packs():
     assert [p.name for p in packs] == ["creator-hooks-v1"]
     assert "hook_type" in packs[0].question_ids
     assert isinstance(packs[0], RubricPackSummary)
+
+
+def test_pack_summaries_skips_yaml_that_is_not_a_pack(tmp_path):
+    d = _rubrics_with_sidecar(tmp_path)
+    with capture_logs() as logs:
+        packs = pack_summaries(d)
+    assert [p.name for p in packs] == ["creator-hooks-v1"]
+    skipped = [e for e in logs if e["event"] == "rubric_pack_skipped"]
+    assert len(skipped) == 1
+    assert skipped[0]["path"] == str(d / "foo.zh-examples.yaml")
+
+
+def test_build_plan_works_beside_a_sidecar_yaml(tmp_path):
+    d = _rubrics_with_sidecar(tmp_path)
+    backend = Recording(FIXTURES)
+    plan = build_plan(
+        "run_abc", BRIEF, ["local"], {"local": 5}, "creator-hooks-v1", None, backend, d
+    )
+    assert plan.rubric_pack == "creator-hooks-v1"
+    assert [p.name for p in backend.seen[1]] == ["creator-hooks-v1"]
+
+
+def test_build_plan_with_a_sidecar_name_is_pack_not_found(tmp_path):
+    d = _rubrics_with_sidecar(tmp_path)
+    with pytest.raises(PackNotFound, match="not a rubric pack"):
+        build_plan(
+            "run_abc",
+            BRIEF,
+            ["local"],
+            {"local": 5},
+            "foo.zh-examples",
+            None,
+            FakeExplainBackend(FIXTURES),
+            d,
+        )
 
 
 def test_build_plan_owns_run_id_quantities_pack_and_brief_text():
@@ -85,8 +140,6 @@ def test_user_pack_wins_over_backend_suggestion():
 
 
 def test_unknown_user_pack_raises():
-    from clipsieve.judge.rubric import PackNotFound
-
     with pytest.raises(PackNotFound):
         _plan(FakeExplainBackend(FIXTURES), pack="nope")
 

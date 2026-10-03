@@ -156,6 +156,28 @@ def test_to_typesafe_carries_text_and_order():
 
 
 @pytest.mark.parametrize(
+    "text",
+    [
+        """# Chinese examples appended to creator-hooks-v1 criteria in bilingual language_mode.
+hook_type:
+  story: "例：「落地第一天，行李丢了」"
+  none: "例：开头只有问候或片头"
+hook_strength:
+  1: "例：开头是「大家好，欢迎回来」"
+  5: "例：「你敢信吗？」加上强烈画面对比和明确利益点"
+""",
+        "name: [unclosed\n",  # not even YAML
+        "- just\n- a list\n",
+    ],
+    ids=["sidecar", "yaml_error", "list"],
+)
+def test_find_pack_on_a_yaml_that_is_not_a_pack_is_pack_not_found(tmp_path, text):
+    (tmp_path / "foo.zh-examples.yaml").write_text(text, encoding="utf-8")
+    with pytest.raises(PackNotFound, match="not a rubric pack"):
+        find_pack("foo.zh-examples", tmp_path)
+
+
+@pytest.mark.parametrize(
     "name", ["../rubrics/creator-hooks-v1", "/etc/creator-hooks-v1", "a/b", ""]
 )
 def test_find_pack_rejects_path_like_names(name):

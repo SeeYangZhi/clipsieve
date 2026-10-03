@@ -1,5 +1,7 @@
 import asyncio
+import shutil
 
+from clipsieve.api.context import RUBRICS_DIR_DEFAULT
 from clipsieve.models import Brief, Stage
 from tests.api.conftest import fake_settings, wait_for_plan, wait_for_stage
 
@@ -152,6 +154,21 @@ async def test_create_run_validation_is_422_with_string_detail(client):
     zero = await client.post("/api/runs", json={**BODY, "quantities": {"local": 0}})
     assert zero.status_code == 422
     assert (await client.get("/api/runs")).json() == []
+
+
+async def test_create_run_with_a_yaml_that_is_not_a_pack_is_422(client, ctx, tmp_path):
+    rubrics = tmp_path / "rubrics"
+    rubrics.mkdir()
+    shutil.copy(RUBRICS_DIR_DEFAULT / "creator-hooks-v1.yaml", rubrics)
+    (rubrics / "foo.zh-examples.yaml").write_text(
+        'hook_type:\n  story: "例：「落地第一天，行李丢了」"\n', encoding="utf-8"
+    )
+    ctx.rubrics_dir = rubrics
+    r = await client.post("/api/runs", json={**BODY, "rubric_pack": "foo.zh-examples"})
+    assert r.status_code == 422 and "foo.zh-examples" in r.json()["detail"]
+    assert (await client.get("/api/runs")).json() == []
+    packs = (await client.get("/api/rubrics")).json()
+    assert [p["name"] for p in packs] == ["creator-hooks-v1"]
 
 
 async def test_optional_fields_are_absent_and_missing_plan_is_null(client, ctx):

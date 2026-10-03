@@ -9,7 +9,13 @@ from __future__ import annotations
 from pathlib import Path
 
 from clipsieve.explain.base import ExplainBackend, ExplainError, RubricPackSummary
-from clipsieve.judge.rubric import PERSONA_FIT, PERSONA_LEVELS, find_pack, load_pack
+from clipsieve.judge.rubric import (
+    PACK_LOAD_ERRORS,
+    PERSONA_FIT,
+    PERSONA_LEVELS,
+    find_pack,
+    load_pack,
+)
 from clipsieve.logging import get_logger
 from clipsieve.models import Brief, Plan, Query, ScoreQuestion
 
@@ -26,9 +32,15 @@ def default_lang(platform: str, language_hint: str | None) -> str:
 
 
 def pack_summaries(rubrics_dir: Path) -> list[RubricPackSummary]:
+    """One summary per YAML file that loads as a pack. Other YAML (sidecars such as
+    `<pack>.zh-examples.yaml`) is skipped and logged."""
     out: list[RubricPackSummary] = []
     for path in sorted(Path(rubrics_dir).glob("*.yaml")):
-        pack = load_pack(path)
+        try:
+            pack = load_pack(path)
+        except PACK_LOAD_ERRORS as exc:
+            log.info("rubric_pack_skipped", path=str(path), reason=type(exc).__name__)
+            continue
         out.append(
             RubricPackSummary(
                 name=pack.name,

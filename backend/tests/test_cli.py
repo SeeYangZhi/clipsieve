@@ -126,6 +126,21 @@ def test_run_unknown_platform_or_pack_is_a_usage_error(tmp_path):
     assert not (tmp_path / "runs").exists() or not any((tmp_path / "runs").iterdir())
 
 
+def test_run_with_a_yaml_that_is_not_a_pack_is_a_usage_error(tmp_path, monkeypatch):
+    rubrics = tmp_path / "rubrics"
+    rubrics.mkdir()
+    real = Path(__file__).resolve().parents[2] / "rubrics" / "creator-hooks-v1.yaml"
+    (rubrics / real.name).write_text(real.read_text("utf-8"), encoding="utf-8")
+    (rubrics / "foo.zh-examples.yaml").write_text('hook_type:\n  story: "例"\n', "utf-8")
+    monkeypatch.setattr("clipsieve.api.context.RUBRICS_DIR_DEFAULT", rubrics)
+    data = tmp_path / "data"
+    result = runner.invoke(
+        app, run_args("--pack", "foo.zh-examples", "--auto-approve"), env=env(data)
+    )
+    assert result.exit_code == 2 and "unknown rubric pack: foo.zh-examples" in result.output
+    assert not (data / "runs").exists() or not any((data / "runs").iterdir())
+
+
 def test_run_that_fails_exits_1(tmp_path, monkeypatch):
     def broken(self, packet):
         raise ExplainError("backend down")

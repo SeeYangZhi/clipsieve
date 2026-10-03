@@ -1,6 +1,6 @@
 # rubrics/ — AGENTS.md
 
-Rubric packs are data, not code. One YAML per pack, validated against `packages/schema/schemas/rubric_pack.json` via `clipsieve.judge.rubric.load_pack`.
+Rubric packs are data, not code. A pack is a `<name>.yaml` here that loads with `clipsieve.judge.rubric.load_pack` (validated against `packages/schema/schemas/rubric_pack.json` plus the rules below). Other YAML in this folder, such as a `<pack>.zh-examples.yaml` sidecar, is not a pack: `pack_summaries` skips it (logs `rubric_pack_skipped`) and `find_pack` reports it as not a pack (`PackNotFound`).
 
 ## Contracts
 
