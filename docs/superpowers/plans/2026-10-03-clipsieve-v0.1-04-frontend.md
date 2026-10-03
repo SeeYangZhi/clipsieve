@@ -1220,7 +1220,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `eventsUrl` (Task 3), `reduceEvent`, `initialState`, `DashboardState` (Task 4).
 - Produces: `useRunEvents(runId, opts, factory?)` returning `{ state, events, connected, progress }`; `type RunEventsOptions`; `type EventSourceLike`; `type EventSourceFactory = (url: string) => EventSourceLike`.
 
-- [ ] **Step 1: Failing tests with a fake EventSource**
+- [x] **Step 1: Failing tests with a fake EventSource**
 
 Create `frontend/src/lib/useRunEvents.test.tsx`:
 
@@ -1362,7 +1362,7 @@ describe("useRunEvents replay", () => {
 Run: `cd frontend && bun run test src/lib/useRunEvents.test.tsx`
 Expected: FAIL, cannot find `./useRunEvents`.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Create `frontend/src/lib/useRunEvents.ts`:
 
@@ -1501,7 +1501,7 @@ export function useRunEvents(runId: string, opts: RunEventsOptions, factory: Eve
 Run: `cd frontend && bun run test src/lib/useRunEvents.test.tsx`
 Expected: 3 passed. If the replay first-event assertion fails because the first delay is computed against itself, confirm `cursor === 0` yields `delay 0` as written.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/lib/useRunEvents.ts frontend/src/lib/useRunEvents.test.tsx
