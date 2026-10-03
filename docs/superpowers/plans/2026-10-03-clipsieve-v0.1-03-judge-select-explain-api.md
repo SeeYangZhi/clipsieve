@@ -2097,7 +2097,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Decision: `run_id` is an argument (the overview signature omitted it); the planner, not the backend, owns `Plan.run_id`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/planner/test_plan.py`:
 
@@ -2162,12 +2162,12 @@ def test_build_plan_falls_back_to_pack_persona_criteria_when_not_five():
     assert plan.persona_fit_criteria[0] == "Unrelated creator and situation"
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/planner -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.planner'`.
 
-- [ ] **Step 3: Implement `planner/plan.py`**
+- [x] **Step 3: Implement `planner/plan.py`**
 
 ```python
 """Turn a brief into an approved-able Plan using the explain backend, then enforce invariants in code."""
@@ -2241,12 +2241,12 @@ def build_plan(
     )
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/planner -q`
 Expected: `5 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/planner backend/tests/planner
