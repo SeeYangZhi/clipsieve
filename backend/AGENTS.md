@@ -8,6 +8,7 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 - `clipsieve/models.py` is GENERATED from `packages/schema/`. Never edit it. Run `bun run schema` at the repo root after changing a schema.
 - Logging via `clipsieve.logging.get_logger(__name__)`. No `print()`.
 - Config via `clipsieve.config.get_settings()`. Never read `os.environ` elsewhere. Nothing depends on cwd: `.env` is read from `REPO_ROOT/.env`, then `./.env` (the cwd file wins), and a relative `CLIPSIEVE_DATA_DIR` resolves against `REPO_ROOT`; absolute paths are kept as given.
+- `CLIPSIEVE_FIXTURE_DIR` (`clipsieve_fixture_dir`) is for tests, fake mode and the Playwright flow only. A blank value means unset (not the cwd); a relative one resolves against `REPO_ROOT`.
 - The creator-hash salt comes only from `config.ensure_creator_salt(settings)`: the configured value, else `<data_dir>/creator_salt`, created on first use (32 hex chars, mode 0600). Never log the salt.
 - Files under `data/runs/<run_id>/` are canonical; SQLite is an index. Any write goes to the file first, then the row. `RunRepository.reindex` must be able to rebuild rows from files.
 - Optional means absent: run files, SQLite `data` columns and `events.jsonl` are dumped with `exclude_none=True` (and `by_alias=True`), so no `null` reaches files that the JSON Schemas type as `string`.
@@ -26,7 +27,7 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/store/` | `RunPaths`, SQLite engine and tables, `RunRepository` |
 | `clipsieve/events/` | `EventWriter`, `read_events`, `follow_events` |
 | `clipsieve/events/payloads.py` | `PAYLOAD_MODELS`, one Pydantic model per `RunEventType` |
-| `clipsieve/adapters/` | `Adapter` protocol, `registry`, `local_import`, `youtube`, `ytdlp_client`, `vtt` |
+| `clipsieve/adapters/` | `Adapter` protocol, `registry`, `local_import`, `youtube`, `ytdlp_client`, `vtt`, `fixture` |
 | `clipsieve/evidence/` | `asr`, `ocr`, `frames`, `comments`, `packet`, `extract` |
 | `clipsieve/judge/rubric.py` | rubric pack loading, per-pass question selection, TypeSafe primitive conversion, persona criteria |
 | `clipsieve/judge/base.py` | `Judge` protocol, `JudgeFailed`, Jev pricing (`cost_usd`) |
@@ -41,9 +42,12 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/explain/claude_cli.py` | `ClaudeCliBackend`: `claude -p` with structured output, one retry on a schema failure or an unknown citation; `PLAN_TASK`, `EXPLAIN_TASK` |
 | `clipsieve/explain/claude_api.py` | `ClaudeApiBackend` stub: both methods raise `NotImplementedError` (v0.2 follow-up) |
 | `clipsieve/planner/plan.py` | `build_plan`, `pack_summaries`, `default_lang`: brief to approvable `Plan` through an `ExplainBackend` |
+| `clipsieve/pipeline/state.py` | `RunState` (`pass_one_kept`, `pass_one_dropped`, `judge_failed`, `extracted`) in `<run>/state.json`; `load_state`, `save_state` |
+| `clipsieve/pipeline/runner.py` | `Runner` (`plan`, `approve`, `run`, `pause`, `resume_flag`, `reselect`), `STAGE_ORDER`, `RunPaused`, `post_state` |
+| `tests/fixtures/evidence/<safe_id>/` | Fixture media plus sidecars that `FixtureAdapter.fetch_media` copies; with the fakes they reproduce `tests/fixtures/evidence/<safe_id>.json` |
 | `tests/fixtures/claude-shim/claude` | Test-only bash stand-in for the `claude` binary (executable, mode 100755) |
 
-Later tasks add `pipeline/`, `api/`, `cli.py` and extend this table.
+Later tasks add `api/`, `cli.py` and extend this table.
 
 ## planner/
 
@@ -71,10 +75,31 @@ Platform adapters turn a `Query` into `Post` records and download media on reque
 - Recorded YouTube fixtures live in `tests/fixtures/youtube/` (`search.json`, `<id>.json`, `<id>.<lang>.vtt`); `FakeYtDlpClient(fixture_dir)` replays them.
 - `YouTubeAdapter.from_settings` reads `clipsieve_data_dir` (for the incoming raw dir), the creator salt via `ensure_creator_salt(settings)`, and `youtube_api_key`: Data API search when set, else yt-dlp search.
 - `local_import`: folder or CSV. Folder posts get `local:<sha1[:12]>` ids and hidden files are skipped; CSV rows have `media=[]`, so `fetch_media` is a no-op for them. Folder posts' `fetch_media` copies the file behind `Post.url` (`file.resolve().as_uri()`); a vanished source raises `MediaDownloadError`. A non-empty `creator` CSV column sets per-row `creator_hash` and `creator_display`; otherwise the hash is of the CSV path.
+- `fixture` (`FixtureAdapter(fixture_dir, data_dir)`, platform `local`): `search` ignores queries and yields the five `posts/*.json` in id order up to `limit`, copying `raw/<safe_id>.json` to `incoming/local/`. `fetch_media` copies `evidence/<safe_id>/` (including `frames/` OCR sidecars) into `dest`, keeping existing files; media named `video.mp4` / `img_NN.jpg` (NN = media position), `local_path` stays `None` when the fixture has no file. `registry.load_adapters` puts it in place of `local` (over any entry point) only when `clipsieve_fixture_dir` is set.
 - `youtube`: live, upcoming and post-live videos are rejected. Shorts filter is duration < 180 s; a missing duration at the full-info stage means "not a Short". The flat yt-dlp search asks for `SEARCH_OVERFETCH` (3) times the remaining count, since long videos are dropped after it; `search` still stops at the limit before fetching another info. Optional Data API key is sent in the `x-goog-api-key` header. Downloads are capped at 200 MB.
 - `vtt.py`: tags are stripped, then character references are unescaped; the cue split tolerates YouTube's `" "` placeholder lines.
 - `adapters/` never imports from `evidence/`.
 - Every adapter passes `tests/adapters/contract.py::run_adapter_contract` against a recorded fixture. The helper checks unique post ids and a `^[0-9a-f]{64}$` `creator_hash`, relocates every raw file and rewrites `raw_ref` exactly as the Runner does, then calls `fetch_media` twice and requires dest-relative `local_path`s. Tests never hit the network: yt-dlp is behind `YtDlpClient` with `FakeYtDlpClient`; HTTP uses `httpx.MockTransport`.
+
+## pipeline/
+
+`Runner` drives one run through its stages and is the only event writer for that run in the process. One `run()` at a time per Runner.
+
+- Constructor: `Runner(run_id, settings, repo, adapters, judge, explain, asr, ocr, frames, rubrics_dir)`. Paths come from `repo.paths(run_id)`. `asr`/`ocr`/`frames` are one shared instance each for the whole run (B.13). A fresh run's log starts with `run_created`, emitted by the constructor when the log is empty, so build the Runner right after `repo.create_run` and never emit `run_created` elsewhere.
+- `STAGE_ORDER = planning, collecting, pass_one, extracting, pass_two, selecting, explaining, done`. `Run.stage` is always assigned a `Stage` member; every change emits `stage_changed {"from", "to"}`.
+- `plan()` (stage `planning` only) calls `build_plan` and emits `plan_ready`. `approve(plan)` (stage `planning` only, else `RuntimeError`) validates the pack, stamps `run_id` and `approved_at`, copies brief, rubric pack and quantities onto the run, emits `plan_approved`, then moves to `collecting`. `run()` before approval raises `RuntimeError`; on a `done` or `failed` run it returns at once.
+- Success order: `run_created`, `plan_ready`, `plan_approved`, `post_collected` x N, `pass_one_judged` x N, `evidence_ready` x kept, `judged` x kept, `selected`, `explained`, `done {counters}` last (each stage preceded by its `stage_changed`).
+- Collecting pulls posts one at a time from `adapter.search` in a thread. Each post's raw file moves from `incoming/<platform>/` to `raw/<safe_id>.json` and `raw_ref` becomes that run-relative path BEFORE the post is stored and before any `fetch_media` (B.1/B.10). `post_collected` carries the post with no media paths. Posts already stored are skipped when a resumed collection re-runs the search. Missing adapter, failed healthcheck, failed search or a post that cannot be stored: recoverable `error` `where: adapter.<platform>`; a platform stops after 10+ posts with over 20% failing.
+- Pass one: one Jev request per post with the pass's questions (`questions_for_pass`), pack = `with_persona_criteria(find_pack(plan.rubric_pack), plan.persona_fit_criteria)`, model `pack.jev_model`, at most `JUDGE_CONCURRENCY` (16) in flight. The keep set (`pass_one_keep`) is decided only after every post is judged or failed, then `pass_one_judged {judge, kept, composite}` is emitted per post and `RunState` records kept and dropped.
+- Extracting (kept posts, `EXTRACT_CONCURRENCY` 2, `asyncio.to_thread`): `fetch_media` and `extract_evidence` in separate try blocks. A `fetch_media` failure (including `MediaDownloadError`) is a recoverable `adapter.<platform>` error and extraction still runs on whatever media exists (C.6); an extraction failure is `evidence.extract` and the post gets empty evidence. Then `evidence_ready` and `RunState.extracted`.
+- Pass two: `build_state(brief, post, evidence)`; when it reports truncation the evidence is re-saved with `truncated: true` (B.3). `judged {judge, composite}` per post. A `JudgeFailed` in either pass is a recoverable `error` `where: judge.pass_one|judge.pass_two` with `post_id`, recorded in `RunState.judge_failed`; that post is excluded from later stages, selection and `post_state` (`judge_failed`), and the run continues. Any other judge exception propagates.
+- Selecting: `select` over pass-two results minus `judge_failed`; `selected`. `reselect(weights_override)` re-runs it on stored results (no Jev calls, no new report, elapsed unchanged) and emits another `selected`; it needs a first selection.
+- Explaining: the packet holds the shortlist's posts, evidence, pass-two results and keyframes plus choice-label counts per question over all pass-two results. The Runner overwrites `report.run_id`, then `validate_report_citations` against the shortlist. `ExplainError`, any other backend exception, or unknown cited ids fail the run: `error` (`where: explain`, `recoverable: false`, stage `explaining`) FIRST, then `run.stage = failed`, `run.error` set, and `stage_changed {from: explaining, to: failed}` as the LAST event (E.8 as amended). The selection stays saved; no report is written; `run()` does not resume a failed run.
+- Resume: `run()` again continues from the saved stage. Per-post idempotency: a post with a judge result file is not re-judged; a post in `RunState.extracted` is not re-extracted; pass one is not redone once its keep set is saved. Counters `collected`, `pass_one_kept`, `judged`, `jev_input_tokens`, `jev_cost_usd` are recounted from the run's files at the start of `run()`. A crash in one per-post task lets in-flight posts finish and record, starts no new ones, then re-raises with the stage unchanged.
+- Pause: `pause()` is cooperative. In-flight posts finish, no new post or stage starts; `run()` sets `run.paused = True` and returns normally. To resume: clear `run.paused`, call `resume_flag()`, then `run()`.
+- Counters: `jev_cost_usd = round(cost_usd(jev_input_tokens), 6)`; `elapsed_s` is `created_at` to now, rounded to 0.1 s; `errors` counts every `error` event.
+- `post_state(post_id, state, selection, judged_pass_two)` returns `judge_failed | dropped_pass_one | shortlisted | review | judged | collected`, in that precedence.
+- Tests (`tests/pipeline/`) run the whole pipeline on `FixtureAdapter`, `RecordedJudge`, `FakeExplainBackend` and the evidence fakes; no network.
 
 ## evidence/
 
