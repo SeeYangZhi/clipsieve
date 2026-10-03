@@ -1652,7 +1652,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Contract decision: `RunPaths` gains one extra property beyond the overview, `selection_json` (`root / "selection.json"`), because the repository persists `Selection` and the overview gave it no file.
 
-- [ ] **Step 1: Write the failing paths test**
+- [x] **Step 1: Write the failing paths test**
 
 `backend/tests/test_paths.py`:
 
@@ -1690,12 +1690,12 @@ def test_ensure_creates_all_dirs(tmp_path: Path):
         assert (p.root / sub).is_dir()
 ```
 
-- [ ] **Step 2: Run to verify failure**
+- [x] **Step 2: Run to verify failure**
 
 Run: `cd backend && uv run pytest -q tests/test_paths.py`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.store'`.
 
-- [ ] **Step 3: Implement `store/__init__.py` and `store/paths.py`**
+- [x] **Step 3: Implement `store/__init__.py` and `store/paths.py`**
 
 `backend/clipsieve/store/__init__.py`: empty file.
 
@@ -1766,12 +1766,12 @@ class RunPaths:
             (self.root / sub).mkdir(parents=True, exist_ok=True)
 ```
 
-- [ ] **Step 4: Run paths test to verify pass**
+- [x] **Step 4: Run paths test to verify pass**
 
 Run: `cd backend && uv run pytest -q tests/test_paths.py`
 Expected: `3 passed`.
 
-- [ ] **Step 5: Write the failing db test**
+- [x] **Step 5: Write the failing db test**
 
 `backend/tests/test_db.py`:
 
@@ -1797,12 +1797,12 @@ def test_init_db_is_idempotent(data_dir: Path):
     init_db(engine)
 ```
 
-- [ ] **Step 6: Run to verify failure**
+- [x] **Step 6: Run to verify failure**
 
 Run: `cd backend && uv run pytest -q tests/test_db.py`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.store.db'`.
 
-- [ ] **Step 7: Implement `store/db.py`**
+- [x] **Step 7: Implement `store/db.py`**
 
 ```python
 """SQLite index tables. Every row stores the canonical JSON in `data`; key columns exist for lookup and ordering."""
@@ -1874,12 +1874,12 @@ def init_db(engine: Engine) -> None:
     SQLModel.metadata.create_all(engine)
 ```
 
-- [ ] **Step 8: Run db test to verify pass, then lint**
+- [x] **Step 8: Run db test to verify pass, then lint**
 
 Run: `cd backend && uv run pytest -q tests/test_db.py tests/test_paths.py && uv run ruff check . && uv run ruff format --check .`
 Expected: `5 passed`, `All checks passed!`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add backend/clipsieve/store backend/tests/test_paths.py backend/tests/test_db.py
