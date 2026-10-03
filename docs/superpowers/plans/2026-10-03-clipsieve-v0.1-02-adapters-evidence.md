@@ -748,7 +748,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `clipsieve.models.TranscriptSegment`.
 - Produces: `YtDlpClient` Protocol with `search(query: str, n: int) -> list[dict]`, `info(url: str) -> dict`, `download(url: str, dest: Path, subtitle_langs: list[str]) -> dict`; `RealYtDlpClient`; `FakeYtDlpClient(fixture_dir: Path)`; `parse_vtt(text: str) -> list[TranscriptSegment]`; `vtt_lang_from_filename(path: Path) -> str | None`.
 
-- [ ] **Step 1: Write the failing VTT tests**
+- [x] **Step 1: Write the failing VTT tests**
 
 `backend/tests/adapters/test_vtt.py`:
 
@@ -791,7 +791,7 @@ def test_vtt_lang_from_filename():
     assert vtt_lang_from_filename(Path("video.vtt")) is None
 ```
 
-- [ ] **Step 2: Create the VTT fixtures**
+- [x] **Step 2: Create the VTT fixtures**
 
 `backend/tests/fixtures/youtube/aB3dEfGhIjK.en.vtt`:
 
@@ -845,7 +845,7 @@ Language: zh-Hans
 新加坡人的真实体验
 ```
 
-- [ ] **Step 3: Create the recorded yt-dlp info fixtures**
+- [x] **Step 3: Create the recorded yt-dlp info fixtures**
 
 `backend/tests/fixtures/youtube/search.json` (shape of `extract_info("ytsearch2:...", download=False)["entries"]` with `extract_flat`):
 
@@ -916,12 +916,12 @@ Language: zh-Hans
 }
 ```
 
-- [ ] **Step 4: Run VTT tests to verify they fail**
+- [x] **Step 4: Run VTT tests to verify they fail**
 
 Run: `uv run pytest tests/adapters/test_vtt.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.adapters.vtt'`
 
-- [ ] **Step 5: Implement the VTT parser**
+- [x] **Step 5: Implement the VTT parser**
 
 `backend/clipsieve/adapters/vtt.py`:
 
@@ -990,12 +990,12 @@ def vtt_lang_from_filename(path: Path) -> str | None:
     return None
 ```
 
-- [ ] **Step 6: Run VTT tests to verify they pass**
+- [x] **Step 6: Run VTT tests to verify they pass**
 
 Run: `uv run pytest tests/adapters/test_vtt.py -v`
 Expected: 4 passed
 
-- [ ] **Step 7: Implement the yt-dlp client interface, real client, and fake**
+- [x] **Step 7: Implement the yt-dlp client interface, real client, and fake**
 
 `backend/clipsieve/adapters/ytdlp_client.py`:
 
@@ -1103,7 +1103,7 @@ class FakeYtDlpClient:
         return meta
 ```
 
-- [ ] **Step 8: Lint and commit**
+- [x] **Step 8: Lint and commit**
 
 Run: `uv run ruff check . && uv run ruff format --check .`
 Expected: `All checks passed!` and no files would be reformatted.
