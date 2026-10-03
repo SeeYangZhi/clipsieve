@@ -44,10 +44,15 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/planner/plan.py` | `build_plan`, `pack_summaries`, `default_lang`: brief to approvable `Plan` through an `ExplainBackend` |
 | `clipsieve/pipeline/state.py` | `RunState` (`pass_one_kept`, `pass_one_dropped`, `judge_failed`, `extracted`) in `<run>/state.json`; `load_state`, `save_state` |
 | `clipsieve/pipeline/runner.py` | `Runner` (`plan`, `approve`, `run`, `pause`, `resume_flag`, `reselect`), `STAGE_ORDER`, `RunPaused`, `post_state` |
+| `clipsieve/api/context.py` | `AppContext` (dataclass), `build_context`, `set_context`, `get_context`, `RUBRICS_DIR_DEFAULT`, `DEFAULT_FIXTURE_DIR` |
+| `clipsieve/api/runs.py` | Run lifecycle routes, posts view, report, reselect; `CreateRunBody`, `ReselectBody`, `PostView`, `PostsPage`, `RunWithPlan`; background `_plan` / `_drive` |
+| `clipsieve/api/events.py` | `GET /runs/{id}/events` SSE, `format_sse` |
+| `clipsieve/api/meta.py` | `GET /adapters`, `GET /rubrics`, `GET /runs/{id}/media/{post_id}/{filename}` |
+| `clipsieve/app.py` | `create_app(ctx=None)`, module-level `app` for `uvicorn clipsieve.app:app` |
 | `tests/fixtures/evidence/<safe_id>/` | Fixture media plus sidecars that `FixtureAdapter.fetch_media` copies; with the fakes they reproduce `tests/fixtures/evidence/<safe_id>.json` |
 | `tests/fixtures/claude-shim/claude` | Test-only bash stand-in for the `claude` binary (executable, mode 100755) |
 
-Later tasks add `api/`, `cli.py` and extend this table.
+Later tasks add `cli.py` and extend this table.
 
 ## planner/
 
@@ -100,6 +105,23 @@ Platform adapters turn a `Query` into `Post` records and download media on reque
 - Counters: `jev_cost_usd = round(cost_usd(jev_input_tokens), 6)`; `elapsed_s` is `created_at` to now, rounded to 0.1 s; `errors` counts every `error` event.
 - `post_state(post_id, state, selection, judged_pass_two)` returns `judge_failed | dropped_pass_one | shortlisted | review | judged | collected`, in that precedence.
 - Tests (`tests/pipeline/`) run the whole pipeline on `FixtureAdapter`, `RecordedJudge`, `FakeExplainBackend` and the evidence fakes; no network.
+
+## api/
+
+FastAPI under `/api`. The binding HTTP contract is the overview plan's; this is how it is met.
+
+- Routes: `POST /runs` (201, planning starts in the background), `GET /runs` (newest first), `GET /runs/{id}` (`{run, plan}`), `PUT /runs/{id}/plan`, `POST /runs/{id}/approve|pause|resume`, `GET /runs/{id}/events?after=N` (SSE), `GET /runs/{id}/posts?offset&limit` (`{items: PostView[], total}`), `GET /runs/{id}/report`, `POST /runs/{id}/reselect` (`{weights}` -> `Selection`), `GET /adapters`, `GET /rubrics`, `GET /runs/{id}/media/{post_id}/{filename}`, `GET /health` (`{status, backend}`).
+- Errors are always `{"detail": str}`, request validation included (`app._on_validation_error`). 404 unknown run or media, missing report; 409 edit or approve after approval, approve before a plan exists or while the planner runs, reselect with no selection or while a pipeline task runs; 422 unknown platform or rubric pack, bad body, a plan whose pack or persona criteria do not validate.
+- Every route sets `response_model_exclude_none=True`: optional fields are absent, never `null`. The one `null` is `RunWithPlan.plan` before a plan exists (contract `plan|null`; a wrap serializer keeps the key).
+- `POST /runs` never emits `run_created`: it builds the run's `Runner` (`ctx.runner_for`), whose constructor does.
+- `build_context(settings)`: fake mode is `clipsieve_explain_backend == "fake"`; with `clipsieve_fixture_dir` unset it becomes `DEFAULT_FIXTURE_DIR` (`backend/tests/fixtures`), so `local` is `FixtureAdapter`, judge `RecordedJudge`, ASR/OCR/frames fakes, explain `FakeExplainBackend`. Real mode: `TypeSafeJudge(typesafe_api_key)`, `WhisperASR`, `PaddleOCRBackend`, `FfmpegFrames` (imported lazily), `get_backend(settings)`. One shared instance each per process (B.13). It calls `ensure_creator_salt` once and puts the salt on `ctx.settings` before `load_adapters` (A.12).
+- `create_app(ctx)` installs `ctx` with `set_context`; without one, `get_context()` builds it from `get_settings()` on the first request, so importing `clipsieve.app` is cheap. The lifespan calls `configure_logging()` (servers only; in-process test transports skip lifespan).
+- Background work: `asyncio.create_task`, the latest task per run in `ctx.tasks[run_id]` (`ctx.busy(run_id)`), a done-callback logs `run_task_failed` with the traceback or `run_task_cancelled`. `_plan` turns a planning failure into a logged `run_plan_failed` plus a recoverable `error` event (`where: planner`), counted in `counters.errors`; the run stays in `planning` and a hand-written plan can still be PUT.
+- `_drive` runs `runner.run()` under `ctx.lock_for(run_id)` (one `run()` per Runner). Pause adds the run to `ctx.pause_requests` and calls `runner.pause()`; resume clears both, clears `run.paused` and starts `_drive` unless a task is running. When `run()` returns paused with no pause outstanding (a late pause won, Task 9), `_drive` clears `paused` and runs again (at most `MAX_LATE_PAUSE_RERUNS`).
+- Posts view: `PostView {post, judge: {pass_name: JudgeResult}, composite?, state}`; `composite` is the selection score when there is one (it follows reselect weights), else the pass-two composite, absent otherwise; `state` from `post_state`.
+- SSE: `id: <seq>`, `event: run_event`, `data: <RunEvent JSON>`; the data line is the `events.jsonl` line byte for byte (`by_alias`, `exclude_none`, CJK literal). The stream holds exactly the events with `seq > max(after, Last-Event-ID)`. A finished run (a `done` event, or any event with stage `failed`) is served whole from that point and the stream closes, including events after `done` such as a reselect's `selected`; a live run is followed with `follow_events` until its first terminal event.
+- Media: `post_id` arrives URL-decoded (`local%3Afx-001`). `filename` may be a sub-path (`frames/<name>`). 404 unless the post's media dir sits directly under `<run>/media/` and the resolved file is inside it, so `..`, absolute paths and a post id of `..` never escape.
+- Tests (`tests/api/`) drive the app in fake mode with `httpx.AsyncClient(ASGITransport)`; settings come from kwargs with `_env_file=None`. SSE tests read only streams that end (a run that reaches `done`); the `client` fixture waits for background tasks before the loop closes.
 
 ## evidence/
 
