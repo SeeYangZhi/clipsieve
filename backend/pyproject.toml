@@ -14,11 +14,27 @@ dependencies = [
   "structlog>=24.4",
   "typer>=0.12",
   "pyyaml>=6.0",
-  "httpx>=0.27",
+  "httpx>=0.28",
+  "yt-dlp>=2026.1.1",
+  "pillow>=10.4",
+]
+
+[project.optional-dependencies]
+asr = [
+  "mlx-whisper>=0.4; sys_platform == 'darwin' and platform_machine == 'arm64'",
+  "faster-whisper>=1.1; sys_platform != 'darwin' or platform_machine != 'arm64'",
+]
+ocr = [
+  "paddleocr>=2.9",
+  "paddlepaddle>=3.0",
 ]
 
 [project.scripts]
 sieve = "clipsieve.cli:app"
+
+[project.entry-points."clipsieve.adapters"]
+local = "clipsieve.adapters.local_import:LocalImportAdapter"
+youtube = "clipsieve.adapters.youtube:YouTubeAdapter"
 
 [dependency-groups]
 dev = [
