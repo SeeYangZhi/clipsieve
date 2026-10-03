@@ -1,0 +1,9 @@
+{
+  "name": "@clipsieve/schema",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "echo 'schema generator arrives in Task 3'"
+  }
+}

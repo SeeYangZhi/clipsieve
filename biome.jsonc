@@ -1,0 +1,13 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "root": true,
+  "extends": ["ultracite/biome/core"],
+  "files": {
+    "includes": [
+      "!**/node_modules",
+      "!**/.next",
+      "!frontend/src/lib/types.ts",
+      "!packages/schema/.build"
+    ]
+  }
+}
