@@ -51,7 +51,20 @@ Python package `clipsieve`. Owns the whole pipeline: config, store, event log, a
 | `clipsieve/app.py` | `create_app(ctx=None)`, module-level `app` for `uvicorn clipsieve.app:app` |
 | `clipsieve/cli.py` | `sieve` typer `app` (`[project.scripts]`): `run`, `replay`, `reselect`, `reindex`, `eval` stub; `_say`, `_json` |
 | `tests/fixtures/evidence/<safe_id>/` | Fixture media plus sidecars that `FixtureAdapter.fetch_media` copies; with the fakes they reproduce `tests/fixtures/evidence/<safe_id>.json` |
+| `tests/fixtures/posts/`, `raw/`, `youtube/` | Five `local:fx-*` post records, their raw payloads, and recorded YouTube search and caption payloads for the adapter contract tests |
+| `tests/fixtures/judge/` | `RecordedJudge` answers per post and pass, plus `make_fixtures.py` |
+| `tests/fixtures/explain/` | `plan.json`, `report.json` for `FakeExplainBackend` and the claude shim |
 | `tests/fixtures/claude-shim/claude` | Test-only bash stand-in for the `claude` binary (executable, mode 100755) |
+
+## select/
+
+Pure functions over `JudgeResult`s and a `RubricPack`. No I/O, no model calls, no settings; policy comes from the pack (or a weights override), never from a prompt.
+
+- `Selection {shortlist, review, scores, dropped}` is defined in `select/select.py` (plan 01 needs it) and persisted by `RunRepository.save_selection`.
+- Normalisation: `normalize_score` is the score's position among its levels (`(value - lowest legend key) / (levels - 1)`, clamped to 0..1; the lowest key is 0 without a legend). A noul contributes its yes-probability; a choice never contributes to the composite, it drives quotas and the run aggregates. `answer_confidence`: a noul's is `|2p - 1|`, else the answer's `confidence` (0 when absent).
+- `composite(result, pack, weights=None, question_ids=None)` is the weighted mean over the weighted questions present, renormalised by the weights actually used. Weights come from the override, else the pack's `selection.weights`, else (pass one, `question_ids` given) those weights restricted to the ids, else 1.0 each.
+- `select(results, pack, weights_override)`: hard filter (`risky_claim` above `hard_filters.risky_claim_max`), then posts with any weighted answer below `review_confidence_below` go to `review` (ranked by score) and skip the shortlist, then rank by composite (post id breaks ties) and fill `shortlist_size` with `violates_quota` (a label capped at `floor(max_share * size)`, at least one). `dropped` reasons: `hard_filter`, `quota`, `not_selected`; review posts are not in `dropped`.
+- `pass_one_keep(results, pack)`: top `ceil(pass_one_keep * n)` (at least one) by composite over the `metadata_pass` questions only.
 
 ## planner/
 

@@ -49,7 +49,7 @@ Implementation plan: `docs/superpowers/plans/`.
 ## Coding Rules (repo-wide)
 
 - `uv` for all Python dependency and command execution. Bun for all JS.
-- `structlog` for backend logging. No `print()` in app code.
+- `structlog` for backend logging. No `print()` in app code. The one exception is the `cli.py` output helpers `_say` and `_json`.
 - Pydantic Settings for configuration. Secrets only in local `.env`. Keep `.env.example` current. Never commit keys.
 - Every external system sits behind a small interface with a fake: adapters, Jev client, explain backend, ASR, OCR.
 - Persist raw platform payloads before normalisation. Every `Post` carries a `raw_ref`.
