@@ -1,15 +1,20 @@
 # clipsieve build status
 
-Updated: 2026-10-03T19:50:55Z by iteration 2
+Updated: 2026-10-03T20:12:32Z by iteration 3 (cut short by usage limit)
 
 ## Plans
 | Plan | Branch | Tasks done / total | Merged | Last commit |
 |---|---|---|---|---|
 | 01 foundation | plan/01-foundation (merged, branch deleted locally) | 8 / 8 | yes (574e57d) | d7b28e8 |
 | 02 adapters-evidence | plan/02-adapters-evidence (merged, branch deleted locally) | 12 / 12 | yes (7c3beb5) | 44206fc |
-| 03 judge-select-explain-api | plan/03-judge-select-explain-api (worktree .worktrees/plan-03-judge-select-explain-api) | 10 / 12 (task 11 CLI in flight) | no | f23ad90 |
+| 03 judge-select-explain-api | plan/03-judge-select-explain-api (worktree .worktrees/plan-03-judge-select-explain-api, pushed) | 12 / 12 ticked; whole-branch final review in flight | no | 7ed007c |
 | 04 frontend | plan/04-frontend (worktree .worktrees/plan-04-frontend, pushed) | 10 / 12 (paused: tasks 11-12 need plan 03 API) | no | a33d9d1 |
 | 05 contrib-xhs-evals | | 0 / 7 | no | |
+
+## Iteration 3 did (cut short by usage limit)
+- Plan 03 Tasks 11 (sieve CLI; DoD smoke passes in fake mode: exit 0, stage done, replay 27 events) and 12 (DOX closeout) implemented, reviewed, ticked. All 12 tasks ticked; suite 384 passed, 1 xfailed; `bun run check` exit 0 on the branch. Branch pushed at 7ed007c.
+- Whole-branch final review (opus) was dispatched on 7c3beb5..8398639 but its verdict was NOT received before the usage limit. Next iteration: check the reviewer output transcript is unavailable to a fresh session, so RE-DISPATCH the final review from the package at `.worktrees/plan-03-judge-select-explain-api/.superpowers/sdd/2026-10-03-clipsieve-v0.1-03-judge-select-explain-api/review-7c3beb5..8398639.diff` (regenerate with review-package for merge-base..HEAD), run ONE fix wave + scoped re-review, then `bun run check`, merge `--no-ff` into main, verify main, push, remove the worktree.
+- Then plan 04: merge main into plan/04-frontend, run Tasks 11 (Playwright e2e vs fake backend) and 12, final review, merge. Then plan 05 (new worktree from main; first reconcile B.10 for XHS via Media.url or run-keyed cache; MediaDownloadError from adapters.base; pack_summaries must skip non-pack YAML such as *.zh-examples.yaml).
 
 ## Iteration 2 did
 - Plan 03 tasks 1-10 complete (rubric pack + judge/rubric.py, TypeSafeJudge with retries, RecordedJudge + fixtures, scoring, quotas/select, explain contract + fake + prompts, claude -p backend + shim, planner, pipeline Runner + FixtureAdapter, FastAPI app + SSE). Fix rounds on tasks 1, 2, 10. Backend suite 367 passed, 1 xfailed; `bun run check` exit 0 on the plan 03 branch.
