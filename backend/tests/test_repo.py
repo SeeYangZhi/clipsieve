@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from datetime import UTC, datetime, timedelta, timezone
 from pathlib import Path
 
 import pytest
@@ -214,3 +215,37 @@ def test_reindex_rebuilds_rows_from_files(repo: RunRepository, fixtures_dir: Pat
     assert fresh.count_posts(run.id) == 2
     assert fresh.get_judge_result(run.id, "local:fx-001", "pass_one") == jr
     assert fresh.get_report(run.id) is not None
+
+
+SHANGHAI = timezone(timedelta(hours=8))
+
+
+def test_list_posts_orders_by_instant_across_utc_offsets(
+    repo: RunRepository, fixtures_dir: Path, data_dir: Path
+):
+    run = repo.create_run(BRIEF, ["local"], {"local": 2}, "creator-hooks-v1")
+    base = load_fixture_post(fixtures_dir, 1)
+    # 09:00+08:00 is 01:00 UTC, so it is earlier than 05:00 UTC despite sorting later as text.
+    # Ids are chosen so post_id order contradicts time order.
+    earlier = base.model_copy(
+        update={"id": "local:z-shanghai", "collected_at": datetime(2026, 10, 3, 9, tzinfo=SHANGHAI)}
+    )
+    later = base.model_copy(
+        update={"id": "local:a-utc", "collected_at": datetime(2026, 10, 3, 5, tzinfo=UTC)}
+    )
+    repo.upsert_post(run.id, later)
+    repo.upsert_post(run.id, earlier)
+    assert [p.id for p in repo.list_posts(run.id)] == ["local:z-shanghai", "local:a-utc"]
+    on_disk = RunPaths(data_dir, run.id).post_json("local:z-shanghai").read_text(encoding="utf-8")
+    assert "2026-10-03T09:00:00+08:00" in on_disk, "file keeps the original offset"
+    assert repo.get_post(run.id, "local:z-shanghai").collected_at.utcoffset() == timedelta(hours=8)
+
+
+def test_list_runs_orders_by_instant_across_utc_offsets(repo: RunRepository):
+    a = repo.create_run(BRIEF, ["local"], {"local": 1}, "creator-hooks-v1")
+    b = repo.create_run(BRIEF, ["local"], {"local": 1}, "creator-hooks-v1")
+    a.created_at = datetime(2026, 10, 3, 9, tzinfo=SHANGHAI)  # 01:00 UTC, older
+    b.created_at = datetime(2026, 10, 3, 5, tzinfo=UTC)  # newer
+    repo.save_run(a)
+    repo.save_run(b)
+    assert [r.id for r in repo.list_runs()] == [b.id, a.id]

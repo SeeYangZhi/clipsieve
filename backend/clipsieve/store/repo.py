@@ -104,7 +104,7 @@ class RunRepository:
             s.merge(
                 RunRow(
                     id=run.id,
-                    created_at=run.created_at.isoformat(),
+                    created_at=run.created_at.astimezone(UTC).isoformat(),
                     stage=run.stage.value,
                     data=_dump(run),
                 )
@@ -145,7 +145,7 @@ class RunRepository:
                 PostRow(
                     run_id=run_id,
                     post_id=post.id,
-                    collected_at=post.collected_at.isoformat(),
+                    collected_at=post.collected_at.astimezone(UTC).isoformat(),
                     data=_dump(post),
                 )
             )
