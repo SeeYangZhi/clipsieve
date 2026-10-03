@@ -7,8 +7,8 @@ Updated: 2026-10-03T17:33:03Z by iteration 1
 |---|---|---|---|---|
 | 01 foundation | plan/01-foundation (merged, branch deleted locally) | 8 / 8 | yes (574e57d) | d7b28e8 |
 | 02 adapters-evidence | plan/02-adapters-evidence (merged, branch deleted locally) | 12 / 12 | yes (7c3beb5) | 44206fc |
-| 03 judge-select-explain-api | plan/03-judge-select-explain-api (worktree .worktrees/plan-03-judge-select-explain-api) | 0 / 12 | no | 7c3beb5 (task 1 about to start) |
-| 04 frontend | plan/04-frontend (worktree .worktrees/plan-04-frontend) | 9 / 12 (task 10 committed, review pending) | no | 7a85117 |
+| 03 judge-select-explain-api | plan/03-judge-select-explain-api (worktree .worktrees/plan-03-judge-select-explain-api) | 0 / 12 | no | 7c3beb5 (task 1 in flight) |
+| 04 frontend | plan/04-frontend (worktree .worktrees/plan-04-frontend, pushed) | 10 / 12 (paused: tasks 11-12 need plan 03 API) | no | a33d9d1 |
 | 05 contrib-xhs-evals | | 0 / 7 | no | |
 
 ## Last iteration did (continued)
@@ -25,7 +25,7 @@ Updated: 2026-10-03T17:33:03Z by iteration 1
 
 ## Next iteration should
 - For each of plan 02 and plan 04: check `git log` in the worktree for a Task 1 commit and the report at `.superpowers/sdd/<plan>/task-1-report.md`; dispatch the task reviewer (review-package b349970..HEAD), fix, tick, then continue tasks 2..12 sequentially per plan, running the two plans in parallel.
-- Plan 03 starts after plan 02 merges; plan 05 after plan 03.
+- Plan 03 running (task 1 dispatched). Plan 04 is paused after task 10: tasks 11 (Playwright vs fake backend) and 12 need plan 03 merged; then merge main into plan/04-frontend (expect small conflicts in root AGENTS.md index and README) and finish plan 04. Plan 05 after plan 03.
 - Plan 05 note: the XHS fetch_media sketch reads the incoming raw file, which conflicts with B.10 (Runner relocates raw before fetch_media); Media has no url field. Reconcile before executing plan 05 (add Media.url to the schema or a run-keyed cache) and import MediaDownloadError from adapters.base (B.11).
 - Plan 03 notes: call `ensure_creator_salt` in build_context and CLI (A.12); API routes use `response_model_exclude_none=True` (A.13); test near plan line 2435 must use `payload.get("post_id")`; explain failure emits error before stage_changed(failed).
 - Plan 04 notes: biome.jsonc schema 2.5.15 and ultracite/biome/react + next presets; treat JSON null as absent defensively; `frontend/node_modules/next/dist/docs/` may be hoisted to root `node_modules/`.
