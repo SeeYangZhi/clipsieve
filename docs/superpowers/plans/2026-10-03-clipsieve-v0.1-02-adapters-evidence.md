@@ -403,7 +403,7 @@ asr = [
     "faster-whisper>=1.1; sys_platform != 'darwin' or platform_machine != 'arm64'",
 ]
 ocr = [
-    "paddleocr>=2.9",
+    "paddleocr>=2.9,<3",
     "paddlepaddle>=3.0",
 ]
 
