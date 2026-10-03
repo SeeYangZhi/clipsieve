@@ -157,7 +157,7 @@ async def create_run(body: CreateRunBody, ctx: Ctx) -> Run:
     try:
         find_pack(body.rubric_pack, ctx.rubrics_dir)
     except PackNotFound as exc:
-        raise HTTPException(422, f"unknown rubric pack: {body.rubric_pack}") from exc
+        raise HTTPException(422, f"unknown rubric pack: {body.rubric_pack} ({exc})") from exc
     brief = Brief(
         text=body.brief, topic="", audience="", persona="", language_hint=body.language_hint
     )

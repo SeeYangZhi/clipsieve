@@ -39,7 +39,7 @@ def pack_summaries(rubrics_dir: Path) -> list[RubricPackSummary]:
         try:
             pack = load_pack(path)
         except PACK_LOAD_ERRORS as exc:
-            log.info("rubric_pack_skipped", path=str(path), reason=type(exc).__name__)
+            log.info("rubric_pack_skipped", path=str(path), reason=str(exc)[:500])
             continue
         out.append(
             RubricPackSummary(

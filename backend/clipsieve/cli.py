@@ -198,8 +198,8 @@ def run(
             raise typer.Exit(2)
         try:
             find_pack(pack, ctx.rubrics_dir)
-        except PackNotFound:
-            _say(f"unknown rubric pack: {pack}", err=True)
+        except PackNotFound as exc:
+            _say(f"unknown rubric pack: {pack} ({exc})", err=True)
             raise typer.Exit(2) from None
         brief_model = Brief(
             text=brief, topic="", audience="", persona="", language_hint=language_hint
