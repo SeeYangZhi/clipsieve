@@ -10,6 +10,7 @@ Next.js 16 App Router client for clipsieve. Thin: all state from `/api/*` (Next 
 - Every user-visible string goes through `t(key, locale)` from `src/lib/i18n.ts`; keys live in `src/lib/i18n/en.ts` and `zh.ts`. Adding a key means adding it to both.
 - Post ids contain `:`; `encodeURIComponent` them in every URL.
 - API origin: `CLIPSIEVE_API_ORIGIN` (default `http://localhost:8000`), read when `next.config.ts` loads (`next dev` start, `next build`; baked into the build's routes manifest).
+- Env: Next reads `frontend/.env*` and the process environment; `bun run dev` from the root also loads the root `.env`. Empty values fall back to defaults (`||`, not `??`).
 
 ## Next 16 notes (verified against node_modules/next/dist/docs on scaffold)
 Docs live at `frontend/node_modules/next/dist/docs/` (Bun isolated linker: `frontend/node_modules/next` links into the root `node_modules/.bun/`; there is no root `node_modules/next`).

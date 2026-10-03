@@ -3,5 +3,17 @@
   "extends": "//",
   "files": {
     "includes": ["**", "!src/components/ui", "!src/lib/types.ts"]
+  },
+  "linter": {
+    "rules": {
+      "style": {
+        "useFilenamingConvention": {
+          "level": "error",
+          "options": {
+            "filenameCases": ["kebab-case", "camelCase", "PascalCase"]
+          }
+        }
+      }
+    }
   }
 }
