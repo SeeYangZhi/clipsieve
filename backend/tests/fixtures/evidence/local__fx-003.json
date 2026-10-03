@@ -1,0 +1,34 @@
+{
+  "comment_summary": {
+    "count": 2,
+    "sample": ["第4张真的绝了", "牛奶居然这么便宜？"],
+    "top_terms": ["张真", "牛奶", "奶居", "居然", "么便", "便宜"]
+  },
+  "keyframes": [],
+  "ocr": [
+    {
+      "index": 0,
+      "source": "image",
+      "text": "overlay 0 房租"
+    },
+    {
+      "index": 1,
+      "source": "image",
+      "text": "overlay 1 房租"
+    },
+    {
+      "index": 2,
+      "source": "image",
+      "text": "overlay 2 房租"
+    },
+    {
+      "index": 3,
+      "source": "image",
+      "text": "overlay 3 房租"
+    }
+  ],
+  "post_id": "local:fx-003",
+  "token_estimate": 52,
+  "transcript": [],
+  "truncated": false
+}

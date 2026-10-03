@@ -1,0 +1,49 @@
+{
+  "comment_summary": {
+    "count": 3,
+    "sample": [
+      "押一付三真的离谱，我也是被吓到了",
+      "求中介联系方式！",
+      "新加坡口音好可爱哈哈"
+    ],
+    "top_terms": [
+      "押一",
+      "一付",
+      "付三",
+      "三真",
+      "离谱",
+      "求中",
+      "中介",
+      "介联",
+      "联系",
+      "系方"
+    ]
+  },
+  "keyframes": [
+    "media/local__fx-002/frames/hook.jpg",
+    "media/local__fx-002/frames/scene_01.jpg"
+  ],
+  "ocr": [
+    {
+      "index": 0,
+      "source": "keyframe",
+      "text": "STOP SCROLLING"
+    }
+  ],
+  "post_id": "local:fx-002",
+  "token_estimate": 79,
+  "transcript": [
+    {
+      "end_s": 2.0,
+      "start_s": 0.0,
+      "text": "hook line for local:fx-002"
+    },
+    {
+      "end_s": 5.0,
+      "start_s": 2.0,
+      "text": "second line 第二句"
+    }
+  ],
+  "transcript_lang": "zh",
+  "truncated": false
+}
