@@ -1,9 +1,11 @@
 import csv
 import json
+import shutil
 from pathlib import Path
 
 import pytest
 
+from clipsieve.adapters.base import hash_creator
 from clipsieve.adapters.local_import import LocalImportAdapter
 from clipsieve.config import Settings
 from clipsieve.models import Query
@@ -83,6 +85,34 @@ def test_csv_chinese_caption_roundtrip(settings, csv_file):
     assert raw["caption"] == "第一天到上海，房租好贵 😅, 真的"
 
 
+def test_csv_creator_column_gives_each_row_its_creator(settings, tmp_path):
+    src = tmp_path / "creators.csv"
+    with src.open("w", newline="", encoding="utf-8") as f:
+        w = csv.writer(f)
+        w.writerow(["url", "title", "creator"])
+        w.writerow(["https://example.com/v/a", "A", "小红"])
+        w.writerow(["https://example.com/v/b", "B", "bob"])
+        w.writerow(["https://example.com/v/c", "C", ""])
+    adapter = LocalImportAdapter.from_settings(settings)
+    query = Query(platform="local", query=str(src), lang="en")
+    posts = {p.text.title: p for p in adapter.search([query], limit=10)}
+    assert posts["A"].creator_hash == hash_creator("小红", "salt")
+    assert posts["B"].creator_hash == hash_creator("bob", "salt")
+    assert posts["A"].creator_hash != posts["B"].creator_hash
+    assert posts["A"].creator_display == "小红"
+    # An empty creator cell falls back to the CSV-path creator.
+    assert posts["C"].creator_hash == hash_creator(str(src.resolve()), "salt")
+    assert posts["C"].creator_display == "creators"
+
+
+def test_csv_without_creator_column_uses_path_creator(settings, csv_file):
+    adapter = LocalImportAdapter.from_settings(settings)
+    posts = list(adapter.search([Query(platform="local", query=str(csv_file), lang="en")], 10))
+    expected = hash_creator(str(csv_file.resolve()), "salt")
+    assert [p.creator_hash for p in posts] == [expected, expected]
+    assert {p.creator_display for p in posts} == {"posts"}
+
+
 def test_csv_rows_have_no_media_and_fetch_media_is_noop(settings, csv_file, tmp_path):
     adapter = LocalImportAdapter.from_settings(settings)
     post = next(adapter.search([Query(platform="local", query=str(csv_file), lang="en")], limit=1))
@@ -92,7 +122,7 @@ def test_csv_rows_have_no_media_and_fetch_media_is_noop(settings, csv_file, tmp_
     assert adapter.fetch_media(post, dest).media == []
 
 
-def test_fetch_media_idempotent(settings, media_folder, tmp_path):
+def test_fetch_media_idempotent(settings, media_folder, tmp_path, monkeypatch):
     adapter = LocalImportAdapter.from_settings(settings)
     post = next(
         p
@@ -101,11 +131,23 @@ def test_fetch_media_idempotent(settings, media_folder, tmp_path):
     )
     dest = tmp_path / "m"
     dest.mkdir()
+    # copy2 preserves the source mtime, so mtime alone cannot reveal a second copy.
+    copies: list[object] = []
+    real_copy2 = shutil.copy2
+
+    def counting_copy2(src, dst, *args, **kwargs):
+        copies.append(dst)
+        return real_copy2(src, dst, *args, **kwargs)
+
+    monkeypatch.setattr(shutil, "copy2", counting_copy2)
     first = adapter.fetch_media(post, dest)
-    mtime = (dest / first.media[0].local_path).stat().st_mtime_ns
+    before = (dest / first.media[0].local_path).stat()
     second = adapter.fetch_media(first, dest)
+    after = (dest / "video.mp4").stat()
     assert second.media[0].local_path == first.media[0].local_path == "video.mp4"
-    assert (dest / "video.mp4").stat().st_mtime_ns == mtime
+    assert len(copies) == 1, "second fetch_media must not copy again"
+    assert after.st_ino == before.st_ino
+    assert after.st_mtime_ns == before.st_mtime_ns
 
 
 def test_healthcheck_ok(settings):

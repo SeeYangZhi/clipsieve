@@ -21,7 +21,7 @@ log = get_logger(__name__)
 
 VIDEO_EXT = {".mp4", ".mov", ".webm", ".mkv", ".m4v"}
 IMAGE_EXT = {".jpg", ".jpeg", ".png", ".webp"}
-CSV_COLUMNS = ("url", "title", "caption", "views", "likes", "comments")
+CSV_COLUMNS = ("url", "title", "caption", "views", "likes", "comments", "lang", "creator")
 
 
 def _int_or_none(value: str | None) -> int | None:
@@ -113,7 +113,8 @@ class LocalImportAdapter:
             )
 
     def _from_csv(self, csv_path: Path, lang: str) -> Iterator[Post]:
-        creator = hash_creator(str(csv_path.resolve()), self._salt)
+        # Rows without a `creator` value share one creator: the CSV file itself.
+        file_creator = hash_creator(str(csv_path.resolve()), self._salt)
         with csv_path.open(newline="", encoding="utf-8-sig") as f:
             reader = csv.DictReader(f)
             missing = [c for c in ("url",) if c not in (reader.fieldnames or [])]
@@ -129,12 +130,15 @@ class LocalImportAdapter:
                 raw_ref = self._write_raw(post_id, payload)
                 caption = row.get("caption") or None
                 hashtags = [w.lstrip("#") for w in (caption or "").split() if w.startswith("#")]
+                row_creator = (row.get("creator") or "").strip()
                 yield Post(
                     id=post_id,
                     platform="local",
                     url=url,
-                    creator_hash=creator,
-                    creator_display=csv_path.stem,
+                    creator_hash=(
+                        hash_creator(row_creator, self._salt) if row_creator else file_creator
+                    ),
+                    creator_display=row_creator or csv_path.stem,
                     kind="video",
                     text=PostText(
                         title=row.get("title") or None, caption=caption, hashtags=hashtags
