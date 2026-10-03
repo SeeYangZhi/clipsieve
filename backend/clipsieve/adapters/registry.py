@@ -3,12 +3,11 @@ from __future__ import annotations
 from importlib import import_module
 from importlib.metadata import EntryPoint, entry_points
 
-import structlog
-
 from clipsieve.adapters.base import Adapter
 from clipsieve.config import Settings
+from clipsieve.logging import get_logger
 
-log = structlog.get_logger(__name__)
+log = get_logger(__name__)
 
 ENTRY_POINT_GROUP = "clipsieve.adapters"
 
