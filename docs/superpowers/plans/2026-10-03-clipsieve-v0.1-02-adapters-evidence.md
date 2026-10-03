@@ -2196,7 +2196,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: models `Brief, Post, Evidence`.
 - Produces: `MAX_STATE_TOKENS = 28_000`, `estimate_tokens(text: str) -> int`, `build_metadata_state(brief: Brief, post: Post) -> dict`, `build_state(brief: Brief, post: Post, evidence: Evidence | None) -> tuple[dict, bool]`, `state_json(state: dict) -> str`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/evidence/test_packet.py`:
 
@@ -2300,12 +2300,12 @@ def test_state_json_is_deterministic_and_unicode():
     assert a == b and "房租好贵" in a and "\\u" not in a
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `uv run pytest tests/evidence/test_packet.py -v`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.evidence.packet'`
 
-- [ ] **Step 3: Implement**
+- [x] **Step 3: Implement**
 
 `backend/clipsieve/evidence/packet.py`:
 
@@ -2410,12 +2410,12 @@ def build_state(brief: Brief, post: Post, evidence: Evidence | None) -> tuple[di
     return state, truncated
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `uv run pytest tests/evidence/test_packet.py -v`
 Expected: 8 passed
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/evidence/packet.py backend/tests/evidence/test_packet.py
