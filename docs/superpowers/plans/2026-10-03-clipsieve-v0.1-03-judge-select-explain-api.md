@@ -3939,7 +3939,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 **Interfaces:** none new.
 
-- [ ] **Step 1: Update `backend/AGENTS.md`**
+- [x] **Step 1: Update `backend/AGENTS.md`**
 
 Append these sections (keep plan 01 and 02 content above them):
 
@@ -3982,7 +3982,7 @@ Append these sections (keep plan 01 and 02 content above them):
 - The only module allowed to `print`. All commands build the same `AppContext` as the API.
 ```
 
-- [ ] **Step 2: README "Running a fixture run"**
+- [x] **Step 2: README "Running a fixture run"**
 
 Append to the root `README.md`:
 
@@ -4002,14 +4002,14 @@ To use real services, set `TYPESAFE_API_KEY` in `.env`, log in to Claude Code on
 
 `backend/README.md`: add a module map table listing `judge/`, `select/`, `explain/`, `pipeline/`, `api/`, `cli.py` with one line each, copied from the AGENTS.md section headers above.
 
-- [ ] **Step 3: Run the full check**
+- [x] **Step 3: Run the full check**
 
 Run: `bun run check`
 Expected: schema drift check passes (no generated file changed in this plan), ruff clean, Biome clean, `pytest` reports all tests from tasks 1 to 11 passing plus plan 01 and 02 tests, frontend placeholder scripts succeed.
 
 If ruff flags `BLE001` on the broad `except Exception` lines in `pipeline/runner.py`, keep the `# noqa: BLE001` comments shown in Task 9; they are deliberate boundaries where one post's failure must not stop the run.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add AGENTS.md backend/AGENTS.md README.md backend/README.md
