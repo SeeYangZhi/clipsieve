@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
@@ -67,11 +68,14 @@ class WhisperASR:
     """mlx-whisper on Apple Silicon when importable, faster-whisper otherwise.
 
     Heavy imports happen inside methods. A caption sidecar short-circuits transcription.
+    One instance is shared by concurrent extractions, so model construction and inference run
+    under a per-instance lock; sidecar reads do not take it.
     """
 
     def __init__(self, model_name: str = "large-v3") -> None:
         self._model_name = model_name
         self._faster_model: Any = None
+        self._lock = threading.Lock()
 
     def transcribe(
         self, media: Path, lang_hint: str | None
@@ -81,11 +85,12 @@ class WhisperASR:
             log.info("asr.sidecar_used", media=str(media))
             return sidecar
         language = normalize_lang_hint(lang_hint)
-        try:
-            import mlx_whisper  # noqa: F401
-        except ImportError:
-            return self._transcribe_faster(media, language)
-        return self._transcribe_mlx(media, language)
+        with self._lock:
+            try:
+                import mlx_whisper  # noqa: F401
+            except ImportError:
+                return self._transcribe_faster(media, language)
+            return self._transcribe_mlx(media, language)
 
     def _transcribe_mlx(
         self, media: Path, lang_hint: str | None

@@ -1,6 +1,9 @@
 import json
 import sys
+import threading
+import time
 import types
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 import pytest
@@ -149,3 +152,58 @@ def test_protocol_conformance():
 )
 def test_normalize_lang_hint(hint, expected):
     assert normalize_lang_hint(hint) == expected
+
+
+class _Overlap:
+    """Counts callers inside a section at once; `peak` must stay 1 when callers are serialised."""
+
+    def __init__(self) -> None:
+        self._guard = threading.Lock()
+        self.inside = 0
+        self.peak = 0
+
+    def __enter__(self) -> None:
+        with self._guard:
+            self.inside += 1
+            self.peak = max(self.peak, self.inside)
+        time.sleep(0.05)
+
+    def __exit__(self, *exc) -> None:
+        with self._guard:
+            self.inside -= 1
+
+
+def test_whisper_asr_serialises_model_construction_and_inference(tmp_path, monkeypatch):
+    # The Runner extracts two posts at once (asyncio.to_thread) with one shared WhisperASR.
+    monkeypatch.setitem(sys.modules, "mlx_whisper", None)
+    fake_fw = types.ModuleType("faster_whisper")
+    constructed: list[str] = []
+    building, inferring = _Overlap(), _Overlap()
+
+    class WhisperModel:
+        def __init__(self, name, device="auto", compute_type="auto"):
+            with building:
+                constructed.append(name)
+
+        def transcribe(self, path, word_timestamps, language):
+            with inferring:
+                Seg = types.SimpleNamespace
+                return [Seg(start=0.0, end=1.0, text="hi")], Seg(language="en")
+
+    fake_fw.WhisperModel = WhisperModel
+    monkeypatch.setitem(sys.modules, "faster_whisper", fake_fw)
+    asr = WhisperASR()
+    media = [tmp_path / "a.mp4", tmp_path / "b.mp4"]
+    for m in media:
+        m.write_bytes(b"\x00")
+    start = threading.Barrier(2)
+
+    def run(m: Path):
+        start.wait()
+        return asr.transcribe(m, "en")
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        results = list(pool.map(run, media))
+    assert [lang for _, lang in results] == ["en", "en"]
+    assert constructed == ["large-v3"], "the model is built once"
+    assert building.peak == 1 and inferring.peak == 1

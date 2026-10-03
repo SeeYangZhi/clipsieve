@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import threading
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
@@ -34,14 +35,17 @@ class FakeOCR:
 class PaddleOCRBackend:
     """PaddleOCR with one lazily built engine per language. Lines below `min_confidence` drop.
 
-    Targets the paddleocr 2.x API; the `ocr` extra pins `paddleocr<3`.
+    Targets the paddleocr 2.x API; the `ocr` extra pins `paddleocr<3`. One instance is shared by
+    concurrent extractions, so engine construction and inference run under a per-instance lock.
     """
 
     def __init__(self, min_confidence: float = 0.6) -> None:
         self._min_confidence = min_confidence
         self._engines: dict[str, Any] = {}
+        self._lock = threading.Lock()
 
     def _engine(self, lang: str) -> Any:
+        """Call with `self._lock` held."""
         if lang not in self._engines:
             from paddleocr import PaddleOCR
 
@@ -49,7 +53,8 @@ class PaddleOCRBackend:
         return self._engines[lang]
 
     def read(self, image: Path, lang: str) -> list[str]:
-        result = self._engine(lang).ocr(str(image), cls=True)
+        with self._lock:
+            result = self._engine(lang).ocr(str(image), cls=True)
         lines: list[str] = []
         for page in result or []:
             for item in page or []:

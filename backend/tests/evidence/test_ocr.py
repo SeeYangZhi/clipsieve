@@ -1,6 +1,9 @@
 import json
 import sys
+import threading
+import time
 import types
+from concurrent.futures import ThreadPoolExecutor
 
 import pytest
 
@@ -84,3 +87,50 @@ def test_fake_ocr_malformed_sidecar_raises(tmp_path):
     img.with_name("hook.jpg.ocr.json").write_text("{not json", encoding="utf-8")
     with pytest.raises(json.JSONDecodeError):
         FakeOCR().read(img, "en")
+
+
+def test_paddle_backend_serialises_engine_construction_and_inference(tmp_path, monkeypatch):
+    # The Runner extracts two posts at once (asyncio.to_thread) with one shared backend.
+    guard = threading.Lock()
+    inside = {"now": 0, "peak": 0}
+    constructed: list[str] = []
+
+    def enter():
+        with guard:
+            inside["now"] += 1
+            inside["peak"] = max(inside["peak"], inside["now"])
+        time.sleep(0.05)
+
+    def leave():
+        with guard:
+            inside["now"] -= 1
+
+    fake = types.ModuleType("paddleocr")
+
+    class PaddleOCR:
+        def __init__(self, use_angle_cls, lang, show_log):
+            enter()
+            constructed.append(lang)
+            leave()
+
+        def ocr(self, path, cls):
+            enter()
+            leave()
+            return [[[[[0, 0], [1, 0], [1, 1], [0, 1]], ("TEXT", 0.99)]]]
+
+    fake.PaddleOCR = PaddleOCR
+    monkeypatch.setitem(sys.modules, "paddleocr", fake)
+    images = [tmp_path / "a.jpg", tmp_path / "b.jpg"]
+    for img in images:
+        img.write_bytes(b"\xff")
+    backend = PaddleOCRBackend()
+    start = threading.Barrier(2)
+
+    def run(img):
+        start.wait()
+        return backend.read(img, "en")
+
+    with ThreadPoolExecutor(max_workers=2) as pool:
+        assert list(pool.map(run, images)) == [["TEXT"], ["TEXT"]]
+    assert constructed == ["en"], "one engine per language"
+    assert inside["peak"] == 1
