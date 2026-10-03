@@ -1,0 +1,7 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.15/schema.json",
+  "extends": "//",
+  "files": {
+    "includes": ["**", "!src/components/ui", "!src/lib/types.ts"]
+  }
+}
