@@ -49,7 +49,8 @@ export function Dashboard({
         </div>
         <div className="flex items-center gap-2">
           {controls}
-          {state.done ? (
+          {/* `done` is also true for a failed run, which has no report. */}
+          {state.stage === "done" ? (
             <Button asChild size="sm">
               <Link href={`${base}/report`}>
                 {t("run.view_report", locale)}

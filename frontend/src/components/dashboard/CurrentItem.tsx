@@ -72,8 +72,8 @@ export function CurrentItem({ latest }: { latest: DashboardState["latest"] }) {
           <div className="flex flex-col gap-3">
             <div>
               <p className="font-medium">
-                {latest.post.text.title ??
-                  latest.post.text.caption ??
+                {latest.post.text.title ||
+                  latest.post.text.caption ||
                   latest.post.id}
               </p>
               <p className="text-muted-foreground text-xs">

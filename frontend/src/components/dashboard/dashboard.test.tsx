@@ -1,7 +1,7 @@
 import { act, fireEvent, render, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it } from "vitest";
 import { fixtureEvents } from "@/lib/__fixtures__/run-events";
-import { reduceAll } from "@/lib/events";
+import { type PostTile, reduceAll } from "@/lib/events";
 import { setLocale } from "@/lib/i18n";
 import { Aggregates } from "./Aggregates";
 import { Counters } from "./Counters";
@@ -17,6 +17,17 @@ const midRun = reduceAll(fixtureEvents.filter((e) => e.seq <= 23));
 afterEach(() => {
   act(() => setLocale("en"));
 });
+
+const FX2_CAPTION = "从新加坡搬到上海的第一周，租房踩了三个坑。";
+
+/** A tile whose post has the given title and, optionally, caption. */
+function retitled(tile: PostTile, title: string, caption?: string): PostTile {
+  const text = { ...tile.post.text, title };
+  if (caption !== undefined) {
+    text.caption = caption;
+  }
+  return { ...tile, post: { ...tile.post, text } };
+}
 
 describe("Counters", () => {
   it("renders six tiles with values", () => {
@@ -96,6 +107,23 @@ describe("PostGrid", () => {
     ).not.toBeNull();
   });
 
+  it("falls back past an empty title to the caption, then the id", () => {
+    const posts = {
+      ...done.posts,
+      "local:fx-001": retitled(done.posts["local:fx-001"], "", ""),
+      "local:fx-002": retitled(done.posts["local:fx-002"], ""),
+    };
+    render(<PostGrid posts={posts} runId="FIXTURE" total={5} />);
+    expect(screen.getByTestId("tile-local:fx-002")).toHaveAttribute(
+      "title",
+      FX2_CAPTION
+    );
+    expect(screen.getByTestId("tile-local:fx-001")).toHaveAttribute(
+      "title",
+      "local:fx-001"
+    );
+  });
+
   it("labels tile states in Chinese", () => {
     act(() => setLocale("zh"));
     render(<PostGrid posts={done.posts} runId="FIXTURE" total={5} />);
@@ -113,6 +141,12 @@ describe("CurrentItem", () => {
     expect(screen.getByText("Problem")).toBeInTheDocument();
     expect(screen.getByText("2.5 / 5")).toBeInTheDocument();
     expect(screen.getAllByRole("progressbar").length).toBeGreaterThanOrEqual(7);
+  });
+  it("falls back past an empty title to the caption", () => {
+    const latest = midRun.latest as NonNullable<typeof midRun.latest>;
+    const post = { ...latest.post, text: { ...latest.post.text, title: "" } };
+    render(<CurrentItem latest={{ ...latest, post }} />);
+    expect(screen.getByText(FX2_CAPTION)).toBeInTheDocument();
   });
   it("shows the empty state", () => {
     render(<CurrentItem latest={null} />);
@@ -176,6 +210,17 @@ describe("ReviewBucket", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "关闭" }));
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
+  it("lists a post with an empty title by its caption", () => {
+    const posts = {
+      ...done.posts,
+      "local:fx-002": retitled(done.posts["local:fx-002"], ""),
+    };
+    render(<ReviewBucket posts={posts} review={["local:fx-002"]} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open list" }));
+    expect(
+      within(screen.getByRole("dialog")).getByText(FX2_CAPTION)
+    ).toBeInTheDocument();
+  });
   it("disables the list when nothing is in review", () => {
     render(<ReviewBucket posts={done.posts} review={[]} />);
     expect(screen.getByRole("button", { name: "Open list" })).toBeDisabled();
@@ -229,6 +274,22 @@ describe("Dashboard", () => {
     expect(screen.getByText("Done")).toBeInTheDocument();
     expect(screen.queryByText("reconnecting…")).not.toBeInTheDocument();
     expect(screen.getByText("5 / 8")).toBeInTheDocument();
+  });
+
+  it("offers no report for a failed run", () => {
+    render(
+      <Dashboard
+        connected={false}
+        events={[]}
+        runId="run 1"
+        state={{ ...midRun, done: true, stage: "failed" }}
+      />
+    );
+    expect(screen.getByText("Failed")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "View report" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Replay" })).toBeInTheDocument();
   });
 
   it("shows a dropped stream as reconnecting while the run is going", () => {

@@ -46,7 +46,7 @@ function TileView({ runId, tile }: { runId: string; tile: PostTile }) {
   const [failedIn, setFailedIn] = useState<PostTileState | null>(null);
   const onError = useCallback(() => setFailedIn(tile.state), [tile.state]);
   const broken = failedIn === tile.state;
-  const title = tile.post.text.title ?? tile.post.text.caption ?? tile.post.id;
+  const title = tile.post.text.title || tile.post.text.caption || tile.post.id;
   const KindIcon = tile.post.kind === "video" ? Film : Images;
   const StateIcon = STATE_ICON[tile.state];
   return (

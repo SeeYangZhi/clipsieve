@@ -57,8 +57,8 @@ export function ReviewBucket({
               <ul className="flex flex-col gap-2 text-sm">
                 {review.map((id) => (
                   <li key={id}>
-                    {posts[id]?.post.text.title ??
-                      posts[id]?.post.text.caption ??
+                    {posts[id]?.post.text.title ||
+                      posts[id]?.post.text.caption ||
                       id}
                   </li>
                 ))}
