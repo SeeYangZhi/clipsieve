@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import html
 import re
 from pathlib import Path
 
@@ -22,7 +23,9 @@ def _to_seconds(stamp: str) -> float:
 
 
 def _clean(line: str) -> str:
-    return _WS.sub(" ", _TAG.sub("", line)).strip()
+    # Unescape after stripping tags: an escaped "&lt;b&gt;" stays literal text, and the
+    # decoded &nbsp; collapses under \s+.
+    return _WS.sub(" ", html.unescape(_TAG.sub("", line))).strip()
 
 
 def parse_vtt(text: str) -> list[TranscriptSegment]:

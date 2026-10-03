@@ -28,6 +28,20 @@ def test_parse_vtt_strips_inline_tags_and_positions():
     assert seg.text == "hello world"
 
 
+def test_parse_vtt_decodes_character_references():
+    # YouTube marks speaker changes with &gt;&gt;. Decode after tag stripping, so an escaped
+    # tag stays literal text and &nbsp; collapses into a plain space.
+    raw = (
+        "WEBVTT\n\n00:00:01.000 --> 00:00:03.000 align:start position:0%\n"
+        "&gt;&gt;<00:00:01.200><c> Tom</c><00:00:01.500><c> &amp;</c><c> Jerry</c>\n"
+        "\n00:00:03.000 --> 00:00:04.000\n"
+        "at 5&nbsp;pm &lt;b&gt;sharp&lt;/b&gt;\n"
+    )
+    first, second = parse_vtt(raw)
+    assert first.text == ">> Tom & Jerry"
+    assert second.text == "at 5 pm <b>sharp</b>"
+
+
 def test_parse_vtt_chinese():
     segments = parse_vtt((FIXTURES / "zH1sH4nGh41.zh-Hans.vtt").read_text(encoding="utf-8"))
     assert segments[0].text == "刚到上海的第一天 房租真的好贵"
