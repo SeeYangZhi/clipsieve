@@ -1,8 +1,9 @@
 """Drives one run through its stages and appends a RunEvent for every step.
 
-Idempotent per post, so `run()` again after a crash or a pause skips finished work: a post is
-judged at most once per pass (its judge result file exists) and extracted at most once
-(`RunState.extracted`). Per-post decisions live in `<run>/state.json`; see `pipeline/state.py`.
+Idempotent per post, so `run()` again after a crash or a pause skips finished work: a post whose
+judge result row for the pass is in SQLite (`repo.get_judge_result`) is not judged again, and a
+post is extracted at most once (`RunState.extracted`). Per-post decisions live in
+`<run>/state.json`; see `pipeline/state.py`.
 """
 
 from __future__ import annotations
@@ -21,11 +22,13 @@ from clipsieve.evidence.asr import ASR
 from clipsieve.evidence.extract import extract_evidence
 from clipsieve.evidence.frames import FrameExtractor
 from clipsieve.evidence.ocr import OCR
-from clipsieve.evidence.packet import build_metadata_state, build_state
+from clipsieve.evidence.packet import build_metadata_state, build_state, estimate_tokens
 from clipsieve.explain.base import (
     ExplainBackend,
     ExplainError,
     ExplainPacket,
+    ExplainPost,
+    cli_payload,
     validate_report_citations,
 )
 from clipsieve.judge.base import Judge, JudgeFailed, cost_usd
@@ -38,15 +41,18 @@ from clipsieve.judge.rubric import (
 )
 from clipsieve.logging import get_logger
 from clipsieve.models import (
+    Brief,
     CommentSummary,
     Evidence,
     JudgeResult,
+    OcrItem,
     Plan,
     Post,
     Query,
     RubricPack,
     Run,
     Stage,
+    TranscriptSegment,
 )
 from clipsieve.pipeline.state import RunState, load_state, save_state
 from clipsieve.planner.plan import build_plan
@@ -72,6 +78,8 @@ ADAPTER_ERROR_ABORT_RATIO = 0.20
 ADAPTER_ERROR_MIN_SEEN = 10
 ALL_POSTS = 1_000_000
 MAX_ERROR_MESSAGE = 1000
+EXPLAIN_TEXT_CAP = 4000  # characters of transcript, and of OCR text, per post in the packet
+TRUNCATION_MARKER = "…"
 
 _SKIPPED = object()  # a per-post task that did not start because the run is pausing
 
@@ -108,6 +116,62 @@ def _empty_evidence(post: Post) -> Evidence:
         token_estimate=0,
         truncated=False,
     )
+
+
+def _cap_text[T: (TranscriptSegment, OcrItem)](items: list[T], cap: int) -> tuple[list[T], bool]:
+    """Keep items in order while their joined text fits in `cap` characters. The item that
+    crosses the cap is cut there and ends with `TRUNCATION_MARKER`; later items are dropped."""
+    out: list[T] = []
+    left = cap
+    for item in items:
+        if len(item.text) <= left:
+            out.append(item)
+            left -= len(item.text)
+            continue
+        out.append(item.model_copy(update={"text": item.text[:left] + TRUNCATION_MARKER}))
+        return out, True
+    return out, False
+
+
+def _explain_evidence(evidence: Evidence) -> Evidence:
+    """A copy with transcript and OCR text capped at `EXPLAIN_TEXT_CAP` characters each, marked
+    `truncated` when anything was cut. The stored evidence is never touched."""
+    transcript, cut_transcript = _cap_text(evidence.transcript, EXPLAIN_TEXT_CAP)
+    ocr, cut_ocr = _cap_text(evidence.ocr, EXPLAIN_TEXT_CAP)
+    if not (cut_transcript or cut_ocr):
+        return evidence
+    return evidence.model_copy(update={"transcript": transcript, "ocr": ocr, "truncated": True})
+
+
+def build_explain_packet(
+    run_id: str,
+    brief: Brief,
+    posts: list[Post],
+    evidence: dict[str, Evidence],
+    judge: dict[str, JudgeResult],
+    aggregates: dict[str, dict[str, int]],
+) -> ExplainPacket:
+    """The explain input for a shortlist. Posts go in without their raw comments (the evidence
+    `comment_summary` keeps a sample) and each post's transcript and OCR text is capped, so the
+    packet stays a bounded size however long the videos or comment threads are."""
+    trimmed = {pid: _explain_evidence(ev) for pid, ev in evidence.items()}
+    packet = ExplainPacket(
+        brief=brief,
+        posts=[ExplainPost.model_validate(p) for p in posts],
+        evidence=trimmed,
+        judge=judge,
+        aggregates=aggregates,
+        keyframes={pid: list(ev.keyframes) for pid, ev in trimmed.items()},
+    )
+    text = cli_payload("explain", packet)  # what the claude_cli backend sends
+    log.info(
+        "explain_packet_built",
+        run_id=run_id,
+        posts=len(packet.posts),
+        approx_chars=len(text),
+        approx_tokens=estimate_tokens(text),
+    )
+    return packet
 
 
 class Runner:
@@ -241,8 +305,9 @@ class Runner:
         return with_persona_criteria(pack, list(plan.persona_fit_criteria))
 
     def _reconcile_counters(self, run: Run) -> None:
-        """Recount from the run's files, so a crash between a write and a counter save leaves
-        no drift on resume. `errors`, `shortlisted` and `review` are kept as saved."""
+        """Recount from the stored posts and judge rows and `state.json`, so a crash between a
+        write and a counter save leaves no drift on resume. `errors`, `shortlisted` and `review`
+        are kept as saved."""
         rstate = load_state(self.paths)
         p1 = self.repo.list_judge_results(self.run_id, PASS_ONE)
         p2 = self.repo.list_judge_results(self.run_id, PASS_TWO)
@@ -628,6 +693,8 @@ class Runner:
         selection = self.repo.get_selection(self.run_id)
         if selection is None:
             raise ExplainError("no selection to explain")
+        if not selection.shortlist:  # fail before any backend call: an empty report costs money
+            raise ExplainError("nothing to explain: no post reached the shortlist")
         results = self._pass_two_results()
         by_id = {r.post_id: r for r in results}
         shortlist = list(selection.shortlist)
@@ -637,13 +704,13 @@ class Runner:
             for pid in shortlist
             if (ev := self.repo.get_evidence(self.run_id, pid)) is not None
         }
-        packet = ExplainPacket(
-            brief=plan.brief,
-            posts=posts,
-            evidence=evidence,
-            judge={pid: by_id[pid] for pid in shortlist if pid in by_id},
-            aggregates=self._aggregates(results),
-            keyframes={pid: list(ev.keyframes) for pid, ev in evidence.items()},
+        packet = build_explain_packet(
+            self.run_id,
+            plan.brief,
+            posts,
+            evidence,
+            {pid: by_id[pid] for pid in shortlist if pid in by_id},
+            self._aggregates(results),
         )
         try:
             report = await asyncio.to_thread(self.explain_backend.explain, packet)

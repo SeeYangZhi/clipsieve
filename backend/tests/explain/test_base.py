@@ -8,6 +8,7 @@ from clipsieve.explain.base import (
     PROMPTS_DIR,
     ExplainError,
     ExplainPacket,
+    ExplainPost,
     PlanRequest,
     RubricPackSummary,
     cli_payload,
@@ -16,7 +17,7 @@ from clipsieve.explain.base import (
 )
 from clipsieve.explain.claude_api import ClaudeApiBackend
 from clipsieve.explain.fake import FakeExplainBackend
-from clipsieve.models import Brief, Plan, Report
+from clipsieve.models import Brief, Plan, Post, Report
 
 FIXTURES = Path(__file__).resolve().parents[1] / "fixtures"
 FIXTURE_POST_IDS = {f"local:fx-00{i}" for i in range(1, 6)}
@@ -134,3 +135,23 @@ def test_prompts_exist_cite_only_given_posts_and_carry_no_policy():
         lowered = text.lower()
         for word in ("weight", "threshold", "quota", "max_share", "shortlist_size", "risky_claim"):
             assert word not in lowered, word
+
+
+def test_explain_post_is_a_post_without_comments(fixture_posts):
+    assert set(ExplainPost.model_fields) == set(Post.model_fields) - {"comments"}
+    for name, field in ExplainPost.model_fields.items():
+        assert field.annotation == Post.model_fields[name].annotation, name
+    post = fixture_posts[0]
+    assert post.comments
+    packet = ExplainPacket(
+        brief=Brief(text="x", topic="t", audience="a", persona="p"),
+        posts=[post],  # a Post validates into an ExplainPost, dropping its comments
+        evidence={},
+        judge={},
+        aggregates={},
+        keyframes={},
+    )
+    (explained,) = packet.posts
+    assert isinstance(explained, ExplainPost)
+    assert explained.model_dump() == post.model_dump(exclude={"comments"})
+    assert "comments" not in json.loads(cli_payload("explain", packet))["posts"][0]

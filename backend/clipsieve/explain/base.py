@@ -9,12 +9,24 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-from typing import Literal, Protocol
+from typing import Any, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import AwareDatetime, BaseModel, ConfigDict, model_validator
 
 from clipsieve.config import Settings
-from clipsieve.models import Brief, Evidence, JudgeResult, Plan, Post, Report
+from clipsieve.models import (
+    Brief,
+    Evidence,
+    JudgeResult,
+    Kind,
+    Media,
+    Metrics,
+    Plan,
+    Platform,
+    Post,
+    PostText,
+    Report,
+)
 
 PROMPTS_DIR = Path(__file__).parent / "prompts"
 
@@ -26,12 +38,43 @@ class RubricPackSummary(BaseModel):
     question_ids: list[str]
 
 
+class ExplainPost(BaseModel):
+    """A shortlisted `Post` as the explain step sees it: every `Post` field except the raw
+    `comments` (the evidence `comment_summary` carries counts, top terms and a sample).
+
+    A `Post` instance validates into one, so `ExplainPacket(posts=[post, ...])` drops comments.
+    `tests/explain/test_base.py` keeps the fields in step with the generated `Post`.
+    """
+
+    model_config = ConfigDict(extra="forbid")
+    id: str
+    platform: Platform
+    url: str
+    creator_hash: str
+    creator_display: str | None = None
+    posted_at: AwareDatetime | None = None
+    kind: Kind
+    text: PostText
+    media: list[Media]
+    metrics: Metrics
+    lang: str | None = None
+    raw_ref: str
+    collected_at: AwareDatetime
+
+    @model_validator(mode="before")
+    @classmethod
+    def _from_post(cls, data: Any) -> Any:
+        if isinstance(data, Post):
+            return data.model_dump(exclude={"comments"})
+        return data
+
+
 class ExplainPacket(BaseModel):
     """Everything the explain step sees, keyed by post id where per-post."""
 
     model_config = ConfigDict(extra="forbid")
     brief: Brief
-    posts: list[Post]
+    posts: list[ExplainPost]
     evidence: dict[str, Evidence]
     judge: dict[str, JudgeResult]
     aggregates: dict[str, dict[str, int]]

@@ -1,6 +1,8 @@
+import json
 from pathlib import Path
 
 import pytest
+from structlog.testing import capture_logs
 
 from clipsieve.adapters.base import AdapterHealth, MediaDownloadError
 from clipsieve.adapters.fixture import FixtureAdapter
@@ -9,13 +11,26 @@ from clipsieve.events.reader import read_events
 from clipsieve.evidence.asr import FakeASR
 from clipsieve.evidence.frames import FakeFrames
 from clipsieve.evidence.ocr import FakeOCR
-from clipsieve.explain.base import ExplainError
+from clipsieve.explain.base import ExplainError, cli_payload
 from clipsieve.explain.fake import FakeExplainBackend
 from clipsieve.judge.base import JudgeFailed
 from clipsieve.judge.recorded import RecordedJudge
-from clipsieve.models import Brief, Evidence
+from clipsieve.models import (
+    Brief,
+    Comment,
+    CommentSummary,
+    Evidence,
+    OcrItem,
+    TranscriptSegment,
+)
 from clipsieve.pipeline import runner as runner_module
-from clipsieve.pipeline.runner import STAGE_ORDER, Runner, post_state
+from clipsieve.pipeline.runner import (
+    EXPLAIN_TEXT_CAP,
+    STAGE_ORDER,
+    Runner,
+    build_explain_packet,
+    post_state,
+)
 from clipsieve.pipeline.state import load_state
 from clipsieve.store.paths import RunPaths, safe_post_filename
 
@@ -325,6 +340,119 @@ async def test_explain_failure_marks_run_failed_with_shortlist_intact(data_dir, 
     assert len(events(data_dir, run_id)) == len(evs)
 
 
+def test_explain_packet_drops_raw_comments_and_caps_text(fixture_posts):
+    big = fixture_posts[0].model_copy(
+        update={"comments": [Comment(text=f"评论 {i}", likes=i) for i in range(50)]}
+    )
+    stored = Evidence(
+        post_id=big.id,
+        transcript=[
+            TranscriptSegment(start_s=i, end_s=i + 1, text="字" * 1000) for i in range(20)
+        ],  # 20 000 characters
+        ocr=[OcrItem(source="keyframe", index=i, text="o" * 1500) for i in range(4)],
+        keyframes=["media/local__fx-001/frames/hook.jpg"],
+        comment_summary=CommentSummary(count=50, top_terms=["上海"], sample=["评论 0", "评论 1"]),
+        token_estimate=26000,
+        truncated=False,
+    )
+    before = stored.model_copy(deep=True)
+    small = fixture_posts[3]
+    small_ev = Evidence.model_validate_json(
+        (FIXTURES / "evidence" / f"{safe_post_filename(small.id)}.json").read_text()
+    )
+    with capture_logs() as logs:
+        packet = build_explain_packet(
+            "run_x", BRIEF, [big, small], {big.id: stored, small.id: small_ev}, {}, {}
+        )
+    payload = cli_payload("explain", packet)
+    posts = json.loads(payload)["posts"]
+    # (a) no raw comments: not a field of the packet post, not a key on the wire
+    assert [p["id"] for p in posts] == [big.id, small.id]
+    assert all("comments" not in p for p in posts)
+    assert all("comments" not in type(p).model_fields for p in packet.posts)
+    # (b) transcript and OCR text capped per post, structure kept, a trailing marker
+    ev = packet.evidence[big.id]
+    transcript = "".join(s.text for s in ev.transcript)
+    ocr = "".join(o.text for o in ev.ocr)
+    assert len(transcript) <= EXPLAIN_TEXT_CAP + len("…") and transcript.endswith("…")
+    assert transcript[:-1] == ("字" * 20000)[:EXPLAIN_TEXT_CAP]
+    assert len(ocr) <= EXPLAIN_TEXT_CAP + len("…") and ocr.endswith("…")
+    assert ev.transcript[0] == stored.transcript[0] and ev.ocr[0] == stored.ocr[0]
+    assert ev.comment_summary == stored.comment_summary  # the summary and samples stay
+    assert ev.truncated is True
+    assert packet.keyframes == {
+        big.id: ["media/local__fx-001/frames/hook.jpg"],
+        small.id: list(small_ev.keyframes),
+    }
+    assert packet.evidence[small.id] == small_ev  # under the cap: unchanged
+    assert stored == before and big.comments  # never mutates what is stored
+    # (c) one info log with the size
+    (entry,) = [e for e in logs if e["event"] == "explain_packet_built"]
+    assert entry["log_level"] == "info" and entry["run_id"] == "run_x" and entry["posts"] == 2
+    assert entry["approx_chars"] == len(payload)
+    assert 0 < entry["approx_tokens"] <= entry["approx_chars"]
+
+
+async def test_run_explains_a_packet_without_raw_comments(data_dir, repo):
+    seen = []
+
+    class Spy(FakeExplainBackend):
+        def explain(self, packet):
+            seen.append(packet)
+            return super().explain(packet)
+
+    runner, run_id = make_runner(data_dir, repo, explain=Spy(FIXTURES))
+    with capture_logs() as logs:
+        await run_to_done(runner)
+    (packet,) = seen
+    shortlist = repo.get_selection(run_id).shortlist
+    assert [p.id for p in packet.posts] == shortlist
+    assert all("comments" not in p for p in json.loads(cli_payload("explain", packet))["posts"])
+    assert all(repo.get_post(run_id, pid).comments for pid in shortlist)  # stored posts keep them
+    assert {c.post_id for c in repo.get_report(run_id).clips} == set(shortlist)
+    assert any(e["event"] == "explain_packet_built" and e["run_id"] == run_id for e in logs)
+
+
+@pytest.mark.parametrize("case", ["every_judge_call_fails", "zero_posts_collected"])
+async def test_empty_shortlist_fails_at_explaining_without_calling_backend(data_dir, repo, case):
+    class AllFail(RecordedJudge):
+        async def judge(self, post_id, pass_name, state, questions, model):
+            raise JudgeFailed(post_id, 5, RuntimeError("429"))
+
+    class Empty(FixtureAdapter):
+        def search(self, queries, limit):
+            return iter(())
+
+    explain = FakeExplainBackend(FIXTURES)
+    if case == "every_judge_call_fails":
+        runner, run_id = make_runner(data_dir, repo, judge=AllFail(FIXTURES), explain=explain)
+    else:
+        runner, run_id = make_runner(
+            data_dir, repo, explain=explain, adapter=Empty(FIXTURES, data_dir)
+        )
+    await run_to_done(runner)
+    run = repo.get_run(run_id)
+    assert run.stage.value == "failed"
+    assert run.error == "nothing to explain: no post reached the shortlist"
+    assert explain.calls.count("explain") == 0  # no backend call, zero spend
+    assert repo.get_selection(run_id).shortlist == []
+    assert repo.get_report(run_id) is None
+    evs = events(data_dir, run_id)
+    # E.8: the error (stage explaining) first, then stage_changed to failed as the last event.
+    err, last = evs[-2], evs[-1]
+    assert err.type.value == "error" and err.stage.value == "explaining"
+    assert err.payload == {
+        "where": "explain",
+        "message": "nothing to explain: no post reached the shortlist",
+        "recoverable": False,
+    }
+    assert last.type.value == "stage_changed" and last.stage.value == "failed"
+    assert last.payload == {"from": "explaining", "to": "failed"}
+    types = [e.type.value for e in evs]
+    assert "explained" not in types and "done" not in types
+    assert types.index("selected") < len(types) - 2
+
+
 @pytest.mark.parametrize("kind", ["unknown_citation", "backend_crash"])
 async def test_explain_bad_report_or_crash_fails_run(data_dir, repo, kind):
     class Bad(FakeExplainBackend):
@@ -430,9 +558,11 @@ async def test_search_failure_is_a_recoverable_adapter_error(data_dir, repo):
     runner, run_id = make_runner(data_dir, repo, adapter=Down(FIXTURES, data_dir))
     await run_to_done(runner)
     run = repo.get_run(run_id)
-    assert run.stage.value == "done" and run.counters.collected == 0
-    (err,) = [e for e in events(data_dir, run_id) if e.type.value == "error"]
-    assert err.payload["where"] == "adapter.local" and "post_id" not in err.payload
+    # Zero posts means an empty shortlist, so the run fails at explaining (see below).
+    assert run.stage.value == "failed" and run.counters.collected == 0
+    errors = [e for e in events(data_dir, run_id) if e.type.value == "error"]
+    (err,) = [e for e in errors if e.payload["where"] == "adapter.local"]
+    assert "post_id" not in err.payload and err.payload["recoverable"] is True
     assert err.stage.value == "collecting"
 
 
@@ -443,8 +573,10 @@ async def test_unhealthy_adapter_is_skipped(data_dir, repo):
 
     runner, run_id = make_runner(data_dir, repo, adapter=Sick(FIXTURES, data_dir))
     await run_to_done(runner)
-    (err,) = [e.payload for e in events(data_dir, run_id) if e.type.value == "error"]
-    assert err["where"] == "adapter.local" and "login expired" in err["message"]
+    errors = [e.payload for e in events(data_dir, run_id) if e.type.value == "error"]
+    (err,) = [e for e in errors if e["where"] == "adapter.local"]
+    assert "login expired" in err["message"]
+    assert repo.get_run(run_id).stage.value == "failed"  # nothing collected, nothing to explain
 
 
 async def test_run_needs_an_approved_plan_and_approve_is_once(data_dir, repo):

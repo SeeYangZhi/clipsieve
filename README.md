@@ -39,7 +39,7 @@ CLIPSIEVE_EXPLAIN_BACKEND=fake uv run sieve run \
   --data-dir /tmp/clipsieve-smoke --auto-approve
 ```
 
-Fake mode wires every fake and reads fixtures from `backend/tests/fixtures`; set `CLIPSIEVE_FIXTURE_DIR` to point elsewhere. Then `uv run sieve replay <run_id> --speed 10 --data-dir /tmp/clipsieve-smoke` prints the event log at ten times speed. The same run is visible in the dashboard at `/runs/<run_id>/replay` once the frontend (plan 04) is running.
+Fake mode wires every fake and reads fixtures from `backend/tests/fixtures`; set `CLIPSIEVE_FIXTURE_DIR` to point elsewhere. Then `uv run sieve replay <run_id> --speed 10 --data-dir /tmp/clipsieve-smoke` prints the event log at ten times speed. The dashboard reads runs only through the API, so it shows this run at `/runs/<run_id>/replay` (frontend from plan 04) only when the API uses the same data dir: start it with `CLIPSIEVE_DATA_DIR=/tmp/clipsieve-smoke bun run dev`, or leave out `--data-dir` above so the run lands in the default data dir.
 
 To use real services, set `TYPESAFE_API_KEY` in `.env`, log in to Claude Code once (`claude` then `/login`), and run with `CLIPSIEVE_EXPLAIN_BACKEND=claude_cli`. The `claude_cli` backend is for your own Claude subscription; hosting clipsieve for others requires the API backend.
 
