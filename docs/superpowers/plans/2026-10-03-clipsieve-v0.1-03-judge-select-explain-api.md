@@ -943,7 +943,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 Decision: when `legend` is absent, levels are assumed 0-indexed, matching the TypeSafe composite-scoring cookbook (`score / 4` for five levels). When present, the minimum integer key in `legend` is the first level.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 `backend/tests/select/test_scoring.py`:
 
@@ -1041,12 +1041,12 @@ def test_needs_review_only_over_weighted_questions():
     assert needs_review(low, pack) is True
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/select/test_scoring.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.select.scoring'`.
 
-- [ ] **Step 3: Implement `select/scoring.py`**
+- [x] **Step 3: Implement `select/scoring.py`**
 
 ```python
 """Pure scoring helpers over JudgeResults. No I/O, no model calls."""
@@ -1142,12 +1142,12 @@ def needs_review(result: JudgeResult, pack: RubricPack, weights: dict[str, float
 from clipsieve.select.scoring import answer_confidence, composite, needs_review, normalize_score, passes_hard_filters  # noqa: F401
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd backend && uv run pytest tests/select/test_scoring.py -q`
 Expected: `16 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/select backend/tests/select
