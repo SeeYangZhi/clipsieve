@@ -719,6 +719,8 @@ Expected: lockfile updated with json-schema-to-typescript.
 
 - [ ] **Step 6: Create `rubric_pack.json`**
 
+Note (applied during execution): `questions.additionalProperties` must `$ref` a named `$defs.Question` holding the `oneOf` of the three question types, so both generators emit a `Question` alias that plans 03 and 05 import. Generated Python `Question` is a plain union alias (not a `RootModel`) so `isinstance(q, ChoiceQuestion)` works on dict values.
+
 ```json
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
@@ -1094,6 +1096,8 @@ if __name__ == "__main__":
 ```
 
 - [ ] **Step 10: Create `packages/schema/generate.ts`**
+
+Note (applied during execution): compile options include `ignoreMinAndMaxItems: true`, otherwise bounded arrays (`persona_fit_criteria` 5 items, `keyframes` maxItems 8, Score `criteria` 2..10) become TS tuple unions and plan 04's `persona_fit_criteria.map(...)` fails typecheck. Pydantic still enforces the lengths at runtime.
 
 ```ts
 // Generate frontend/src/lib/types.ts from packages/schema/schemas/*.json.
