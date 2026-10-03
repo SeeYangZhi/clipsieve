@@ -8,6 +8,7 @@ from datetime import UTC, datetime
 from pydantic import ValidationError
 
 from clipsieve.events.payloads import PAYLOAD_MODELS
+from clipsieve.events.reader import read_events
 from clipsieve.logging import get_logger
 from clipsieve.models import RunEvent, RunEventType, Stage
 from clipsieve.store.paths import RunPaths
@@ -20,24 +21,40 @@ class EventWriter:
         self.paths = paths
         self.run_id = run_id
         self.paths.root.mkdir(parents=True, exist_ok=True)
-        self._last_seq = self._read_last_seq()
+        self._repair_partial_tail()
+        events = read_events(paths)
+        self._last_seq = events[-1].seq if events else 0
 
-    def _read_last_seq(self) -> int:
+    def _repair_partial_tail(self) -> None:
+        """Terminate a line a dead writer left unfinished, so the next event gets its own line."""
         f = self.paths.events_jsonl
         if not f.exists():
-            return 0
-        last = 0
-        # Bytes, not text: a trailing line cut mid-codepoint must not abort the resume scan.
+            return
         with f.open("rb") as fh:
-            for raw in fh:
-                line = raw.strip()
-                if not line:
-                    continue
+            size = fh.seek(0, os.SEEK_END)
+            if size == 0:
+                return
+            fh.seek(size - 1)
+            if fh.read(1) == b"\n":
+                return
+        self._append(b"\n")
+        log.warning("events.repaired_partial_line", run_id=self.run_id, offset=size)
+
+    def _append(self, data: bytes) -> None:
+        """Append data and fsync. On any failure, cut the file back to its old size and re-raise."""
+        with self.paths.events_jsonl.open("ab", buffering=0) as fh:
+            start = fh.seek(0, os.SEEK_END)
+            try:
+                view = memoryview(data)
+                while view:
+                    view = view[fh.write(view) :]
+                os.fsync(fh.fileno())
+            except BaseException:
                 try:
-                    last = RunEvent.model_validate_json(line).seq
-                except ValidationError:
-                    log.warning("events.skip_corrupt_line", run_id=self.run_id)
-        return last
+                    fh.truncate(start)
+                except OSError:
+                    log.warning("events.truncate_failed", run_id=self.run_id, offset=start)
+                raise
 
     @property
     def last_seq(self) -> int:
@@ -60,10 +77,6 @@ class EventWriter:
             stage=Stage(stage),
             payload=validated.model_dump(mode="json", by_alias=True),
         )
-        line = event.model_dump_json(by_alias=True) + "\n"
-        with self.paths.events_jsonl.open("a", encoding="utf-8") as fh:
-            fh.write(line)
-            fh.flush()
-            os.fsync(fh.fileno())
+        self._append((event.model_dump_json(by_alias=True) + "\n").encode("utf-8"))
         self._last_seq = event.seq
         return event

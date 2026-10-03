@@ -5,7 +5,9 @@ import json
 from pathlib import Path
 
 import pytest
+from structlog.testing import capture_logs
 
+from clipsieve.events import writer as writer_module
 from clipsieve.events.reader import follow_events, read_events
 from clipsieve.events.writer import EventWriter
 from clipsieve.models import Post
@@ -165,8 +167,9 @@ async def test_readers_skip_partial_line_split_mid_codepoint(paths: RunPaths):
     cut = raw.index("上".encode()) + 1
     with paths.events_jsonl.open("ab") as f:
         f.write(raw[:cut])
-    assert [e.seq for e in read_events(paths)] == [1]
-    assert EventWriter(paths, "run_ev").last_seq == 1
+    with capture_logs() as logs:
+        assert [e.seq for e in read_events(paths)] == [1]
+    assert logs == []  # a trailing partial line is not corrupt, just unfinished
     seen: list[int] = []
 
     async def consume():
@@ -181,3 +184,78 @@ async def test_readers_skip_partial_line_split_mid_codepoint(paths: RunPaths):
     await asyncio.wait_for(task, timeout=2.0)
     assert seen == [1, 2]
     assert [e.payload["message"] for e in read_events(paths)] == ["上海", "上海"]
+
+
+async def _drain(agen) -> list[int]:
+    return [ev.seq async for ev in agen]
+
+
+def test_writer_repairs_partial_tail_before_appending(paths: RunPaths):
+    w = EventWriter(paths, "run_ev")
+    w.emit("error", "collecting", {"where": "x", "message": "上海", "recoverable": True})
+    fragment = '{"run_id": "run_ev", "seq": 2, "payload": {"message": "上'.encode()[:-1]
+    with paths.events_jsonl.open("ab") as f:
+        f.write(fragment)
+    with capture_logs() as logs:
+        w2 = EventWriter(paths, "run_ev")
+    assert w2.last_seq == 1
+    assert [entry["event"] for entry in logs] == [
+        "events.repaired_partial_line",
+        "events.skip_corrupt_line",
+    ]
+    e2 = w2.emit("stage_changed", "collecting", {"from": "planning", "to": "collecting"})
+    assert e2.seq == 2
+    assert [(e.seq, e.type) for e in read_events(paths)] == [(1, "error"), (2, "stage_changed")]
+    lines = paths.events_jsonl.read_bytes().split(b"\n")
+    assert lines[1] == fragment
+    assert lines[-1] == b""
+
+
+def test_emit_truncates_failed_write(paths: RunPaths, monkeypatch: pytest.MonkeyPatch):
+    w = EventWriter(paths, "run_ev")
+    w.emit("error", "collecting", {"where": "x", "message": "one", "recoverable": True})
+    before = paths.events_jsonl.read_bytes()
+
+    def no_space(fd: int) -> None:
+        raise OSError(28, "No space left on device")
+
+    monkeypatch.setattr(writer_module.os, "fsync", no_space)
+    with pytest.raises(OSError):
+        w.emit("error", "collecting", {"where": "x", "message": "two", "recoverable": True})
+    monkeypatch.undo()
+    assert paths.events_jsonl.read_bytes() == before
+    assert w.last_seq == 1
+    e2 = w.emit("error", "collecting", {"where": "x", "message": "three", "recoverable": True})
+    assert e2.seq == 2
+    assert [(e.seq, e.payload["message"]) for e in read_events(paths)] == [(1, "one"), (2, "three")]
+
+
+async def test_readers_log_corrupt_complete_lines(paths: RunPaths):
+    w = EventWriter(paths, "run_ev")
+    w.emit("error", "collecting", {"where": "x", "message": "a", "recoverable": True})
+    bad_offset = paths.events_jsonl.stat().st_size
+    with capture_logs() as logs:
+        agen = follow_events(paths, after=0, poll_s=0.02)
+        assert (await asyncio.wait_for(anext(agen), timeout=2.0)).seq == 1
+        with paths.events_jsonl.open("ab") as f:
+            f.write(b'{"not": "an event"}\n')
+        w.emit("done", "done", {"counters": COUNTERS})
+        assert await asyncio.wait_for(_drain(agen), timeout=2.0) == [2]
+        assert [e.seq for e in read_events(paths)] == [1, 2]
+    skipped = [(x["event"], x["run_id"], x["offset"]) for x in logs]
+    assert skipped == [("events.skip_corrupt_line", "run_ev", bad_offset)] * 2
+
+
+@pytest.mark.parametrize("terminal", ["done", "failed"])
+async def test_follow_events_returns_when_after_reaches_terminal(paths: RunPaths, terminal: str):
+    w = EventWriter(paths, "run_ev")
+    w.emit("stage_changed", "collecting", {"from": "planning", "to": "collecting"})
+    if terminal == "done":
+        last = w.emit("done", "done", {"counters": COUNTERS})
+    else:
+        last = w.emit("stage_changed", "failed", {"from": "explaining", "to": "failed"})
+    for after in (last.seq, last.seq + 3):
+        agen = follow_events(paths, after=after, poll_s=0.02)
+        assert await asyncio.wait_for(_drain(agen), timeout=2.0) == []
+    agen = follow_events(paths, after=last.seq - 1, poll_s=0.02)
+    assert await asyncio.wait_for(_drain(agen), timeout=2.0) == [last.seq]
