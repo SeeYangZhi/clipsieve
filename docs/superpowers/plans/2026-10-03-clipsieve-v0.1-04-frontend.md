@@ -581,7 +581,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: generated `frontend/src/lib/types.ts` exporting `Post, Plan, Run, Report, JudgeResult, RunEvent, Stage, Counters` (plan 01).
 - Produces: `api` object per the overview Frontend contract; `ApiError`; types `CreateRunBody, PostState, PostView, Selection, AdapterStatus, RubricPackSummary`; helpers `mediaUrl(runId, postId, filename)`, `eventsUrl(runId, after)`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 Create `frontend/src/lib/api.test.ts`:
 
@@ -645,7 +645,7 @@ describe("api", () => {
 Run: `cd frontend && bun run test src/lib/api.test.ts`
 Expected: FAIL, cannot find `./api`.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Create `frontend/src/lib/api.ts`:
 
@@ -744,7 +744,7 @@ export function eventsUrl(runId: string, after: number): string {
 Run: `cd frontend && bun run test src/lib/api.test.ts`
 Expected: 5 passed.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/lib/api.ts frontend/src/lib/api.test.ts
