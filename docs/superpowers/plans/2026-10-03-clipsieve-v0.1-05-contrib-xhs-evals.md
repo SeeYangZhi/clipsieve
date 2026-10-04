@@ -788,7 +788,7 @@ def image_urls(note: dict) -> list[str]
 def video_urls(note: dict) -> list[str]
 ```
 
-- [ ] **Step 1: Write the fixtures**
+- [x] **Step 1: Write the fixtures**
 
 ```json
 // contrib/adapter-xhs-mediacrawler/tests/fixtures/mediacrawler-output/notes.json
@@ -870,7 +870,7 @@ def video_urls(note: dict) -> list[str]
 ]
 ```
 
-- [ ] **Step 2: Write the failing mapping tests**
+- [x] **Step 2: Write the failing mapping tests**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/test_mapping.py
@@ -987,12 +987,12 @@ def test_field_map_is_overridable(monkeypatch, notes):
     assert post.text.caption == notes[2]["title"]
 ```
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest tests/test_mapping.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve_xhs.mapping'`.
 
-- [ ] **Step 4: Implement the mapping**
+- [x] **Step 4: Implement the mapping**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/mapping.py
@@ -1152,12 +1152,12 @@ def map_note(note: dict, comments: list[dict], salt: str, raw_ref: str, collecte
 
 Note on `Media.index` for video: the overview's `Media` has optional `index`; we set `0` for the single video so media ordering is uniform. `duration_s`, `width`, `height` are unknown from MediaCrawler and left unset; plan 02's `extract_evidence` reads duration from the downloaded file.
 
-- [ ] **Step 5: Run tests to verify they pass**
+- [x] **Step 5: Run tests to verify they pass**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest tests/test_mapping.py -v`
 Expected: `16 passed` (8 parametrised `parse_count` cases plus 8 tests).
 
-- [ ] **Step 6: Format the fixture JSON**
+- [x] **Step 6: Format the fixture JSON**
 
 The fixtures are checked by Biome (`bun run lint` runs `bunx ultracite check` over the whole repo), and the hand-written rows above are not Biome-formatted. From the **repo root**:
 
@@ -1169,7 +1169,7 @@ cd contrib/adapter-xhs-mediacrawler && uv run ruff format . && uv run ruff check
 
 Expected: `ultracite check` exits 0; `16 passed` (formatting does not change the parsed data).
 
-- [ ] **Step 7: Commit**
+- [x] **Step 7: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/clipsieve_xhs/mapping.py contrib/adapter-xhs-mediacrawler/tests/test_mapping.py contrib/adapter-xhs-mediacrawler/tests/fixtures
