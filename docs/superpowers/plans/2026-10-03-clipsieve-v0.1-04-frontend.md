@@ -3057,9 +3057,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 12: DOX closeout and green `bun run check`
 
 **Files:**
-- Modify: `frontend/AGENTS.md`, root `AGENTS.md`, root `.github/workflows/check.yml` (plan 01) to run `bun run --filter frontend e2e` only when `RUN_E2E=1`
+- Modify: `frontend/AGENTS.md`, root `AGENTS.md`, root `.github/workflows/check.yml` (plan 01) to run `bun run --filter frontend e2e` only when the repository variable `RUN_E2E` is `1`
 
-- [ ] **Step 1: Complete `frontend/AGENTS.md`**
+- [x] **Step 1: Complete `frontend/AGENTS.md`**
 
 Replace the file with the Task 1 content plus these sections:
 
@@ -3081,7 +3081,7 @@ Replace the file with the Task 1 content plus these sections:
 - Fixture event log: `src/lib/__fixtures__/run-events.ts` (builder) and `run-events.json` (regenerate with `bun run scripts/write-fixture-events.ts`).
 ```
 
-- [ ] **Step 2: Root index and CI**
+- [x] **Step 2: Root index and CI**
 
 In root `AGENTS.md` Child DOX Index ensure the `frontend/` line reads `- frontend/ — Next.js 16 client; contracts in frontend/AGENTS.md`.
 
@@ -3089,16 +3089,16 @@ In `.github/workflows/check.yml` add after the existing check step:
 
 ```yaml
       - name: Playwright e2e (opt-in)
-        if: ${{ env.RUN_E2E == '1' }}
+        if: ${{ vars.RUN_E2E == '1' }}
         run: cd frontend && bunx playwright install --with-deps chromium && bun run e2e
 ```
 
-- [ ] **Step 3: Full check**
+- [x] **Step 3: Full check**
 
 Run from repo root: `bun run check`
 Expected: schema drift check passes (types.ts unchanged), ultracite and ruff clean, `tsc --noEmit` clean, pytest and vitest green.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/AGENTS.md AGENTS.md .github/workflows/check.yml
