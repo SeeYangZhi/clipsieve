@@ -1,6 +1,6 @@
 # clipsieve build status
 
-Updated: 2026-10-04T01:59:07Z by iteration 4
+Updated: 2026-10-04T02:22:43Z by iteration 5
 
 ## Plans
 | Plan | Branch | Tasks done / total | Merged | Last commit |
@@ -8,8 +8,12 @@ Updated: 2026-10-04T01:59:07Z by iteration 4
 | 01 foundation | plan/01-foundation (merged, branch deleted locally) | 8 / 8 | yes (574e57d) | d7b28e8 |
 | 02 adapters-evidence | plan/02-adapters-evidence (merged, branch deleted locally) | 12 / 12 | yes (7c3beb5) | 44206fc |
 | 03 judge-select-explain-api | merged into main (2616c2d) | 12 / 12 | yes | 2616c2d |
-| 04 frontend | plan/04-frontend (worktree .worktrees/plan-04-frontend) | 12 / 12 ticked; final review done (5 Important), fix wave in flight | no | bc9de7a |
-| 05 contrib-xhs-evals | plan/05-contrib-xhs-evals (worktree .worktrees/plan-05-contrib-xhs-evals) | 0 / 7 (plan text reconciled 9bcd7b2; task 1 in flight) | no | 9bcd7b2 |
+| 04 frontend | merged into main (3273b2f) | 12 / 12 | yes | 3273b2f |
+| 05 contrib-xhs-evals | plan/05-contrib-xhs-evals (worktree .worktrees/plan-05-contrib-xhs-evals) | 2 / 7 (task 3 mapping in flight) | no | db29dc5 |
+
+## Iteration 5 did
+- Plan 04 fix wave (7 fixes: pause intent + bounded re-poll, failed-run alert with the error message, planner-failure alert with start-over link, replay-mode Dashboard without the connection badge, back-to-run link, PostDialog title fallback, `compress: false` after CONFIRMING Next gzip buffered the live SSE stream) + scoped re-review clean. Plan 04 merged into main with --no-ff (3273b2f): on main 397 pytest passed, `bun run check` exit 0, `cd frontend && bun run e2e` 1 passed. Worktree removed.
+- Plan 05 Tasks 1 (contrib skeleton + XhsSettings) and 2 (MediaCrawler runner) complete, reviewed, ticked; contrib suite 14 passed. Task 3 (record mapping) dispatched.
 
 ## Iteration 4 did
 - Plan 04 Tasks 11 (Playwright e2e vs fake backend: 1 passed, re-run by controller) and 12 (DOX closeout, CI opt-in e2e gated on vars.RUN_E2E) complete and ticked. Whole-branch review: mergeable after fixes — pause button uses pre-transition run; failed run shows no reason; planner failure leaves plan page spinning; replay page shows reconnecting badge; Next gzip may buffer live SSE (verify, compress:false). Fix wave dispatched.
