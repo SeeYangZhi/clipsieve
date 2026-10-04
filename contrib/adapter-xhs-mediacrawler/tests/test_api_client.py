@@ -267,6 +267,61 @@ def test_non_json_200_is_an_api_error_without_echoing_the_body():
     assert "secret" not in str(info.value)
 
 
+@respx.mock
+def test_network_error_is_an_api_error_without_retry():
+    """A timeout or connection failure must reach the runner as `XhsApiError` (so a page ends
+    with a recoverable error) and must not be retried; the message names the type only."""
+    route = respx.post(API_HOST + SEARCH_URI).mock(side_effect=httpx.ReadTimeout("t"))
+    client, _, _ = make_client()
+    with pytest.raises(XhsApiError, match=r"network error \(ReadTimeout\)") as info:
+        client.search_notes("k", 1)
+    assert route.call_count == 1
+    assert info.value.status is None and info.value.code is None
+    assert SEARCH_URI in str(info.value)
+
+
+class RaisingSigner(FakeSigner):
+    def __init__(self, exc: Exception):
+        super().__init__()
+        self.exc = exc
+
+    def sign_headers_post(self, uri, cookies, payload, x_rap=False):
+        raise self.exc
+
+    def sign_headers_get(self, uri, cookies, params, x_rap=False):
+        raise self.exc
+
+
+@respx.mock
+def test_signer_value_error_is_an_api_error_with_a_truncated_message():
+    route = respx.post(API_HOST + SEARCH_URI).mock(return_value=ok({"items": []}))
+    client = XhsApiClient(
+        COOKIES,
+        httpx.Client(),
+        signer=RaisingSigner(ValueError("Missing 'a1' in cookies")),
+        sleep=lambda _s: None,
+    )
+    with pytest.raises(XhsApiError, match="ValueError: Missing 'a1'"):
+        client.search_notes("k", 1)
+    assert route.call_count == 0  # nothing was sent
+    # A long signer message is cut so it cannot carry a whole cookie string.
+    long = RaisingSigner(ValueError("x" * 300))
+    client2 = XhsApiClient(COOKIES, httpx.Client(), signer=long, sleep=lambda _s: None)
+    with pytest.raises(XhsApiError) as info:
+        client2.comments("n1", "TOK")
+    assert len(str(info.value)) < 120 + len(COMMENTS_URI) + 20
+
+
+@respx.mock
+def test_non_integer_code_is_an_api_error():
+    respx.post(API_HOST + SEARCH_URI).mock(
+        return_value=httpx.Response(200, json={"code": "weird", "success": False, "msg": "m"})
+    )
+    client, _, _ = make_client()
+    with pytest.raises(XhsApiError, match="ValueError"):
+        client.search_notes("k", 1)
+
+
 def test_search_id_is_base36_and_fresh():
     a, b = search_id(), search_id()
     assert a != b

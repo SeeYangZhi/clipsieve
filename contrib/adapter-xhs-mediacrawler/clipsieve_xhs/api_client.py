@@ -40,6 +40,7 @@ NO_PERMISSION_CODE = -104
 RATE_LIMIT_CODES = {300011, 300012, 300013}
 VERIFY_STATUSES = {461, 471}
 MAX_ATTEMPTS = 3
+VALUE_ERROR_MAX_CHARS = 120
 # Every header xhshow emits for a browser tab's request; anything else it adds is dropped.
 # x-rap-param: xhshow documents it as required by the search, feed and comment endpoints; not
 # verified live yet (the first probe session answered -104 with and without it).
@@ -106,6 +107,12 @@ def _query_uri(uri: str, params: dict) -> str:
     if not params:
         return uri
     return uri + "?" + "&".join(f"{k}={quote(str(v), safe=',')}" for k, v in params.items())
+
+
+def _value_error_message(uri: str, exc: Exception) -> str:
+    """`uri: ValueError: <text>`, cut to `VALUE_ERROR_MAX_CHARS` so it cannot carry a cookie
+    string even if a signer echoes its input."""
+    return f"{uri}: {type(exc).__name__}: {str(exc)[:VALUE_ERROR_MAX_CHARS]}"
 
 
 class XhsApiClient:
@@ -218,7 +225,16 @@ class XhsApiClient:
     ) -> dict:
         for attempt in range(1, MAX_ATTEMPTS + 1):
             self._pace()
-            resp = self._send(method, uri, params, payload)
+            try:
+                resp = self._send(method, uri, params, payload)
+            except httpx.HTTPError as exc:
+                # Type name only: the httpx error carries the request (with the Cookie header),
+                # so it is not kept on the chain either.
+                raise XhsApiError(
+                    f"{uri}: network error ({type(exc).__name__})", status=None
+                ) from None
+            except ValueError as exc:  # the signer rejected its input (e.g. a missing cookie key)
+                raise XhsApiError(_value_error_message(uri, exc)) from exc
             if resp.status_code in VERIFY_STATUSES:
                 raise XhsLoginRequired(
                     f"{uri}: verification required (HTTP {resp.status_code}); open "
@@ -233,7 +249,10 @@ class XhsApiClient:
                 raise XhsApiError(f"{uri}: non-JSON response (HTTP 200)", status=200) from exc
             if body.get("success") or body.get("code") == 0:
                 return body.get("data") or {}
-            code = int(body.get("code") or 0)
+            try:
+                code = int(body.get("code") or 0)
+            except (TypeError, ValueError) as exc:
+                raise XhsApiError(_value_error_message(uri, exc)) from exc
             msg = str(body.get("msg") or body.get("message") or "")
             if code == NO_PERMISSION_CODE:
                 raise XhsLoginRequired(
