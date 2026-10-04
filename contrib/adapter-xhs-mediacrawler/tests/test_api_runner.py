@@ -7,6 +7,7 @@ import httpx
 
 from clipsieve.adapters.base import AdapterHealth
 from clipsieve_xhs.api_runner import (
+    COMMENT_FIELDS,
     XhsApiRunner,
     build_comment_records,
     build_note_record,
@@ -121,16 +122,7 @@ def test_note_record_feeds_map_note_unchanged():
 def test_comment_records_keep_only_the_allowed_fields():
     recs = build_comment_records(N1, COMMENTS, NOW)
     assert [r["comment_id"] for r in recs] == ["c1", "c2"]
-    assert set(recs[0]) == {
-        "comment_id",
-        "create_time",
-        "note_id",
-        "content",
-        "like_count",
-        "sub_comment_count",
-        "parent_comment_id",
-        "last_modify_ts",
-    }
+    assert set(recs[0]) == set(COMMENT_FIELDS)
     assert recs[0]["note_id"] == N1 and recs[0]["parent_comment_id"] == ""
     assert "u-9" not in json.dumps(recs) and "路" not in json.dumps(recs)
 
@@ -166,6 +158,16 @@ def test_note_without_stream_is_skipped_not_fatal(tmp_path):
     assert out.returncode == 0
 
 
+def test_video_note_whose_detail_has_no_stream_is_skipped_with_an_error(tmp_path):
+    no_stream = {**FEED, "note_id": N3, "video": {"media": {"stream": {"h264": []}}}}
+    client = FakeClient(detail={N1: FEED, N3: no_stream})
+    out = make_runner(client, clipsieve_xhs_note_kinds="video").search("k", 1, tmp_path)
+    assert [n["note_id"] for n in out.notes] == [N1]
+    assert any("no video stream" in e and N3 in e for e in out.errors)
+    assert out.returncode == 0
+    assert ("detail", N3, "TOK3") in client.calls  # the detail was fetched, then rejected
+
+
 def test_comments_are_fetched_only_when_enabled(tmp_path):
     off = FakeClient()
     make_runner(off).search("k", 1, tmp_path)
@@ -181,23 +183,48 @@ def test_empty_page_returns_empty_output(tmp_path):
     assert out.notes == [] and out.comments == [] and out.errors == [] and out.returncode == 0
 
 
-def test_login_expired_mid_page_returns_partial_and_stops(tmp_path):
-    client = FakeClient(fail={N3: XhsLoginRequired("/feed: login expired (-104)", code=-104)})
-    runner = make_runner(client, clipsieve_xhs_note_kinds="video")
-    out = runner.search("k", 1, tmp_path)
-    assert [n["note_id"] for n in out.notes] == [N1]
-    assert out.returncode == 1 and any("login expired" in e for e in out.errors)
-    # the next page must not reuse the dead session: the client is rebuilt from fresh cookies
+def counting_provider(cookies="a1=A; web_session=W"):
+    """A cookies provider that counts how often the runner re-reads the browser session."""
     calls = {"n": 0}
 
     def provider():
         calls["n"] += 1
+        return cookies
+
+    return provider, calls
+
+
+def test_login_expired_mid_page_returns_partial_and_stops(tmp_path):
+    client = FakeClient(fail={N3: XhsLoginRequired("/feed: login expired (-104)", code=-104)})
+    provider, calls = counting_provider()
+    runner = make_runner(client, cookies=provider, clipsieve_xhs_note_kinds="video")
+    out = runner.search("k", 1, tmp_path)
+    assert [n["note_id"] for n in out.notes] == [N1]
+    assert out.returncode == 1 and any("login expired" in e for e in out.errors)
+    assert calls["n"] == 1
+    # the next page must not reuse the dead session: the client is rebuilt from fresh cookies
+    out2 = runner.search("k", 2, tmp_path)
+    assert out2.returncode == 0 and out2.notes == []
+    assert calls["n"] == 2
+
+
+def test_rate_limit_keeps_the_client_across_pages(tmp_path):
+    client = FakeClient(
+        fail={N3: XhsRateLimited("/feed: rate limited after 3 attempts (300012)", code=300012)}
+    )
+    provider, calls = counting_provider()
+    runner = make_runner(client, cookies=provider, clipsieve_xhs_note_kinds="video")
+    assert runner.search("k", 1, tmp_path).returncode == 1
+    assert runner.search("k", 2, tmp_path).returncode == 0
+    assert calls["n"] == 1  # throttled, not logged out: the same session is reused
+
+
+def test_missing_cookies_are_a_page_error(tmp_path):
+    def provider():
         raise XhsLoginRequired("missing cookie(s) web_session")
 
-    runner2 = make_runner(client, cookies=provider)
-    out2 = runner2.search("k", 1, tmp_path)
-    assert out2.notes == [] and out2.returncode == 1 and "web_session" in out2.errors[0]
-    assert calls["n"] == 1
+    out = make_runner(FakeClient(), cookies=provider).search("k", 1, tmp_path)
+    assert out.notes == [] and out.returncode == 1 and "web_session" in out.errors[0]
 
 
 def test_rate_limit_during_details_stops_page(tmp_path):
