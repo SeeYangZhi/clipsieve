@@ -108,6 +108,7 @@ export const zh: Record<string, string> = {
   "plan.validation.query_text": "每条搜索关键词都需要填写内容",
   "post.kind.image_note": "图文笔记",
   "post.kind.video": "视频",
+  "post.open_original": "打开原帖",
   "question.format": "形式",
   "question.format_guess": "形式推测",
   "question.hook_strength": "钩子强度",

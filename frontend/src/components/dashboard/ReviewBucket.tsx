@@ -1,5 +1,7 @@
 "use client";
 
+import { type MouseEvent, useCallback, useState } from "react";
+import { PostDialog } from "@/components/report/PostDialog";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
@@ -12,7 +14,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import type { PostTile } from "@/lib/events";
+import { type PostTile, tileView } from "@/lib/events";
 import { t, useLocale } from "@/lib/i18n";
 
 export function ReviewBucket({
@@ -23,6 +25,16 @@ export function ReviewBucket({
   posts: Record<string, PostTile>;
 }) {
   const [locale] = useLocale();
+  const [selected, setSelected] = useState<string | null>(null);
+  const selectedTile = selected === null ? undefined : posts[selected];
+  const pick = useCallback((e: MouseEvent<HTMLButtonElement>) => {
+    setSelected(e.currentTarget.dataset.id ?? null);
+  }, []);
+  const onDialogOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setSelected(null);
+    }
+  }, []);
   return (
     <Card>
       <CardHeader>
@@ -57,9 +69,16 @@ export function ReviewBucket({
               <ul className="flex flex-col gap-2 text-sm">
                 {review.map((id) => (
                   <li key={id}>
-                    {posts[id]?.post.text.title ||
-                      posts[id]?.post.text.caption ||
-                      id}
+                    <button
+                      className="text-left underline-offset-2 hover:underline"
+                      data-id={id}
+                      onClick={pick}
+                      type="button"
+                    >
+                      {posts[id]?.post.text.title ||
+                        posts[id]?.post.text.caption ||
+                        id}
+                    </button>
                   </li>
                 ))}
               </ul>
@@ -71,6 +90,11 @@ export function ReviewBucket({
             </DialogFooter>
           </DialogContent>
         </Dialog>
+        <PostDialog
+          onOpenChange={onDialogOpenChange}
+          open={selected !== null}
+          view={selectedTile ? tileView(selectedTile) : null}
+        />
       </CardContent>
     </Card>
   );

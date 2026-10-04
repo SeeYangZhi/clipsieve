@@ -51,6 +51,16 @@ export function PostDialog({
               <p>{view.post.text.caption}</p>
             </section>
           ) : null}
+          {view.post.url ? (
+            <a
+              className="text-sm underline underline-offset-2"
+              href={view.post.url}
+              rel="noreferrer"
+              target="_blank"
+            >
+              {t("post.open_original", locale)}
+            </a>
+          ) : null}
           {judge ? (
             <section className="flex flex-col gap-1">
               <h3 className="text-muted-foreground text-xs uppercase tracking-wide">

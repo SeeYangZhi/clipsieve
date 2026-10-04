@@ -2,7 +2,8 @@
 
 import { CircleAlert } from "lucide-react";
 import Link from "next/link";
-import type { ReactNode } from "react";
+import { type ReactNode, useCallback, useState } from "react";
+import { PostDialog } from "@/components/report/PostDialog";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -10,6 +11,7 @@ import {
   answersPerSecond,
   type DashboardState,
   failureMessage,
+  tileView,
 } from "@/lib/events";
 import { t, useLocale } from "@/lib/i18n";
 import type { RunEvent } from "@/lib/types";
@@ -47,6 +49,13 @@ export function Dashboard({
   error,
 }: Props) {
   const [locale] = useLocale();
+  const [selected, setSelected] = useState<string | null>(null);
+  const selectedTile = selected === null ? undefined : state.posts[selected];
+  const onDialogOpenChange = useCallback((open: boolean) => {
+    if (!open) {
+      setSelected(null);
+    }
+  }, []);
   const base = `/runs/${encodeURIComponent(runId)}`;
   const failed = state.stage === "failed";
   const failure = failed ? (failureMessage(state.errors) ?? error) : null;
@@ -95,6 +104,7 @@ export function Dashboard({
       <Counters counters={state.counters} rate={answersPerSecond(events)} />
       <div className="grid gap-4 lg:grid-cols-[3fr_2fr]">
         <PostGrid
+          onSelect={setSelected}
           posts={state.posts}
           runId={runId}
           total={total ?? state.counters.collected}
@@ -105,6 +115,11 @@ export function Dashboard({
           <ReviewBucket posts={state.posts} review={state.review} />
         </div>
       </div>
+      <PostDialog
+        onOpenChange={onDialogOpenChange}
+        open={selected !== null}
+        view={selectedTile ? tileView(selectedTile) : null}
+      />
     </div>
   );
 }

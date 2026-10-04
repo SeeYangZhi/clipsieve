@@ -348,3 +348,21 @@ describe("failureMessage", () => {
     ).toBeNull();
   });
 });
+
+describe("tile judge results", () => {
+  it("keeps each pass's judge result on the tile and builds a PostView from it", async () => {
+    const { tileView } = await import("./events");
+    const done = reduceAll(fixtureEvents);
+    const tile = done.posts["local:fx-001"];
+    expect(tile.judge?.pass_one?.pass_name).toBe("pass_one");
+    expect(tile.judge?.pass_two?.pass_name).toBe("pass_two");
+    expect(Object.keys(tile.judge?.pass_two?.answers ?? {})).toContain(
+      "hook_strength"
+    );
+    const view = tileView(tile);
+    expect(view.post.id).toBe("local:fx-001");
+    expect(view.state).toBe("shortlisted");
+    expect(view.judge.pass_two).toBe(tile.judge?.pass_two);
+    expect(view.composite).toBe(tile.composite);
+  });
+});

@@ -45,3 +45,15 @@ describe("PostDialog", () => {
     expect(screen.getByRole("heading", { name: post.id })).toBeInTheDocument();
   });
 });
+
+describe("PostDialog original link", () => {
+  it("links to the original post in a new tab", () => {
+    render(
+      <PostDialog onOpenChange={vi.fn()} open={true} view={view("t", "c")} />
+    );
+    const link = screen.getByRole("link", { name: "Open original post" });
+    expect(link).toHaveAttribute("href", post.url);
+    expect(link).toHaveAttribute("target", "_blank");
+    expect(link).toHaveAttribute("rel", "noreferrer");
+  });
+});

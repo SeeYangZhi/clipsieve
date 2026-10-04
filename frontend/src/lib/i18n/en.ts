@@ -108,6 +108,7 @@ export const en: Record<string, string> = {
   "plan.validation.query_text": "Every search query needs text",
   "post.kind.image_note": "image note",
   "post.kind.video": "video",
+  "post.open_original": "Open original post",
   "question.format": "Format",
   "question.format_guess": "Format guess",
   "question.hook_strength": "Hook strength",

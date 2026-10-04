@@ -1,3 +1,4 @@
+import type { PostView } from "./api";
 import type {
   Counters,
   JudgeResult,
@@ -19,8 +20,27 @@ export type PostTileState =
 
 export interface PostTile {
   composite?: number;
+  /** pass name -> the Jev result that pass produced for this post */
+  judge?: Record<string, JudgeResult>;
   post: Post;
   state: PostTileState;
+}
+
+/** The dialog view of a tile: what `GET /runs/{id}/posts` would return for it. */
+export function tileView(tile: PostTile): PostView {
+  return {
+    composite: tile.composite,
+    judge: tile.judge ?? {},
+    post: tile.post,
+    state: tile.state,
+  };
+}
+
+function withPass(
+  tile: PostTile | undefined,
+  judge: JudgeResult
+): Record<string, JudgeResult> {
+  return { ...(tile?.judge ?? {}), [judge.pass_name]: judge };
 }
 
 export interface DashboardState {
@@ -133,6 +153,7 @@ function onPassOneJudged(s: DashboardState, p: Payload): DashboardState {
     counters: addTokens(counters, judge.input_tokens),
     posts: setTile(s.posts, judge.post_id, {
       composite: Number(p.composite),
+      judge: withPass(s.posts[judge.post_id], judge),
       state: kept ? "collected" : "dropped_pass_one",
     }),
   };
@@ -141,7 +162,11 @@ function onPassOneJudged(s: DashboardState, p: Payload): DashboardState {
 function onJudged(s: DashboardState, p: Payload): DashboardState {
   const judge = p.judge as JudgeResult;
   const composite = Number(p.composite);
-  const posts = setTile(s.posts, judge.post_id, { composite, state: "judged" });
+  const posts = setTile(s.posts, judge.post_id, {
+    composite,
+    judge: withPass(s.posts[judge.post_id], judge),
+    state: "judged",
+  });
   const tile = posts[judge.post_id];
   const counters = { ...s.counters, judged: s.counters.judged + 1 };
   return {

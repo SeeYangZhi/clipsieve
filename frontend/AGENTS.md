@@ -44,6 +44,7 @@ Next.js 16 App Router client for clipsieve. Thin: all state from `/api/*` (Next 
 - Native `<select>` for form selects (`BriefForm`, `PlanEditor`); shadcn `Select` portals and jsdom cannot drive it.
 - Tiles request `mediaUrl(runId, post.id, "thumb.jpg")` (`/api/runs/{id}/media/{post_id}/thumb.jpg`) and fall back to a kind icon on error.
 - `data-testid="tile-<post_id>"` and `data-state` on grid tiles are part of the e2e contract.
+- Grid tiles and "Too close to call" list entries are buttons that open `report/PostDialog` for that post (caption, latest Jev answers, a link to the original post). The reducer keeps each pass's `JudgeResult` on the tile (`PostTile.judge`), so the dialog works live and in replay without a fetch; `tileView(tile)` builds the `PostView` it expects.
 - Fixture event log: `src/lib/__fixtures__/run-events.ts` (builder) and generated `run-events.json` (`bun run scripts/write-fixture-events.ts` in `frontend/`).
 
 ## Next 16 notes (verified against node_modules/next/dist/docs on scaffold)

@@ -39,7 +39,15 @@ const STATE_ICON_CLASS: Partial<Record<PostTileState, string>> = {
   shortlisted: "fill-amber-500 text-amber-500",
 };
 
-function TileView({ runId, tile }: { runId: string; tile: PostTile }) {
+function TileView({
+  runId,
+  tile,
+  onSelect,
+}: {
+  onSelect?: (id: string) => void;
+  runId: string;
+  tile: PostTile;
+}) {
   const [locale] = useLocale();
   // The state the thumbnail failed in: a later state (e.g. after evidence
   // extraction) tries the thumbnail once more.
@@ -49,38 +57,50 @@ function TileView({ runId, tile }: { runId: string; tile: PostTile }) {
   const title = tile.post.text.title || tile.post.text.caption || tile.post.id;
   const KindIcon = tile.post.kind === "video" ? Film : Images;
   const StateIcon = STATE_ICON[tile.state];
+  const label = `${title} (${t(`grid.state.${tile.state}`, locale)})`;
+  const select = useCallback(
+    () => onSelect?.(tile.post.id),
+    [onSelect, tile.post.id]
+  );
   return (
     <li
-      aria-label={`${title} (${t(`grid.state.${tile.state}`, locale)})`}
+      aria-label={label}
       className={`relative aspect-square overflow-hidden rounded bg-muted ${TILE_STATE_CLASS[tile.state]}`}
       data-state={tile.state}
       data-testid={`tile-${tile.post.id}`}
       title={title}
     >
-      {broken ? (
-        <KindIcon
-          aria-hidden="true"
-          className="absolute inset-0 m-auto size-5 text-muted-foreground"
-        />
-      ) : (
-        // biome-ignore lint/performance/noImgElement lint/a11y/noNoninteractiveElementInteractions: thumbnails come from the local API, not an optimizable remote; onError is a resource load event, not a user interaction
-        <img
-          alt=""
-          className="size-full object-cover"
-          decoding="async"
-          height={44}
-          loading="lazy"
-          onError={onError}
-          src={mediaUrl(runId, tile.post.id, "thumb.jpg")}
-          width={44}
-        />
-      )}
-      {StateIcon ? (
-        <StateIcon
-          aria-hidden="true"
-          className={`absolute top-0.5 right-0.5 size-3 drop-shadow ${STATE_ICON_CLASS[tile.state] ?? ""}`}
-        />
-      ) : null}
+      <button
+        aria-label={label}
+        className="absolute inset-0 size-full"
+        onClick={select}
+        type="button"
+      >
+        {broken ? (
+          <KindIcon
+            aria-hidden="true"
+            className="absolute inset-0 m-auto size-5 text-muted-foreground"
+          />
+        ) : (
+          // biome-ignore lint/performance/noImgElement lint/a11y/noNoninteractiveElementInteractions: thumbnails come from the local API, not an optimizable remote; onError is a resource load event, not a user interaction
+          <img
+            alt=""
+            className="size-full object-cover"
+            decoding="async"
+            height={44}
+            loading="lazy"
+            onError={onError}
+            src={mediaUrl(runId, tile.post.id, "thumb.jpg")}
+            width={44}
+          />
+        )}
+        {StateIcon ? (
+          <StateIcon
+            aria-hidden="true"
+            className={`absolute top-0.5 right-0.5 size-3 drop-shadow ${STATE_ICON_CLASS[tile.state] ?? ""}`}
+          />
+        ) : null}
+      </button>
     </li>
   );
 }
@@ -92,7 +112,9 @@ export function PostGrid({
   runId,
   posts,
   total,
+  onSelect,
 }: {
+  onSelect?: (id: string) => void;
   runId: string;
   posts: Record<string, PostTile>;
   total: number;
@@ -111,7 +133,12 @@ export function PostGrid({
       <CardContent>
         <ul className="grid grid-cols-[repeat(auto-fill,minmax(44px,1fr))] gap-1">
           {tiles.map((tile) => (
-            <Tile key={tile.post.id} runId={runId} tile={tile} />
+            <Tile
+              key={tile.post.id}
+              onSelect={onSelect}
+              runId={runId}
+              tile={tile}
+            />
           ))}
         </ul>
       </CardContent>

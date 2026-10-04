@@ -228,7 +228,68 @@ describe("ReviewBucket", () => {
   });
 });
 
+describe("ReviewBucket inspection", () => {
+  it("opens the post dialog with answers and the original link from a review item", () => {
+    render(<ReviewBucket posts={done.posts} review={done.review} />);
+    fireEvent.click(screen.getByRole("button", { name: "Open list" }));
+    const [reviewId] = done.review;
+    const reviewed = done.posts[reviewId];
+    const title =
+      reviewed.post.text.title || reviewed.post.text.caption || reviewId;
+    fireEvent.click(screen.getByRole("button", { name: title }));
+    const dialogs = screen.getAllByRole("dialog");
+    const post = dialogs.at(-1) as HTMLElement;
+    expect(
+      within(post).getByRole("heading", { name: title })
+    ).toBeInTheDocument();
+    expect(within(post).getByText("Hook strength")).toBeInTheDocument();
+    const link = within(post).getByRole("link", { name: "Open original post" });
+    expect(link).toHaveAttribute("href", reviewed.post.url);
+    expect(link).toHaveAttribute("target", "_blank");
+  });
+});
+
+describe("PostGrid inspection", () => {
+  it("reports the clicked tile", () => {
+    const seen: string[] = [];
+    const onSelect = (id: string) => {
+      seen.push(id);
+    };
+    render(
+      <PostGrid
+        onSelect={onSelect}
+        posts={done.posts}
+        runId="FIXTURE"
+        total={5}
+      />
+    );
+    fireEvent.click(
+      within(screen.getByTestId("tile-local:fx-001")).getByRole("button")
+    );
+    expect(seen).toEqual(["local:fx-001"]);
+  });
+});
+
 describe("Dashboard", () => {
+  it("opens the post dialog when a tile is clicked", () => {
+    render(
+      <Dashboard
+        connected={false}
+        events={fixtureEvents}
+        mode="live"
+        runId="FIXTURE"
+        state={done}
+      />
+    );
+    fireEvent.click(
+      within(screen.getByTestId("tile-local:fx-001")).getByRole("button")
+    );
+    expect(
+      within(screen.getByRole("dialog")).getByRole("heading", {
+        name: done.posts["local:fx-001"].post.text.title,
+      })
+    ).toBeInTheDocument();
+  });
   it("composes the four regions mid-run, without the report link", () => {
     render(
       <Dashboard
