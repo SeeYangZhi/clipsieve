@@ -45,7 +45,7 @@
 - Consumes: `XhsSettings` (existing fields `clipsieve_xhs_mediacrawler_dir`, `clipsieve_xhs_timeout_s`, `clipsieve_xhs_pinned_commit`, `clipsieve_xhs_note_kinds: Literal["all","video"]`, `clipsieve_xhs_max_pages`).
 - Produces: `XhsSettings.clipsieve_xhs_runner: Literal["api", "mediacrawler"] = "api"`, `clipsieve_xhs_comments: bool = False`, `clipsieve_xhs_request_interval_s: float = 1.0` (`ge=0`), `clipsieve_xhs_page_size: int = 20` (`ge=1, le=20`); `clipsieve_xhs_max_pages` default raised from 5 to 10.
 
-- [ ] **Step 1: Write the failing settings tests**
+- [x] **Step 1: Write the failing settings tests**
 
 Append to `contrib/adapter-xhs-mediacrawler/tests/test_settings.py`:
 
@@ -90,12 +90,12 @@ def test_api_runner_settings_from_env(monkeypatch):
     assert s.clipsieve_xhs_request_interval_s == 0.5
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_settings.py`
 Expected: 3 failed (`AttributeError: ... has no attribute 'clipsieve_xhs_runner'`, and the validation tests pass trivially only after the fields exist, so they fail on the first assertion).
 
-- [ ] **Step 3: Add the dependencies and the fields**
+- [x] **Step 3: Add the dependencies and the fields**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv add "xhshow>=0.2.0,<0.3" "websockets>=13"`
 
@@ -127,12 +127,12 @@ class XhsSettings(BaseSettings):
     clipsieve_xhs_page_size: int = Field(default=20, ge=1, le=20)
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_settings.py && uv run ruff check . && uv run ruff format --check .`
 Expected: all settings tests pass; ruff clean. (The adapter test `test_max_pages_caps_paging_short_of_limit` sets its own `clipsieve_xhs_max_pages=2`, so the default change does not break it; confirm with the full suite.)
 
-- [ ] **Step 5: Document the variables**
+- [x] **Step 5: Document the variables**
 
 Append to `.env.example` after the `CLIPSIEVE_XHS_MAX_PAGES=5` line, and change that default to `10`:
 
@@ -149,7 +149,7 @@ CLIPSIEVE_XHS_REQUEST_INTERVAL_S=1.0
 CLIPSIEVE_XHS_PAGE_SIZE=20
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/pyproject.toml contrib/adapter-xhs-mediacrawler/uv.lock contrib/adapter-xhs-mediacrawler/clipsieve_xhs/settings.py contrib/adapter-xhs-mediacrawler/tests/test_settings.py .env.example
