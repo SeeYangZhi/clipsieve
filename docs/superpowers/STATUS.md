@@ -1,6 +1,6 @@
 # clipsieve build status
 
-Updated: 2026-10-03T20:43:59Z by iteration 4
+Updated: 2026-10-04T01:59:07Z by iteration 4
 
 ## Plans
 | Plan | Branch | Tasks done / total | Merged | Last commit |
@@ -8,10 +8,12 @@ Updated: 2026-10-03T20:43:59Z by iteration 4
 | 01 foundation | plan/01-foundation (merged, branch deleted locally) | 8 / 8 | yes (574e57d) | d7b28e8 |
 | 02 adapters-evidence | plan/02-adapters-evidence (merged, branch deleted locally) | 12 / 12 | yes (7c3beb5) | 44206fc |
 | 03 judge-select-explain-api | merged into main (2616c2d) | 12 / 12 | yes | 2616c2d |
-| 04 frontend | plan/04-frontend (worktree .worktrees/plan-04-frontend; main merged at 85f91d7) | 10 / 12 (task 11 Playwright e2e in flight) | no | 85f91d7 |
-| 05 contrib-xhs-evals | plan/05-contrib-xhs-evals (worktree .worktrees/plan-05-contrib-xhs-evals, created from main 2616c2d) | 0 / 7 (pre-flight scan in flight) | no | 2616c2d |
+| 04 frontend | plan/04-frontend (worktree .worktrees/plan-04-frontend) | 12 / 12 ticked; final review done (5 Important), fix wave in flight | no | bc9de7a |
+| 05 contrib-xhs-evals | plan/05-contrib-xhs-evals (worktree .worktrees/plan-05-contrib-xhs-evals) | 0 / 7 (plan text reconciled 9bcd7b2; task 1 in flight) | no | 9bcd7b2 |
 
 ## Iteration 4 did
+- Plan 04 Tasks 11 (Playwright e2e vs fake backend: 1 passed, re-run by controller) and 12 (DOX closeout, CI opt-in e2e gated on vars.RUN_E2E) complete and ticked. Whole-branch review: mergeable after fixes — pause button uses pre-transition run; failed run shows no reason; planner failure leaves plan page spinning; replay page shows reconnecting badge; Next gzip may buffer live SSE (verify, compress:false). Fix wave dispatched.
+- Plan 05 pre-flight scan: 13 rulings recorded in its ledger (persistent XHS media-URL cache instead of Media.url; MediaDownloadError from adapters.base; XhsSettings env_file/REPO_ROOT; 0-indexed predicted_level; eval_cmd edited in place; calibration keyed by golden stem+mode; contract test offline via respx; raw comment identifiers stripped; table rows in root index; test counts). Plan text + overview Addendum C (C.2, C.8, C.12 amended; C.15-C.18 added) patched in 9bcd7b2. Task 1 dispatched.
 - Plan 03 whole-branch review: mergeable after fixes (empty shortlist fails before explain; pack_summaries skips non-pack YAML and surfaces load errors; explain packet drops comments and caps text at 4000 chars; two doc fixes). Fix wave + scoped re-review clean. Overview Addendum E.14 records the behaviour changes for plans 04/05.
 - Plan 03 merged into main with --no-ff (2616c2d); on main: 397 pytest passed, `bun run check` exit 0, DoD smoke `sieve run ... --data-dir /tmp/clipsieve-smoke` exit 0 stage done, `sieve replay` 27 events run_created..done. Main pushed. Plan 03 worktree removed.
 - Plan 04: main merged into plan/04-frontend (85f91d7; conflicts in .env.example and root AGENTS.md index resolved); backend suite and `bun run check` green there. Task 11 (Playwright e2e vs fake backend) dispatched.
