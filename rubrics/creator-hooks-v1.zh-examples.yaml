@@ -1,0 +1,24 @@
+# Chinese examples appended to creator-hooks-v1 criteria in bilingual language_mode.
+# choice: label -> example phrase. score: 1-based level -> example situation.
+hook_type:
+  curiosity_gap: "例：「来上海之前没人告诉我这件事」"
+  bold_claim: "例：「上海早餐8块钱，新加坡买不到一杯咖啡」"
+  result_first: "例：「48小时拿到钥匙，过程在这」"
+  problem: "例：「被中介坑了一个月房租」"
+  story: "例：「落地第一天，行李丢了」"
+  authority: "例：「在上海住了十年的新加坡人告诉你」"
+  none: "例：开头只有问候或片头"
+hook_strength:
+  1: "例：开头是「大家好，欢迎回来」"
+  2: "例：只说了「今天聊聊上海租房」"
+  3: "例：「上海租房有个坑你可能没注意」"
+  4: "例：「8块钱早餐」配上价格特写"
+  5: "例：「你敢信吗？」加上强烈画面对比和明确利益点"
+format:
+  talking_head: "例：一个人对镜头说话"
+  vlog_montage: "例：街拍、地铁、外卖等生活片段剪辑"
+  image_carousel: "例：多张图文笔记"
+persona_fit:
+  1: "例：与新加坡人、上海都无关"
+  3: "例：在上海生活的外国人，但不是新加坡人"
+  5: "例：新加坡人在上海，第一人称真实口吻"

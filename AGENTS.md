@@ -74,5 +74,6 @@ Implementation plan: `docs/superpowers/plans/`.
 | `packages/schema/AGENTS.md` | JSON Schemas and the two generators |
 | `rubrics/AGENTS.md` | Rubric pack YAML (`creator-hooks-v1`) and per-pack calibration notes |
 | `contrib/adapter-xhs-mediacrawler/AGENTS.md` | Community Xiaohongshu adapter driving a MediaCrawler checkout; never imported by core |
+| `evals/AGENTS.md` | Golden sets (`golden/`) and `score.py`; agreement rules live in `evals/README.md` |
 
 `frontend/` currently holds a placeholder `package.json` so root scripts resolve; plan 04 replaces it and adds `frontend/AGENTS.md`.
