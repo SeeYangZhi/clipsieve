@@ -1565,12 +1565,12 @@ if __name__ == "__main__":
 
 (`sys.stdout.write` keeps the repo's no-`print()` rule; the script is outside the package and is not imported by anything.)
 
-- [ ] **Step 2: Confirm the browser session**
+- [x] **Step 2: Confirm the browser session**
 
 Run: `curl -s localhost:9222/json/version | head -c 120`
 Expected: a JSON object with `webSocketDebuggerUrl`. If not, start Brave: `open -na "Brave Browser" --args --remote-debugging-port=9222 --user-data-dir="$HOME/.clipsieve-chrome" "https://www.xiaohongshu.com"` and log in there.
 
-- [ ] **Step 3: Probe one page, then three**
+- [x] **Step 3: Probe one page, then three**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run python scripts/probe_api_runner.py "新加坡搬到上海" 1`
 Expected: `health: True api runner: ...`, then `page 1: notes=<15..20> videos=<same> ... rc=0 in <20..40>s`. Every note must be a video (the server-side filter), and `errors` should be 0 to 2 (deleted notes).
@@ -1580,7 +1580,7 @@ Expected: three pages, 40 to 60 video notes, total under 2 minutes, no `300012`.
 
 If the first page returns `HTTP 403`/`406` or `success: false` with an unfamiliar code, the signature or body shape is off: compare the request against MediaCrawler's `client.py:318-330` and `playwright_sign.py` (body bytes, header names, `x-s-common`), fix `api_client.py`, add a unit test for the difference, and rerun.
 
-- [ ] **Step 4: End-to-end run from the dashboard**
+- [x] **Step 4: End-to-end run from the dashboard**
 
 With `.env` holding `CLIPSIEVE_XHS_RUNNER=api`, `CLIPSIEVE_XHS_NOTE_KINDS=video`, restart `bun run dev`, confirm `curl -s localhost:8000/api/adapters` shows `xiaohongshu` healthy with the "api runner" message, then start a run with platform `xiaohongshu`, quantity 30, brief `新加坡人搬到上海的生活 vlog`. Expected: `collecting` finishes in under 5 minutes with 30 video posts; `post_collected` events carry `kind: video`; `fetch_media` downloads `video.mp4` for every kept post (the stream URLs need the `Referer` header the adapter already sends); the run proceeds through extraction and judging as before.
 
