@@ -359,6 +359,9 @@ def render_markdown(report: EvalReport) -> str:
         "|---|---|---:|---:|---:|---:|",
     ]
     for q in report.questions:
+        if q.n == 0:  # nothing was scored: 0.00 would read as "always wrong"
+            lines.append(f"| {q.question_id} | {q.type} | 0 | - | - | - |")
+            continue
         lines.append(
             f"| {q.question_id} | {q.type} | {q.n} | {q.agreement:.2f} "
             f"| {f(q.mean_conf_correct)} | {f(q.mean_conf_incorrect)} |"

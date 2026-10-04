@@ -19,7 +19,7 @@ Browser-session adapter. It drives the user's own logged-in Chrome through a loc
 - Media URLs are cached by the adapter in `<data_dir>/adapter-cache/xiaohongshu/<safe_id>.media.json` as `{"urls": [...]}` (written by `search`, read by `media_urls_for`: memory first, then disk). `fetch_media` never reads the raw payload or `raw_ref` because the Runner relocates it first, so a second process can fetch media after a restart. A missing entry raises `MediaDownloadError` (imported from `clipsieve.adapters.base`, never redefined) before `dest` is created.
 - `fetch_media` downloads with the adapter's `httpx.Client` (30 s timeout, `Referer: https://www.xiaohongshu.com/`, streamed to `<name>.part` then renamed) into `dest` as `video.mp4` (first cached URL; the rest are lower-quality streams) or `img_00.jpg`, `img_01.jpg`, ... (always `.jpg`, overview B.2); `Media.local_path` is dest-relative. Existing non-empty files are not re-downloaded. A non-2xx response or network error raises `MediaDownloadError`.
 - `map_note` maps only what core `Comment` defines (`text`, `likes`; top 50 top-level comments by likes). Media entries carry type and index only; URLs come from `image_urls`/`video_urls` for the adapter's media cache.
-- Mapping is table-driven in `mapping.py::FIELD_MAP`. Unverified MediaCrawler details (date format in filenames, `tag_list` delimiter, `time` unit) are fixed there, not in logic.
+- Mapping is table-driven in `mapping.py::FIELD_MAP`, the single override point: `adapter.py` reads note ids and types only through `mapping.note_id`/`note_type`, so `Post.id`, the raw file name and the media-cache key stay consistent. Unverified MediaCrawler details (date format in filenames, `tag_list` delimiter, `time` unit) are fixed there, not in logic.
 - Tests never start MediaCrawler, Chrome or the network. `FakeRunner` in `tests/conftest.py` replays `tests/fixtures/mediacrawler-output/`; media downloads are mocked with `respx`. `tests/test_adapter.py` also runs the shared `backend/tests/adapters/contract.py::run_adapter_contract`, loaded by file path because `tests` is this package's test module name too.
 
 ## Layout
@@ -29,3 +29,4 @@ Browser-session adapter. It drives the user's own logged-in Chrome through a loc
 - `clipsieve_xhs/mapping.py` MediaCrawler record -> `Post`.
 - `clipsieve_xhs/adapter.py` the `Adapter` implementation, raw payload writer and media-URL cache.
 - `tests/fixtures/mediacrawler-output/` three realistic notes and their comments.
+- Lint: `pyproject.toml` extends `../../backend/pyproject.toml` (ruff `E F I UP B T20`, line length 100); `clipsieve` and `clipsieve_xhs` are one isort group. Run `uv run ruff check . && uv run ruff format --check .` here.

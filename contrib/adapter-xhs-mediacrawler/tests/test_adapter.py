@@ -6,10 +6,10 @@ from pathlib import Path
 import httpx
 import pytest
 import respx
+
 from clipsieve.adapters.base import MediaDownloadError
 from clipsieve.config import Settings
 from clipsieve.models import Query
-
 from clipsieve_xhs.adapter import XhsMediaCrawlerAdapter
 from clipsieve_xhs.runner import RunnerOutput
 from clipsieve_xhs.settings import XhsSettings
@@ -222,3 +222,30 @@ def test_passes_shared_adapter_contract(adapter, tmp_path):
         respx.get(url).mock(return_value=httpx.Response(200, content=b"media-bytes"))
     posts = contract.run_adapter_contract(adapter, Q[0], tmp_path)  # ONE Query, no network
     assert posts
+
+
+def test_field_map_override_keeps_post_id_raw_file_and_media_cache_consistent(
+    tmp_path, fake_runner, monkeypatch
+):
+    from clipsieve_xhs import mapping
+
+    monkeypatch.setitem(mapping.FIELD_MAP, "note_id", "nid")
+    real = fake_runner.search
+
+    def renamed(keyword, start_page, workdir):
+        out = real(keyword, start_page, workdir)
+        for n in out.notes:
+            n["nid"] = n.pop("note_id")
+        return out
+
+    monkeypatch.setattr(fake_runner, "search", renamed)
+    adapter = make_adapter(tmp_path, fake_runner)
+    posts = list(adapter.search(Q, limit=10))
+    assert [p.id for p in posts] == [
+        "xiaohongshu:66f1a2b3c4d5e6f700000001",
+        "xiaohongshu:66f1a2b3c4d5e6f700000002",
+        "xiaohongshu:66f1a2b3c4d5e6f700000003",
+    ]
+    assert (tmp_path / "raw" / "xiaohongshu__66f1a2b3c4d5e6f700000001.json").exists()
+    cache = tmp_path / "cache" / "xiaohongshu__66f1a2b3c4d5e6f700000002.media.json"
+    assert json.loads(cache.read_text(encoding="utf-8")) == {"urls": IMAGE_URLS}

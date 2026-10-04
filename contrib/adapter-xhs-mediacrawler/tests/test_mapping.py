@@ -3,9 +3,9 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
+
 from clipsieve.adapters.base import hash_creator
 from clipsieve.models import Post
-
 from clipsieve_xhs import mapping
 from clipsieve_xhs.mapping import group_comments, map_note, parse_count, split_list
 
@@ -159,3 +159,12 @@ def test_post_url_drops_xsec_query_and_fragment(notes, comments):
     post = map_note(n, comments[n["note_id"]], SALT, "/tmp/raw.json", NOW)
     assert post.url == "https://www.xiaohongshu.com/explore/66f1a2b3c4d5e6f700000001"
     assert "xsec" not in post.url
+
+
+def test_note_id_and_type_helpers_follow_field_map(monkeypatch):
+    rec = {"note_id": "a", "type": "video", "nid2": "b", "kind2": "normal"}
+    assert mapping.note_id(rec) == "a" and mapping.note_type(rec) == "video"
+    monkeypatch.setitem(mapping.FIELD_MAP, "note_id", "nid2")
+    monkeypatch.setitem(mapping.FIELD_MAP, "type", "kind2")
+    assert mapping.note_id(rec) == "b" and mapping.note_type(rec) == "normal"
+    assert mapping.note_id({}) == "" and mapping.note_type({}) == "normal"

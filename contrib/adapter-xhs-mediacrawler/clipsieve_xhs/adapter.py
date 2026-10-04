@@ -8,13 +8,21 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+
 from clipsieve.adapters.base import Adapter, AdapterHealth, MediaDownloadError, incoming_dir
 from clipsieve.config import Settings, ensure_creator_salt, get_settings
 from clipsieve.logging import get_logger
 from clipsieve.models import Media, Post, Query
 from clipsieve.store.paths import safe_post_filename
-
-from clipsieve_xhs.mapping import PLATFORM, group_comments, image_urls, map_note, video_urls
+from clipsieve_xhs.mapping import (
+    PLATFORM,
+    group_comments,
+    image_urls,
+    map_note,
+    note_id,
+    note_type,
+    video_urls,
+)
 from clipsieve_xhs.runner import MediaCrawlerRunner, RunnerProtocol
 from clipsieve_xhs.settings import XhsSettings, get_xhs_settings
 
@@ -95,10 +103,10 @@ class XhsMediaCrawlerAdapter(Adapter):
             while yielded < limit:
                 new_posts = 0
                 for note, comments in self._run_page(q.query, page):
-                    note_id = str(note.get("note_id") or "")
-                    if not note_id or note_id in seen:
+                    nid = note_id(note)
+                    if not nid or nid in seen:
                         continue
-                    seen.add(note_id)
+                    seen.add(nid)
                     new_posts += 1
                     yield self._collect(note, comments, q.query, salt)
                     yielded += 1
@@ -154,10 +162,10 @@ class XhsMediaCrawlerAdapter(Adapter):
             log.warning("xhs.runner.error", query=keyword, page=page, error=err)
         grouped = group_comments(out.comments)
         for note in out.notes:
-            yield note, grouped.get(str(note.get("note_id") or ""), [])
+            yield note, grouped.get(note_id(note), [])
 
     def _collect(self, note: dict, comments: list[dict], query: str, salt: str) -> Post:
-        post_id = f"{PLATFORM}:{note.get('note_id')}"
+        post_id = f"{PLATFORM}:{note_id(note)}"
         raw_path = self.raw_dir / f"{safe_post_filename(post_id)}.json"
         payload = {
             "note": _strip(note, RAW_NOTE_DROP),
@@ -172,7 +180,7 @@ class XhsMediaCrawlerAdapter(Adapter):
         return self.cache_dir / f"{safe_post_filename(post_id)}.media.json"
 
     def _remember_media_urls(self, post_id: str, note: dict) -> None:
-        urls = video_urls(note) if str(note.get("type")) == "video" else image_urls(note)
+        urls = video_urls(note) if note_type(note) == "video" else image_urls(note)
         self._media_cache[post_id] = urls
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._cache_path(post_id).write_text(

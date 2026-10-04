@@ -225,3 +225,60 @@ def test_eval_translator_failure_exits_1_without_traceback(rubrics, real_mode):
     assert "claude: command not found" in result.output
     assert "Traceback" not in result.output
     assert not (rubrics / "creator-hooks-v1.calibration.md").exists()
+
+
+def test_eval_empty_golden_exits_2_before_any_judge_or_write(rubrics, tmp_path, monkeypatch):
+    """A header-only golden set (as shipped) must not score, build a judge or touch the file."""
+    golden = tmp_path / "empty-100.jsonl"
+    golden.write_text("# labelled 2026-10-03, pack creator-hooks-v1\n\n", encoding="utf-8")
+    cal = rubrics / "creator-hooks-v1.calibration.md"
+    write_results(cal, "zh-100", "raw", "| keep |\n", datetime(2026, 10, 3, tzinfo=UTC))
+    before = cal.read_text(encoding="utf-8")
+
+    def _boom(*args, **kwargs):
+        raise AssertionError("judge must not be constructed for an empty golden set")
+
+    monkeypatch.setattr("clipsieve.cli.RecordedJudge", _boom)
+    monkeypatch.setattr("clipsieve.cli.TypeSafeJudge", _boom)
+    result = runner.invoke(
+        app,
+        [
+            "eval",
+            "--pack",
+            "creator-hooks-v1",
+            "--golden",
+            str(golden),
+            "--rubrics-dir",
+            str(rubrics),
+            "--judge-fixtures",
+            str(FIX),
+        ],
+    )
+    assert result.exit_code == 2, result.output
+    assert "golden set has no items" in result.output and "evals/README.md" in result.output
+    assert cal.read_text(encoding="utf-8") == before
+
+
+def test_render_markdown_shows_dash_when_a_question_has_no_samples():
+    from evals.score import EvalReport, QuestionAgreement, render_markdown
+
+    report = EvalReport(
+        pack="p",
+        mode="raw",
+        n_items=0,
+        questions=[
+            QuestionAgreement(
+                question_id="q",
+                type="choice",
+                n=0,
+                correct=0,
+                agreement=0.0,
+                mean_conf_correct=0.5,
+                mean_conf_incorrect=None,
+            )
+        ],
+        jev_input_tokens=0,
+        jev_cost_usd=0.0,
+        translate_cost_usd=0.0,
+    )
+    assert "| q | choice | 0 | - | - | - |" in render_markdown(report)

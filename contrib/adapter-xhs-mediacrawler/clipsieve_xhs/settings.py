@@ -1,8 +1,9 @@
 from functools import lru_cache
 from pathlib import Path
 
-from clipsieve.config import REPO_ROOT
 from pydantic_settings import BaseSettings, SettingsConfigDict
+
+from clipsieve.config import REPO_ROOT
 
 PINNED_COMMIT = "380b426000aac3d612837ed72c99808347dc94c9"
 

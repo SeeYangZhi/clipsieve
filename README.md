@@ -4,7 +4,7 @@ Sift thousands of social clips, reels, shorts and notes down to the few worth st
 
 clipsieve is a local-first research tool for creators and marketers. You describe what you are researching in a sentence. It turns that into search queries, collects posts from the platforms you tick, converts each one into text evidence (transcript, on-screen text, caption, comments, metrics), scores every post against a typed rubric with [Jev](https://typesafe.ai), keeps the top few percent with diversity across formats, and has Claude explain the patterns and draft concepts in your voice.
 
-Status: plans 01 (schemas, run store, event log), 02 (adapters, evidence) and 03 (judge, select, explain, pipeline, API, CLI) are implemented; the frontend arrives with plan 04. See `docs/superpowers/specs/` for the v0.1 design and `docs/superpowers/plans/` for the implementation plans.
+Status: v0.1. The backend (schemas, run store, event log, adapters, evidence, judge, select, explain, pipeline, API, CLI), the Next.js frontend (dashboard, plan editor, report and replay), the community Xiaohongshu adapter in `contrib/` and the `evals/` calibration scorer are all implemented. See `docs/superpowers/specs/` for the v0.1 design and `docs/superpowers/plans/` for the implementation plans.
 
 ## Principles
 

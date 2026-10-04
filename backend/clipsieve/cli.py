@@ -342,8 +342,23 @@ def eval_cmd(
         raise typer.Exit(2)
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
-    from evals.score import ClaudeCliTranslator, IdentityTranslator, render_markdown, score_pack
+    from evals.score import (
+        ClaudeCliTranslator,
+        IdentityTranslator,
+        read_golden,
+        render_markdown,
+        score_pack,
+    )
 
+    try:
+        items = read_golden(golden)
+    except (OSError, ValueError) as exc:
+        log.warning("cli_eval_failed", pack=pack, mode=mode, golden=str(golden), error=str(exc))
+        _say(f"eval failed: {exc}", err=True)
+        raise typer.Exit(1) from None
+    if not items:
+        _say("golden set has no items; label it first (see evals/README.md)", err=True)
+        raise typer.Exit(2)
     judge = (
         RecordedJudge(judge_fixtures)
         if judge_fixtures is not None

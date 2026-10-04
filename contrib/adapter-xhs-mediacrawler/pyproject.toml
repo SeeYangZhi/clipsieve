@@ -34,5 +34,7 @@ asyncio_mode = "auto"
 testpaths = ["tests"]
 
 [tool.ruff]
-line-length = 100
-target-version = "py312"
+extend = "../../backend/pyproject.toml"
+
+[tool.ruff.lint.isort]
+known-first-party = ["clipsieve", "clipsieve_xhs"]

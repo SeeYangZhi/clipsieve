@@ -2,8 +2,8 @@ import json
 from pathlib import Path
 
 import pytest
-from clipsieve.adapters.base import AdapterHealth
 
+from clipsieve.adapters.base import AdapterHealth
 from clipsieve_xhs.runner import RunnerOutput
 
 FIX = Path(__file__).parent / "fixtures" / "mediacrawler-output"

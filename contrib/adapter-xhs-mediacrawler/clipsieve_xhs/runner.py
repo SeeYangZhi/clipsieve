@@ -8,10 +8,10 @@ from pathlib import Path
 from typing import Protocol
 
 import httpx
+
 from clipsieve.adapters.base import AdapterHealth
 from clipsieve.config import REPO_ROOT
 from clipsieve.logging import get_logger
-
 from clipsieve_xhs.settings import XhsSettings
 
 log = get_logger(__name__)
@@ -82,7 +82,8 @@ class MediaCrawlerRunner:
         ]
 
     def output_dir(self, workdir: Path) -> Path:
-        # MediaCrawler writes f"data/{platform}/{file_type}" relative to cwd when SAVE_DATA_PATH is unset.
+        # MediaCrawler writes f"data/{platform}/{file_type}" relative to cwd when SAVE_DATA_PATH
+        # is unset.
         return workdir / "data" / "xhs" / "jsonl"
 
     def read_records(self, path: Path) -> tuple[list[dict], list[str]]:
@@ -125,7 +126,8 @@ class MediaCrawlerRunner:
         if not (self.mc_dir / "main.py").exists():
             return AdapterHealth(
                 False,
-                f"MediaCrawler checkout not found at {self.mc_dir}; set CLIPSIEVE_XHS_MEDIACRAWLER_DIR",
+                f"MediaCrawler checkout not found at {self.mc_dir}; "
+                "set CLIPSIEVE_XHS_MEDIACRAWLER_DIR",
             )
         port = self.cdp_port
         try:
@@ -151,7 +153,8 @@ class MediaCrawlerRunner:
         if head != pinned:
             return AdapterHealth(
                 False,
-                f"MediaCrawler at {head[:12]} differs from pinned {pinned[:12]}; run git checkout {pinned[:12]}",
+                f"MediaCrawler at {head[:12]} differs from pinned {pinned[:12]}; "
+                f"run git checkout {pinned[:12]}",
             )
         return AdapterHealth(True, f"Chrome {browser} on port {port}; MediaCrawler {head[:12]}")
 
@@ -177,7 +180,8 @@ class MediaCrawlerRunner:
                 errors.append(f"mediacrawler exited {returncode}")
         except subprocess.TimeoutExpired:
             errors.append(
-                f"mediacrawler timed out after {self.settings.clipsieve_xhs_timeout_s}s; using partial output"
+                f"mediacrawler timed out after {self.settings.clipsieve_xhs_timeout_s}s; "
+                "using partial output"
             )
         except OSError as e:
             errors.append(f"cannot start mediacrawler: {e}")

@@ -21,6 +21,8 @@ Lines starting with `#` are ignored.
 
 ## Running
 
+The shipped `golden/en-100.jsonl` and `golden/zh-100.jsonl` are header-only and must be labelled before running; `sieve eval` exits 2 on a golden file with no items.
+
 ```bash
 cd backend && uv run sieve eval --pack creator-hooks-v1 --golden ../evals/golden/zh-100.jsonl --mode raw
 cd backend && uv run sieve eval --pack creator-hooks-v1 --golden ../evals/golden/zh-100.jsonl --mode translate

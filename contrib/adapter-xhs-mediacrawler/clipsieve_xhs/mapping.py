@@ -8,7 +8,8 @@ from clipsieve.adapters.base import hash_creator
 from clipsieve.models import Comment, Media, Metrics, Post, PostText
 
 # Our field -> MediaCrawler record key. Verified against store/xhs/__init__.py at the pinned commit.
-# Override entries here if a MediaCrawler bump renames a key; logic below never hardcodes record keys.
+# Override entries here if a MediaCrawler bump renames a key; logic below never hardcodes record
+# keys.
 FIELD_MAP: dict[str, str] = {
     "note_id": "note_id",
     "type": "type",
@@ -47,6 +48,16 @@ _NUM = re.compile(r"^\s*([\d.,]+)\s*([万wW]?)\s*$")
 
 def _g(rec: dict, key: str):
     return rec.get(FIELD_MAP[key])
+
+
+def note_id(note: dict) -> str:
+    """The note's id via FIELD_MAP, or "" when absent."""
+    return str(_g(note, "note_id") or "")
+
+
+def note_type(note: dict) -> str:
+    """The note's type via FIELD_MAP, "normal" when absent."""
+    return str(_g(note, "type") or "normal")
 
 
 def parse_count(value) -> int | None:
@@ -120,7 +131,7 @@ def group_comments(comments: list[dict]) -> dict[str, list[dict]]:
             continue
         nid = str(_g(c, "c_note_id") or "")
         grouped.setdefault(nid, []).append(c)
-    for nid, lst in grouped.items():
+    for lst in grouped.values():
         lst.sort(key=lambda c: parse_count(_g(c, "c_like_count")) or 0, reverse=True)
     return grouped
 
@@ -128,8 +139,8 @@ def group_comments(comments: list[dict]) -> dict[str, list[dict]]:
 def map_note(
     note: dict, comments: list[dict], salt: str, raw_ref: str, collected_at: datetime
 ) -> Post:
-    note_id = str(_g(note, "note_id"))
-    ntype = str(_g(note, "type") or "normal")
+    nid = note_id(note)
+    ntype = note_type(note)
     title = str(_g(note, "title") or "")
     caption = str(_g(note, "caption") or "")
     kind = "video" if ntype == "video" else "image_note"
@@ -144,11 +155,9 @@ def map_note(
         ]
     top = comments[:MAX_COMMENTS]
     return Post(
-        id=f"{PLATFORM}:{note_id}",
+        id=f"{PLATFORM}:{nid}",
         platform=PLATFORM,
-        url=_clean_url(
-            str(_g(note, "note_url") or f"https://www.xiaohongshu.com/explore/{note_id}")
-        ),
+        url=_clean_url(str(_g(note, "note_url") or f"https://www.xiaohongshu.com/explore/{nid}")),
         creator_hash=hash_creator(str(_g(note, "creator_hash") or "unknown"), salt),
         creator_display=(str(_g(note, "nickname")) if _g(note, "nickname") else None),
         posted_at=_posted_at(note),
