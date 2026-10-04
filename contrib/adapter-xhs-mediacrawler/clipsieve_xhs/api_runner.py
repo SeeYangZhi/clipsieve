@@ -167,13 +167,11 @@ class XhsApiRunner:
 
     def healthcheck(self) -> AdapterHealth:
         port = self.cdp_port
-        if self._halted is not None:
-            halted, self._halted = self._halted, None  # core healthchecks at run start
-            return AdapterHealth(
-                False,
-                f"api runner halted: {halted}; check that search works in the browser tab, "
-                "then start a new run",
-            )
+        # A halt was already surfaced by the run that hit it (the adapter raises). Core
+        # healthchecks at run start, so clearing it here gives the new run one fresh attempt
+        # with re-read cookies instead of skipping it.
+        halted, self._halted = self._halted, None
+        note = f" (previous run halted: {halted}; retrying with fresh cookies)" if halted else ""
         try:
             self._cookies_provider()
         except XhsLoginRequired as e:
@@ -187,7 +185,7 @@ class XhsApiRunner:
                 False, f"api runner: Chrome remote debugging not reachable on port {port}: {e}"
             )
         return AdapterHealth(
-            True, f"api runner: xiaohongshu web session from the browser on port {port}"
+            True, f"api runner: xiaohongshu web session from the browser on port {port}{note}"
         )
 
     def search(self, keyword: str, start_page: int, workdir: Path) -> RunnerOutput:

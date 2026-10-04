@@ -211,10 +211,12 @@ def assert_halted_run(runner: XhsApiRunner, client: FakeClient, tmp_path, marker
         assert len(refused.errors) == 1 and refused.errors[0].startswith("halted: ")
         assert marker in refused.errors[0]
     assert len(client.calls) == n_calls  # no search, detail or comment request was made
+    # The halt was already surfaced by the run that hit it (the adapter raises), so the next
+    # run's healthcheck clears it, notes it, and lets that run try again with fresh cookies.
     health = runner.healthcheck()
-    assert health.ok is False and "halted" in health.message and marker in health.message
-    assert "new run" in health.message
-    assert runner.healthcheck().ok is True  # the halt is cleared: a new run gets a fresh chance
+    assert health.ok is True and "halted" in health.message and marker in health.message
+    assert "retry" in health.message
+    assert "halted" not in runner.healthcheck().message  # cleared after one report
 
 
 def test_login_expired_mid_page_halts_the_run_until_the_next_healthcheck(tmp_path):
@@ -222,9 +224,9 @@ def test_login_expired_mid_page_halts_the_run_until_the_next_healthcheck(tmp_pat
     provider, calls = counting_provider()
     runner = make_runner(client, cookies=provider, clipsieve_xhs_note_kinds="video")
     assert_halted_run(runner, client, tmp_path, "login expired")
-    # cookies were read once for page 1 and once for the second (ok) healthcheck; never while
-    # halted
-    assert calls["n"] == 2
+    # cookies were read once for page 1 and once per healthcheck (both read them now); never
+    # while halted
+    assert calls["n"] == 3
 
 
 def test_rate_limit_mid_page_halts_the_run_until_the_next_healthcheck(tmp_path):
@@ -234,7 +236,7 @@ def test_rate_limit_mid_page_halts_the_run_until_the_next_healthcheck(tmp_path):
     provider, calls = counting_provider()
     runner = make_runner(client, cookies=provider, clipsieve_xhs_note_kinds="video")
     assert_halted_run(runner, client, tmp_path, "300012")
-    assert calls["n"] == 2
+    assert calls["n"] == 3
 
 
 def test_login_expired_on_the_search_request_halts_too(tmp_path):
@@ -247,7 +249,10 @@ def test_login_expired_on_the_search_request_halts_too(tmp_path):
     n_calls = len(client.calls)
     assert runner.search("k", 2, tmp_path).fatal is True
     assert len(client.calls) == n_calls
-    assert runner.healthcheck().ok is False
+    health = runner.healthcheck()
+    assert health.ok is True and "halted" in health.message
+    runner.search("k", 1, tmp_path)  # a fresh attempt after the reset: a real request again
+    assert len(client.calls) == n_calls + 1
 
 
 def test_plain_api_errors_do_not_halt(tmp_path):
@@ -337,5 +342,5 @@ def test_search_only_halts_the_runner_on_login_or_rate_limit(tmp_path):
     assert runner.search("k", 1, tmp_path).fatal is True
     assert len(client.calls) == n_calls
     health = runner.healthcheck()
-    assert health.ok is False and "halted" in health.message
-    assert runner.healthcheck().ok is True
+    assert health.ok is True and "halted" in health.message
+    assert "halted" not in runner.healthcheck().message
