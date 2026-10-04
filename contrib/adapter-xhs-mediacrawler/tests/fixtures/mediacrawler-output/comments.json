@@ -1,0 +1,67 @@
+[
+  {
+    "comment_id": "c001",
+    "create_time": 1758250000000,
+    "note_id": "66f1a2b3c4d5e6f700000001",
+    "content": "外卖速度真的离谱哈哈哈，欢迎来上海！",
+    "creator_hash": "mc_1111",
+    "nickname": "阿*",
+    "sub_comment_count": "2",
+    "pictures": "",
+    "parent_comment_id": "0",
+    "last_modify_ts": 1759478400000,
+    "like_count": "230"
+  },
+  {
+    "comment_id": "c002",
+    "create_time": 1758250100000,
+    "note_id": "66f1a2b3c4d5e6f700000001",
+    "content": "同新加坡人，刚到上海一个月，求租房攻略🙏",
+    "creator_hash": "mc_2222",
+    "nickname": "L*",
+    "sub_comment_count": "0",
+    "pictures": "",
+    "parent_comment_id": "0",
+    "last_modify_ts": 1759478400000,
+    "like_count": "98"
+  },
+  {
+    "comment_id": "c003",
+    "create_time": 1758250200000,
+    "note_id": "66f1a2b3c4d5e6f700000001",
+    "content": "回复 @L*：下期就出！",
+    "creator_hash": "mc_7c1f4a9e2b",
+    "nickname": "小*",
+    "sub_comment_count": "0",
+    "pictures": "",
+    "parent_comment_id": "c002",
+    "last_modify_ts": 1759478400000,
+    "like_count": "12"
+  },
+  {
+    "comment_id": "c004",
+    "create_time": 1758250300000,
+    "note_id": "66f1a2b3c4d5e6f700000001",
+    "content": "地铁迷路那段笑死，我第一次也是坐反方向",
+    "creator_hash": "mc_3333",
+    "nickname": "M*",
+    "sub_comment_count": "0",
+    "pictures": "",
+    "parent_comment_id": "0",
+    "last_modify_ts": 1759478400000,
+    "like_count": "415"
+  },
+  {
+    "comment_id": "c005",
+    "create_time": 1757040000000,
+    "note_id": "66f1a2b3c4d5e6f700000002",
+    "content": "中介费那条太真实了，被坑过一次",
+    "creator_hash": "mc_4444",
+    "nickname": "W*",
+    "sub_comment_count": "1",
+    "pictures": "",
+    "parent_comment_id": "0",
+    "last_modify_ts": 1759478400000,
+    "like_count": "57"
+  }
+]
