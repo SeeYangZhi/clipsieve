@@ -9,7 +9,13 @@ from pathlib import Path
 
 import httpx
 
-from clipsieve.adapters.base import Adapter, AdapterHealth, MediaDownloadError, incoming_dir
+from clipsieve.adapters.base import (
+    COVER_NAME,
+    Adapter,
+    AdapterHealth,
+    MediaDownloadError,
+    incoming_dir,
+)
 from clipsieve.config import Settings, ensure_creator_salt, get_settings
 from clipsieve.logging import get_logger
 from clipsieve.models import Media, Post, Query
@@ -36,6 +42,7 @@ USER_AGENT = (
 CACHE_SUBDIR = "adapter-cache"
 DOWNLOAD_TIMEOUT_S = 30.0
 API_TIMEOUT_S = 15.0
+COVER_TIMEOUT_S = 15.0
 # Dropped before the raw payload is written (backend/AGENTS.md: author identifiers are not stored).
 RAW_NOTE_DROP = frozenset({"xsec_token"})
 RAW_COMMENT_DROP = frozenset({"creator_hash", "nickname", "pictures"})
@@ -78,6 +85,7 @@ class XhsMediaCrawlerAdapter(Adapter):
         )
         self._now = now
         self._media_cache: dict[str, list[str]] = {}
+        self._cover_cache: dict[str, str] = {}
 
     @classmethod
     def from_settings(cls, settings: Settings) -> XhsMediaCrawlerAdapter:
@@ -199,6 +207,48 @@ class XhsMediaCrawlerAdapter(Adapter):
                 media.append(existing.model_copy(update={"local_path": name}))
         return post.model_copy(update={"media": media})
 
+    def fetch_cover(self, post: Post, dest: Path) -> Path | None:
+        """Download the cover (first image URL at collection time) to `dest/thumb.jpg`.
+        Never raises for network or HTTP errors; logs the post id only, never the CDN URL."""
+        target = dest / COVER_NAME
+        if target.exists() and target.stat().st_size > 0:
+            return target
+        url = self._cover_url_for(post.id)
+        if not url:
+            return None
+        dest.mkdir(parents=True, exist_ok=True)
+        part = target.with_name(target.name + ".part")
+        status = None
+        try:
+            with self.http.stream("GET", url, timeout=COVER_TIMEOUT_S) as resp:
+                status = resp.status_code
+                resp.raise_for_status()
+                with part.open("wb") as fh:
+                    for chunk in resp.iter_bytes():
+                        fh.write(chunk)
+            part.replace(target)
+        except httpx.HTTPError as e:
+            part.unlink(missing_ok=True)
+            if isinstance(e, httpx.HTTPStatusError):
+                status = e.response.status_code
+            log.info(
+                "xhs.cover_failed", post_id=post.id, error_type=type(e).__name__, status=status
+            )
+            return None
+        return target
+
+    def _cover_url_for(self, post_id: str) -> str | None:
+        if post_id in self._cover_cache:
+            return self._cover_cache[post_id]
+        try:
+            url = json.loads(self._cache_path(post_id).read_text(encoding="utf-8")).get("cover")
+        except (OSError, ValueError, AttributeError):
+            return None
+        if not isinstance(url, str) or not url:
+            return None
+        self._cover_cache[post_id] = url
+        return url
+
     # ---- helpers ----------------------------------------------------------
 
     def _run_page(
@@ -233,9 +283,14 @@ class XhsMediaCrawlerAdapter(Adapter):
     def _remember_media_urls(self, post_id: str, note: dict) -> None:
         urls = video_urls(note) if note_type(note) == "video" else image_urls(note)
         self._media_cache[post_id] = urls
+        entry: dict = {"urls": urls}
+        covers = image_urls(note)  # video notes: the cover frame; image notes: the first image
+        if covers:
+            entry["cover"] = covers[0]
+            self._cover_cache[post_id] = covers[0]
         self.cache_dir.mkdir(parents=True, exist_ok=True)
         self._cache_path(post_id).write_text(
-            json.dumps({"urls": urls}, ensure_ascii=False), encoding="utf-8"
+            json.dumps(entry, ensure_ascii=False), encoding="utf-8"
         )
 
     def _download(self, url: str, target: Path) -> None:

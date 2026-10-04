@@ -83,6 +83,8 @@ The smallest safe re-probe after a restriction is `uv run python scripts/probe_a
 
 Per note: title, caption (`desc`), hashtags (`tag_list`), likes, saves, comments count, shares, post time, image URLs or video URL, up to 50 top-level comments sorted by likes (api runner: only with `CLIPSIEVE_XHS_COMMENTS=1`), and the runner's record, in MediaCrawler's jsonl shape, as `raw_ref`. `creator_hash` is clipsieve's salted hash of the runner's creator hash (api runner: a SHA-256 of the user id; MediaCrawler: its already-anonymised `creator_hash`). The api runner emits no nicknames; MediaCrawler's are kept only as `creator_display`.
 
+A cover thumbnail per collected post is fetched from the CDN at collection time.
+
 ## Video-only runs
 
 Set `CLIPSIEVE_XHS_NOTE_KINDS=video` to keep only video notes. The api runner asks Xiaohongshu for video notes only; the pinned MediaCrawler cannot, so with `mediacrawler` image notes are discarded after the crawl and a video-only run needs more search pages per query. `CLIPSIEVE_XHS_MAX_PAGES` (default 10) bounds how many pages one query may crawl.
