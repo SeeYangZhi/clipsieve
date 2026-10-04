@@ -1,0 +1,47 @@
+{
+  "has_more": true,
+  "items": [
+    {
+      "id": "66f1a2b3c4d5e6f700000101",
+      "model_type": "note",
+      "xsec_token": "TOK1",
+      "xsec_source": "pc_search",
+      "note_card": {
+        "type": "video",
+        "display_title": "搬来上海第一周",
+        "user": { "user_id": "u-1", "nickname": "小*" },
+        "interact_info": { "liked_count": "1.2万" },
+        "cover": { "url_default": "https://sns-img.example/c1.jpg" }
+      }
+    },
+    {
+      "id": "66f1a2b3c4d5e6f700000102",
+      "model_type": "note",
+      "xsec_token": "TOK2",
+      "xsec_source": "pc_search",
+      "note_card": {
+        "type": "normal",
+        "display_title": "租房避坑",
+        "user": { "user_id": "u-2", "nickname": "阿*" },
+        "interact_info": { "liked_count": "88" }
+      }
+    },
+    {
+      "id": "rec-1",
+      "model_type": "rec_query",
+      "rec_query": { "queries": [] }
+    },
+    {
+      "id": "66f1a2b3c4d5e6f700000103",
+      "model_type": "note",
+      "xsec_token": "TOK3",
+      "xsec_source": "pc_search",
+      "note_card": {
+        "type": "video",
+        "display_title": "已删除的视频",
+        "user": { "user_id": "u-3", "nickname": "被*" },
+        "interact_info": { "liked_count": "3" }
+      }
+    }
+  ]
+}
