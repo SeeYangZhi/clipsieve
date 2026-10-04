@@ -1,7 +1,7 @@
 """`sieve` command line. The only module in clipsieve/ allowed to print, and only in `_say` and
 `_json`; everything else logs through structlog, to stderr.
 
-Exit codes: 0 success, 1 run failed or not found, 2 usage error, declined plan or not implemented.
+Exit codes: 0 success, 1 run failed or not found, 2 usage error or declined plan.
 Typer commands are sync and drive async work with `asyncio.run`, so no running loop is assumed.
 `run` plans in one loop, asks for approval outside any loop (a plain Ctrl-C or EOF at the
 prompt), then approves and runs in a second loop; nothing loop-bound outlives the first.
@@ -15,15 +15,19 @@ import sys
 import time
 from collections.abc import Iterator
 from contextlib import contextmanager
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Annotated
 
 import typer
 
 from clipsieve.api.context import AppContext, build_context
+from clipsieve.calibration import repo_root, write_results
 from clipsieve.config import REPO_ROOT, Settings, get_settings
 from clipsieve.events.reader import follow_events, read_events
+from clipsieve.judge.recorded import RecordedJudge
 from clipsieve.judge.rubric import PackNotFound, find_pack
+from clipsieve.judge.typesafe_client import TypeSafeJudge
 from clipsieve.logging import configure_logging, get_logger
 from clipsieve.models import Brief, Plan, RunEventType, Stage
 from clipsieve.pipeline.runner import MAX_ERROR_MESSAGE, Runner
@@ -294,12 +298,83 @@ def reindex(run_id: str, data_dir: DataDir = None) -> None:
     _say(f"reindexed {run_id}")
 
 
+# ---- eval -----------------------------------------------------------------------------------
+
+EVAL_MODES = ("raw", "translate", "bilingual")
+
+
 @app.command("eval")
 def eval_cmd(
-    pack: Annotated[str, typer.Option("--pack")],
-    golden: Annotated[Path, typer.Option("--golden")],
-    mode: Annotated[str, typer.Option("--mode")] = "raw",
+    pack: Annotated[str, typer.Option("--pack", help="Rubric pack name, e.g. creator-hooks-v1")],
+    golden: Annotated[
+        Path, typer.Option("--golden", exists=True, dir_okay=False, help="Golden JSONL file")
+    ],
+    mode: Annotated[str, typer.Option("--mode", help="raw | translate | bilingual")] = "raw",
+    rubrics_dir: Annotated[
+        Path | None, typer.Option("--rubrics-dir", help="Defaults to <repo>/rubrics")
+    ] = None,
+    judge_fixtures: Annotated[
+        Path | None,
+        typer.Option(
+            "--judge-fixtures",
+            help="Use RecordedJudge on this fixtures dir (reads <dir>/judge/) instead of TypeSafe",
+        ),
+    ] = None,
 ) -> None:
-    """Score a rubric pack against a golden set. Not implemented yet (plan 05)."""
-    _say("sieve eval arrives with plan 05 (contrib adapters and evals). Nothing was run.", err=True)
-    raise typer.Exit(2)
+    """Score a rubric pack against a golden set and write rubrics/<pack>.calibration.md."""
+    if mode not in EVAL_MODES:
+        _say(f"--mode must be one of {', '.join(EVAL_MODES)}, got {mode!r}", err=True)
+        raise typer.Exit(2)
+    if mode == "translate" and judge_fixtures is not None:
+        # Recorded answers ignore the state, so translating it would only spend `claude` money.
+        _say("--mode translate needs the real judge; drop --judge-fixtures", err=True)
+        raise typer.Exit(2)
+    root = repo_root()
+    rubrics = rubrics_dir or root / "rubrics"
+    try:
+        rp = find_pack(pack, rubrics)
+    except PackNotFound as exc:
+        _say(f"unknown rubric pack: {pack} ({exc})", err=True)
+        raise typer.Exit(2) from None
+    settings = get_settings()
+    if judge_fixtures is None and not settings.typesafe_api_key:
+        _say("TYPESAFE_API_KEY is not set; set it in .env or pass --judge-fixtures", err=True)
+        raise typer.Exit(2)
+    if str(root) not in sys.path:
+        sys.path.insert(0, str(root))
+    from evals.score import ClaudeCliTranslator, IdentityTranslator, render_markdown, score_pack
+
+    judge = (
+        RecordedJudge(judge_fixtures)
+        if judge_fixtures is not None
+        else TypeSafeJudge(settings.typesafe_api_key)
+    )
+    translator = (
+        ClaudeCliTranslator(settings.clipsieve_claude_bin)
+        if mode == "translate"
+        else IdentityTranslator()
+    )
+
+    async def _run():
+        try:
+            return await score_pack(
+                rp, golden, judge, mode=mode, translator=translator, rubrics_dir=rubrics
+            )
+        finally:
+            aclose = getattr(judge, "aclose", None)  # TypeSafeJudge has one, RecordedJudge not
+            if aclose is not None:
+                await aclose()
+
+    try:
+        report = asyncio.run(_run())
+    except (OSError, ValueError, RuntimeError) as exc:
+        # Missing fixture or `claude` binary (OSError), a bad golden line or unparsable `claude`
+        # output (ValueError, which covers JSONDecodeError), a translation failure (RuntimeError).
+        log.warning("cli_eval_failed", pack=pack, mode=mode, golden=str(golden), error=str(exc))
+        _say(f"eval failed: {exc}", err=True)
+        raise typer.Exit(1) from None
+    table = render_markdown(report)
+    _say(table)
+    cal = rubrics / f"{pack}.calibration.md"
+    write_results(cal, golden.stem, mode, table, datetime.now(tz=UTC))
+    _say(f"wrote {cal}")

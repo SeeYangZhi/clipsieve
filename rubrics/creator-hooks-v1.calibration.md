@@ -2,27 +2,10 @@
 
 Pack version: 1. Jev model: jev-1.13.0. Status: NOT CALIBRATED.
 
-Filled by `sieve eval` (plan 05). Do not edit the tables by hand.
+Filled by `sieve eval` between the markers below: one `### <golden stem> <mode> (<date>)` section per golden set (`en-100`, `zh-100`) and mode (`raw`, `translate`, `bilingual`). Do not edit inside the markers.
 
-## English golden set (evals/golden/en-100.jsonl)
-
-| question | n | agreement | mean confidence | notes |
-|---|---|---|---|---|
-| hook_type | | | | |
-| hook_strength | | | | |
-| format | | | | |
-| persona_fit | | | | |
-| risky_claim | | | | |
-| niche_relevance | | | | |
-| format_guess | | | | |
-
-## Chinese golden set (evals/golden/zh-100.jsonl)
-
-| mode | question | n | agreement | mean confidence |
-|---|---|---|---|---|
-| raw | | | | |
-| translate | | | | |
-| bilingual | | | | |
+<!-- results:start -->
+<!-- results:end -->
 
 ## Decision
 
