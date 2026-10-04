@@ -1,0 +1,1 @@
+# clipsieve golden set. One JSON object per line: {"post_id", "state", "labels"}. Labels: choice -> label string, score -> 1-based level int, noul -> bool. Lines starting with # are ignored. See evals/README.md for the labelling protocol.

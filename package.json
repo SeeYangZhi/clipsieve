@@ -11,8 +11,8 @@
     "dev": "bun run --filter frontend dev & (cd backend && uv run uvicorn clipsieve.app:app --reload --port 8000); wait",
     "dev:api": "cd backend && uv run uvicorn clipsieve.app:app --reload --port 8000",
     "dev:web": "bun run --filter frontend dev",
-    "format": "bunx ultracite fix && (cd backend && uv run ruff format .)",
-    "lint": "bunx ultracite check && (cd backend && uv run ruff check . && uv run ruff format --check .)",
+    "format": "bunx ultracite fix && (cd backend && uv run ruff format . ../evals ../contrib)",
+    "lint": "bunx ultracite check && (cd backend && uv run ruff check . ../evals ../contrib && uv run ruff format --check . ../evals ../contrib)",
     "schema": "cd backend && uv run python ../packages/schema/generate.py && bun run --filter @clipsieve/schema generate",
     "test": "(cd backend && uv run pytest -q) && bun run --filter frontend test",
     "typecheck": "bun run --filter frontend typecheck"

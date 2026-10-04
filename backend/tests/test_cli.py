@@ -280,13 +280,6 @@ def test_reselect_before_any_selection_exits_1(tmp_path):
     assert result.exit_code == 1 and "no selection" in result.output
 
 
-def test_eval_is_a_stub(tmp_path):
-    result = runner.invoke(
-        app, ["eval", "--pack", "creator-hooks-v1", "--golden", "x.jsonl"], env=env(tmp_path)
-    )
-    assert result.exit_code == 2 and "plan 05" in result.output
-
-
 def test_unknown_run_exits_1(tmp_path):
     result = runner.invoke(app, ["replay", "run_nope"], env=env(tmp_path))
     assert result.exit_code == 1 and "not found" in result.output

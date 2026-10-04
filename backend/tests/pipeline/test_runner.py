@@ -496,7 +496,8 @@ async def test_raw_is_relocated_before_fetch_media(data_dir, repo):
 
     runner, run_id = make_runner(data_dir, repo, adapter=Spy(FIXTURES, data_dir))
     await run_to_done(runner)
-    assert seen == [(f"raw/{safe_post_filename(pid)}.json", False) for pid in KEPT]
+    # extraction runs concurrently, so compare as a set rather than in order
+    assert sorted(seen) == sorted((f"raw/{safe_post_filename(pid)}.json", False) for pid in KEPT)
 
 
 async def test_media_download_error_is_recoverable_and_extraction_still_runs(data_dir, repo):

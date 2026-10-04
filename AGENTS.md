@@ -74,5 +74,5 @@ Implementation plan: `docs/superpowers/plans/`.
 | `packages/schema/AGENTS.md` | JSON Schemas and the two generators |
 | `rubrics/AGENTS.md` | Rubric pack YAML (`creator-hooks-v1`) and per-pack calibration notes |
 | `frontend/AGENTS.md` | Next.js client: `/api/*` rewrite, SSE, shadcn UI, Vitest/Playwright, Next 16 notes (plan 04) |
-
-`contrib/adapter-xhs-mediacrawler/` and `evals/` get their AGENTS.md when plan 05 creates them.
+| `contrib/adapter-xhs-mediacrawler/AGENTS.md` | Community Xiaohongshu adapter driving a MediaCrawler checkout; never imported by core |
+| `evals/AGENTS.md` | Golden sets (`golden/`) and `score.py`; agreement rules live in `evals/README.md` |

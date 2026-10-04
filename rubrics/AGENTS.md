@@ -12,6 +12,8 @@ Rubric packs are data, not code. A pack is a `<name>.yaml` here that loads with 
 - `persona_fit` must be a 5-level `score`; the planner replaces its criteria per run.
 - `jev_model` is pinned. Once a pack is calibrated, bump `version` when any question text changes; thresholds tuned on one version do not transfer.
 - Each pack has a `<name>.calibration.md` written by `sieve eval`. A pack is "calibrated" only when that file says so.
+- `sieve eval` writes only between the `<!-- results:start -->` / `<!-- results:end -->` markers, one `### <golden stem> <mode> (<date>)` section each; everything else in the file is hand-written.
+- `<name>.zh-examples.yaml` (optional sidecar) holds Chinese examples that `evals/score.py` appends to the English criteria in `bilingual` mode: `question_id -> {label: phrase}` for choice, `question_id -> {1-based level: situation}` for score. Labels and levels not in the pack are ignored.
 
 ## Child DOX Index
 

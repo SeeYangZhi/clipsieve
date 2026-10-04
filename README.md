@@ -4,7 +4,7 @@ Sift thousands of social clips, reels, shorts and notes down to the few worth st
 
 clipsieve is a local-first research tool for creators and marketers. You describe what you are researching in a sentence. It turns that into search queries, collects posts from the platforms you tick, converts each one into text evidence (transcript, on-screen text, caption, comments, metrics), scores every post against a typed rubric with [Jev](https://typesafe.ai), keeps the top few percent with diversity across formats, and has Claude explain the patterns and draft concepts in your voice.
 
-Status: plans 01 (schemas, run store, event log), 02 (adapters, evidence) and 03 (judge, select, explain, pipeline, API, CLI) are implemented; the frontend arrives with plan 04. See `docs/superpowers/specs/` for the v0.1 design and `docs/superpowers/plans/` for the implementation plans.
+Status: v0.1. The backend (schemas, run store, event log, adapters, evidence, judge, select, explain, pipeline, API, CLI), the Next.js frontend (dashboard, plan editor, report and replay), the community Xiaohongshu adapter in `contrib/` and the `evals/` calibration scorer are all implemented. See `docs/superpowers/specs/` for the v0.1 design and `docs/superpowers/plans/` for the implementation plans.
 
 ## Principles
 
@@ -17,6 +17,26 @@ Status: plans 01 (schemas, run store, event log), 02 (adapters, evidence) and 03
 ## Adapters
 
 Built in: `local` (folder of media or a CSV export) and `youtube` (yt-dlp, Shorts under 180 s, auto-captions). Community adapters that drive a logged-in browser live in `contrib/` with their own terms. See `backend/AGENTS.md` for the adapter contract.
+
+## Community adapters
+
+Browser-session adapters live under `contrib/` as separate packages with their own licences and disclaimers. They are **not** part of the core and the core never imports them.
+
+| Adapter | Platform | How it works | Licence constraints |
+|---|---|---|---|
+| [`contrib/adapter-xhs-mediacrawler`](contrib/adapter-xhs-mediacrawler/README.md) | Xiaohongshu (小红书) | Drives a local [MediaCrawler](https://github.com/NanmiCoder/MediaCrawler) checkout in CDP mode against your own logged-in Chrome | MediaCrawler is Non-Commercial Learning License 1.1: learning and research only, no commercial use |
+
+Install one into the backend environment and clipsieve discovers it:
+
+```bash
+cd backend && uv pip install -e ../contrib/adapter-xhs-mediacrawler
+```
+
+You are responsible for complying with each platform's terms of service and the laws that apply to you.
+
+## Evaluation
+
+Rubric packs ship with calibration numbers. `sieve eval` scores a pack against a hand-labelled golden set per question, in `raw`, `translate` and `bilingual` modes, and writes the results into `rubrics/<pack>.calibration.md`. See [`evals/README.md`](evals/README.md) for the golden format and labelling protocol.
 
 ## Development
 
