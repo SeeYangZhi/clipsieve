@@ -91,9 +91,11 @@ def split_list(value) -> list[str]:
 
 
 def _clean_url(url: str) -> str:
-    """Drop query and fragment: note_url may embed xsec_token."""
+    """Drop only the fragment. The query stays: Xiaohongshu refuses to open a note page
+    without the `xsec_token` MediaCrawler puts in `note_url`, so a token-free `Post.url`
+    is a dead link for the person reviewing the post."""
     parts = urlsplit(url)
-    return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, parts.query, ""))
 
 
 def image_urls(note: dict) -> list[str]:

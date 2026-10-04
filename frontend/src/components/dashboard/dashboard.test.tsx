@@ -196,12 +196,16 @@ describe("Aggregates", () => {
 
 describe("ReviewBucket", () => {
   it("shows the count", () => {
-    render(<ReviewBucket posts={done.posts} review={done.review} />);
+    render(
+      <ReviewBucket posts={done.posts} review={done.review} runId="FIXTURE" />
+    );
     expect(screen.getByText("1 posts")).toBeInTheDocument();
   });
   it("lists the review posts in a dialog with a translated close", () => {
     act(() => setLocale("zh"));
-    render(<ReviewBucket posts={done.posts} review={done.review} />);
+    render(
+      <ReviewBucket posts={done.posts} review={done.review} runId="FIXTURE" />
+    );
     fireEvent.click(screen.getByRole("button", { name: "打开列表" }));
     const dialog = screen.getByRole("dialog");
     expect(
@@ -216,21 +220,25 @@ describe("ReviewBucket", () => {
       ...done.posts,
       "local:fx-002": retitled(done.posts["local:fx-002"], ""),
     };
-    render(<ReviewBucket posts={posts} review={["local:fx-002"]} />);
+    render(
+      <ReviewBucket posts={posts} review={["local:fx-002"]} runId="FIXTURE" />
+    );
     fireEvent.click(screen.getByRole("button", { name: "Open list" }));
     expect(
       within(screen.getByRole("dialog")).getByText(FX2_CAPTION)
     ).toBeInTheDocument();
   });
   it("disables the list when nothing is in review", () => {
-    render(<ReviewBucket posts={done.posts} review={[]} />);
+    render(<ReviewBucket posts={done.posts} review={[]} runId="FIXTURE" />);
     expect(screen.getByRole("button", { name: "Open list" })).toBeDisabled();
   });
 });
 
 describe("ReviewBucket inspection", () => {
   it("opens the post dialog with answers and the original link from a review item", () => {
-    render(<ReviewBucket posts={done.posts} review={done.review} />);
+    render(
+      <ReviewBucket posts={done.posts} review={done.review} runId="FIXTURE" />
+    );
     fireEvent.click(screen.getByRole("button", { name: "Open list" }));
     const [reviewId] = done.review;
     const reviewed = done.posts[reviewId];

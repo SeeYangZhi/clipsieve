@@ -112,12 +112,17 @@ export function Dashboard({
         <div className="flex flex-col gap-4">
           <CurrentItem latest={state.latest} />
           <Aggregates aggregates={state.aggregates} />
-          <ReviewBucket posts={state.posts} review={state.review} />
+          <ReviewBucket
+            posts={state.posts}
+            review={state.review}
+            runId={runId}
+          />
         </div>
       </div>
       <PostDialog
         onOpenChange={onDialogOpenChange}
         open={selected !== null}
+        runId={runId}
         view={selectedTile ? tileView(selectedTile) : null}
       />
     </div>

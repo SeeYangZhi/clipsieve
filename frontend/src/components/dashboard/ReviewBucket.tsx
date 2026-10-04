@@ -20,9 +20,11 @@ import { t, useLocale } from "@/lib/i18n";
 export function ReviewBucket({
   review,
   posts,
+  runId,
 }: {
   review: string[];
   posts: Record<string, PostTile>;
+  runId: string;
 }) {
   const [locale] = useLocale();
   const [selected, setSelected] = useState<string | null>(null);
@@ -93,6 +95,7 @@ export function ReviewBucket({
         <PostDialog
           onOpenChange={onDialogOpenChange}
           open={selected !== null}
+          runId={runId}
           view={selectedTile ? tileView(selectedTile) : null}
         />
       </CardContent>

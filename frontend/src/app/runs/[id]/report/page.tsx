@@ -131,7 +131,7 @@ export default function ReportPage() {
   return (
     <div className="flex flex-col gap-4">
       {back}
-      <ReportView posts={current.posts} report={current.report} />
+      <ReportView posts={current.posts} report={current.report} runId={id} />
     </div>
   );
 }

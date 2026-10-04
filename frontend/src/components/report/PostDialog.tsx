@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useState } from "react";
 import { answerLabel } from "@/components/dashboard/CurrentItem";
 import { Button } from "@/components/ui/button";
 import {
@@ -11,7 +12,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import type { PostView } from "@/lib/api";
+import { mediaUrl, type PostView } from "@/lib/api";
 import { t, tOr, useLocale } from "@/lib/i18n";
 
 /** One cited post: its caption and the latest pass's Jev answers. */
@@ -19,13 +20,23 @@ export function PostDialog({
   view,
   open,
   onOpenChange,
+  runId,
 }: {
   onOpenChange: (open: boolean) => void;
   open: boolean;
+  /** When given, the downloaded media under `GET /runs/{id}/media/...` is shown. */
+  runId?: string;
   view: PostView | null;
 }) {
   const [locale] = useLocale();
   const judge = view?.judge.pass_two ?? view?.judge.pass_one;
+  // The post whose local media failed to load (only kept posts have media on disk).
+  const [brokenFor, setBrokenFor] = useState<string | null>(null);
+  const mediaBroken = brokenFor === view?.post.id;
+  const markBroken = useCallback(
+    () => setBrokenFor(view?.post.id ?? null),
+    [view]
+  );
   return (
     // Without a post there is nothing to title, so the dialog stays shut.
     <Dialog onOpenChange={onOpenChange} open={open && view !== null}>
@@ -50,6 +61,9 @@ export function PostDialog({
               </h3>
               <p>{view.post.text.caption}</p>
             </section>
+          ) : null}
+          {runId && !mediaBroken ? (
+            <LocalMedia onError={markBroken} runId={runId} view={view} />
           ) : null}
           {view.post.url ? (
             <a
@@ -86,5 +100,40 @@ export function PostDialog({
         </DialogContent>
       ) : null}
     </Dialog>
+  );
+}
+
+/** The media the Runner downloaded for a kept post; the caller hides it when the file is missing. */
+function LocalMedia({
+  runId,
+  view,
+  onError,
+}: {
+  onError: () => void;
+  runId: string;
+  view: PostView;
+}) {
+  if (view.post.kind === "video") {
+    return (
+      // biome-ignore lint/a11y/useMediaCaption: the transcript is in the evidence, not a caption track
+      <video
+        className="max-h-72 w-full rounded bg-black"
+        controls
+        onError={onError}
+        preload="metadata"
+        src={mediaUrl(runId, view.post.id, "video.mp4")}
+      />
+    );
+  }
+  return (
+    // biome-ignore lint/performance/noImgElement lint/a11y/noNoninteractiveElementInteractions: local API image; onError only hides a missing file
+    <img
+      alt=""
+      className="max-h-72 w-full rounded object-contain"
+      height={288}
+      onError={onError}
+      src={mediaUrl(runId, view.post.id, "img_00.jpg")}
+      width={512}
+    />
   );
 }

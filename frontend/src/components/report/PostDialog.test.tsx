@@ -57,3 +57,27 @@ describe("PostDialog original link", () => {
     expect(link).toHaveAttribute("rel", "noreferrer");
   });
 });
+
+describe("PostDialog local media", () => {
+  it("plays the downloaded video when a run id is given", () => {
+    render(
+      <PostDialog
+        onOpenChange={vi.fn()}
+        open={true}
+        runId="run x"
+        view={view("t", "c")}
+      />
+    );
+    const video = document.querySelector("video");
+    expect(video).not.toBeNull();
+    expect(video?.getAttribute("src")).toBe(
+      `/api/runs/run%20x/media/${encodeURIComponent(post.id)}/video.mp4`
+    );
+  });
+  it("shows no player without a run id", () => {
+    render(
+      <PostDialog onOpenChange={vi.fn()} open={true} view={view("t", "c")} />
+    );
+    expect(document.querySelector("video")).toBeNull();
+  });
+});

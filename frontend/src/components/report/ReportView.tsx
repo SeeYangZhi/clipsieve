@@ -122,9 +122,11 @@ function Labelled({ label, children }: { children: ReactNode; label: string }) {
 export function ReportView({
   report,
   posts,
+  runId,
 }: {
   posts: Record<string, PostView>;
   report: Report;
+  runId?: string;
 }) {
   const [locale] = useLocale();
   // The id outlives `open` so the dialog keeps its content while it animates shut.
@@ -255,6 +257,7 @@ export function ReportView({
       <PostDialog
         onOpenChange={setOpen}
         open={open}
+        runId={runId}
         view={openId === null ? null : (lookup(posts, openId) ?? null)}
       />
     </div>

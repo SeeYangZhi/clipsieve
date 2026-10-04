@@ -150,15 +150,18 @@ def test_field_map_is_overridable(monkeypatch, notes):
     assert post.text.caption == notes[2]["title"]
 
 
-def test_post_url_drops_xsec_query_and_fragment(notes, comments):
+def test_post_url_keeps_the_share_token_xiaohongshu_requires(notes, comments):
+    """Note pages 404 without xsec_token, so a reviewer could never open the post."""
     n = dict(notes[0])
     n["note_url"] = (
         "https://www.xiaohongshu.com/explore/66f1a2b3c4d5e6f700000001"
         "?xsec_token=abc&xsec_source=pc_search#frag"
     )
     post = map_note(n, comments[n["note_id"]], SALT, "/tmp/raw.json", NOW)
-    assert post.url == "https://www.xiaohongshu.com/explore/66f1a2b3c4d5e6f700000001"
-    assert "xsec" not in post.url
+    assert post.url == (
+        "https://www.xiaohongshu.com/explore/66f1a2b3c4d5e6f700000001"
+        "?xsec_token=abc&xsec_source=pc_search"
+    )
 
 
 def test_note_id_and_type_helpers_follow_field_map(monkeypatch):
