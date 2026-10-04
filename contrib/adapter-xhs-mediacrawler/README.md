@@ -1,18 +1,18 @@
 # clipsieve-adapter-xhs
 
-Community Xiaohongshu (小红书) adapter for [clipsieve](../../README.md). It drives a **local checkout of [MediaCrawler](https://github.com/NanmiCoder/MediaCrawler)** in CDP mode against your own logged-in Chrome, then maps the notes and comments MediaCrawler writes into clipsieve `Post` records.
+Community Xiaohongshu (小红书) adapter for [clipsieve](../../README.md). By default it calls Xiaohongshu's web API with the cookies of your own logged-in browser (`CLIPSIEVE_XHS_RUNNER=api`); the fallback runner (`mediacrawler`) drives a **local checkout of [MediaCrawler](https://github.com/NanmiCoder/MediaCrawler)** in CDP mode. Either way it maps the notes and comments it collects into clipsieve `Post` records.
 
 ## Read this first
 
 MediaCrawler is distributed under the **NON-COMMERCIAL LEARNING LICENSE 1.1**. Its README states (Chinese original, our translation): "本项目仅供学习和参考之用，禁止用于商业用途" — "This project is for learning and reference only; commercial use is prohibited" — and that it must not be used for any illegal purpose. By using this adapter you accept those terms for your MediaCrawler checkout.
 
-clipsieve itself is Apache-2.0, but **this adapter does not change MediaCrawler's licence**. This package never copies MediaCrawler code; it runs your checkout as a subprocess.
+clipsieve itself is Apache-2.0, but **this adapter does not change MediaCrawler's licence**. This package never copies MediaCrawler code; the fallback runner runs your checkout as a subprocess, and the api runner only follows the public wire format.
 
 **You are responsible for compliance with Xiaohongshu's terms of service and the laws that apply to you**, including personal-data law (PIPL, GDPR). clipsieve hashes creator identifiers and caps stored comments, and MediaCrawler already anonymises creators in its output, but collecting content you are not permitted to collect is on you, not on the tools.
 
 ## Setup
 
-1. Clone MediaCrawler as a **sibling of the repo** (the default `CLIPSIEVE_XHS_MEDIACRAWLER_DIR=../MediaCrawler` is resolved against the clipsieve repo root, not your shell's cwd) and pin it to the commit this adapter was tested against:
+1. Only for `CLIPSIEVE_XHS_RUNNER=mediacrawler`: clone MediaCrawler as a **sibling of the repo** (the default `CLIPSIEVE_XHS_MEDIACRAWLER_DIR=../MediaCrawler` is resolved against the clipsieve repo root, not your shell's cwd) and pin it to the commit this adapter was tested against:
 
    ```bash
    cd ..            # the directory that contains clipsieve/
@@ -21,16 +21,16 @@ clipsieve itself is Apache-2.0, but **this adapter does not change MediaCrawler'
    uv sync && uv run playwright install
    ```
 
-2. Start Chrome with remote debugging on the port clipsieve expects (default 9222) and log in to xiaohongshu.com in that Chrome:
+2. Required for both runners: start Chrome (or another Chromium) with remote debugging on the port clipsieve expects (default 9222) and log in to xiaohongshu.com in that Chrome:
 
    ```bash
    # macOS
    "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" --remote-debugging-port=9222 --user-data-dir="$HOME/.clipsieve-chrome"
    ```
 
-   On the first crawl MediaCrawler shows a QR code in that Chrome if you are not logged in. Scan it once; the session persists in that Chrome profile.
+   The api runner reads the `a1` and `web_session` cookies from this browser over CDP; with the `mediacrawler` runner, on the first crawl MediaCrawler shows a QR code in that Chrome if you are not logged in. Scan it once; the session persists in that Chrome profile.
 
-3. Point clipsieve at the checkout in the repo-root `.env` (the first two lines are the shipped defaults; the port is a core setting):
+3. Optional settings in the repo-root `.env` (`CLIPSIEVE_XHS_RUNNER=api` is the default; the MediaCrawler lines apply only to the `mediacrawler` runner; the port is a core setting):
 
    ```text
    CLIPSIEVE_XHS_MEDIACRAWLER_DIR=../MediaCrawler
@@ -46,13 +46,32 @@ clipsieve itself is Apache-2.0, but **this adapter does not change MediaCrawler'
 
    `GET /api/adapters` then lists `xiaohongshu` with its health. If health is false, the message says which of Chrome, the checkout or the pinned commit is wrong.
 
+## How the api runner works
+
+- Cookies come from your own logged-in Chromium through the Chrome DevTools Protocol on the configured port (`Storage.getCookies`). No credentials are stored; a missing `a1` or `web_session` cookie is a health failure telling you to log in to xiaohongshu.com in that browser.
+- Requests go straight to `https://edith.xiaohongshu.com` over httpx, signed per request with [`xhshow`](https://github.com/cloxl/xhshow), with the `Origin`, `Referer` and `User-Agent` a browser tab sends.
+- Search asks for `note_type=1` when `CLIPSIEVE_XHS_NOTE_KINDS=video` (server-side filter) and `CLIPSIEVE_XHS_PAGE_SIZE` notes (default 20). One search call is one page, so paging, dedupe, `limit` and `CLIPSIEVE_XHS_MAX_PAGES` behave as with the other runner. Each note needs one detail request for the video stream URL; comments are opt-in (`CLIPSIEVE_XHS_COMMENTS=1`) because they cost one more request per note.
+- Records use the keys MediaCrawler writes, so the mapping, the raw-payload privacy stripping, the media-URL cache and media download are shared by both runners. Creator ids are hashed before they leave the runner; nicknames are not emitted.
+- Requests are serial with a jittered interval (`CLIPSIEVE_XHS_REQUEST_INTERVAL_S`, default 1.0 s) and a short backoff on the platform's rate-limit codes. Login-expired and verification responses stop the page with a recoverable error instead of retrying; open xiaohongshu.com in that browser, resolve the check, and run again.
+
+## Performance
+
+Expected, measured in Task 6:
+
+| | MediaCrawler runner | API runner |
+|---|---|---|
+| Requests per 20 videos | 1 browser crawl, all note types, ~150 s | 1 search + 20 detail calls, ~25 to 35 s |
+| Video share per page | 30 to 50 % | 100 % |
+| 50 videos collected | 25 to 50 min | 2 to 3 min |
+| Comments | always | opt-in |
+
 ## What it collects
 
 Per note: title, caption (`desc`), hashtags (`tag_list`), likes, saves, comments count, shares, post time, image URLs or video URL, up to 50 top-level comments sorted by likes, and the untouched MediaCrawler record as `raw_ref`. `creator_hash` is clipsieve's salted hash of MediaCrawler's already-anonymised `creator_hash`. Nicknames are kept only as `creator_display`.
 
 ## Video-only runs
 
-Set `CLIPSIEVE_XHS_NOTE_KINDS=video` to keep only video notes. The pinned MediaCrawler cannot ask Xiaohongshu for videos only, so image notes are discarded after the crawl and a video-only run needs more search pages per query. `CLIPSIEVE_XHS_MAX_PAGES` (default 5) bounds how many pages one query may crawl.
+Set `CLIPSIEVE_XHS_NOTE_KINDS=video` to keep only video notes. The api runner asks Xiaohongshu for video notes only; the pinned MediaCrawler cannot, so with `mediacrawler` image notes are discarded after the crawl and a video-only run needs more search pages per query. `CLIPSIEVE_XHS_MAX_PAGES` (default 10) bounds how many pages one query may crawl.
 
 ## Limits
 

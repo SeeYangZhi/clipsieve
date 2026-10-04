@@ -65,14 +65,12 @@ class XhsMediaCrawlerAdapter(Adapter):
     ) -> None:
         self.settings = settings or get_settings()
         self.xhs = xhs_settings or get_xhs_settings()
-        self.runner = runner or MediaCrawlerRunner(
-            self.xhs, cdp_port=self.settings.clipsieve_xhs_chrome_cdp_port
-        )
         self.http = http or httpx.Client(
             timeout=DOWNLOAD_TIMEOUT_S,
             follow_redirects=True,
             headers={"Referer": REFERER, "User-Agent": USER_AGENT},
         )
+        self.runner = runner or self._runner_from_settings()
         self.raw_dir = raw_dir or incoming_dir(self.settings.clipsieve_data_dir, self.platform)
         self.cache_dir = cache_dir or (
             self.settings.clipsieve_data_dir / CACHE_SUBDIR / self.platform
@@ -88,6 +86,16 @@ class XhsMediaCrawlerAdapter(Adapter):
 
     def healthcheck(self) -> AdapterHealth:
         return self.runner.healthcheck()
+
+    def _runner_from_settings(self) -> RunnerProtocol:
+        port = self.settings.clipsieve_xhs_chrome_cdp_port
+        if self.xhs.clipsieve_xhs_runner == "api":
+            from clipsieve_xhs.api_runner import (
+                XhsApiRunner,
+            )  # keeps MediaCrawler-only installs importable
+
+            return XhsApiRunner(self.xhs, cdp_port=port, http=self.http)
+        return MediaCrawlerRunner(self.xhs, cdp_port=port)
 
     def search(self, queries: list[Query], limit: int) -> Iterator[Post]:
         """One MediaCrawler run per page, from page 1, until `limit` posts are yielded, a page

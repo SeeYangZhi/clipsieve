@@ -323,3 +323,31 @@ def test_max_pages_caps_paging_short_of_limit(tmp_path):
     posts = list(adapter.search(Q, limit=10))
     assert len(posts) == 2
     assert runner.pages == [1, 2]
+
+
+def test_default_runner_follows_the_setting(tmp_path):
+    from clipsieve.config import Settings
+    from clipsieve_xhs.api_runner import XhsApiRunner
+    from clipsieve_xhs.runner import MediaCrawlerRunner
+
+    core = Settings(
+        _env_file=None, clipsieve_data_dir=tmp_path / "data", clipsieve_creator_salt="salt"
+    )
+    api = XhsMediaCrawlerAdapter(core, XhsSettings(_env_file=None, clipsieve_xhs_runner="api"))
+    assert isinstance(api.runner, XhsApiRunner)
+    assert api.runner.cdp_port == core.clipsieve_xhs_chrome_cdp_port
+    mc = XhsMediaCrawlerAdapter(
+        core, XhsSettings(_env_file=None, clipsieve_xhs_runner="mediacrawler")
+    )
+    assert isinstance(mc.runner, MediaCrawlerRunner)
+
+
+def test_from_settings_builds_the_api_runner_by_default(tmp_path):
+    from clipsieve.config import Settings
+    from clipsieve_xhs.api_runner import XhsApiRunner
+
+    core = Settings(
+        _env_file=None, clipsieve_data_dir=tmp_path / "data", clipsieve_creator_salt="salt"
+    )
+    adapter = XhsMediaCrawlerAdapter.from_settings(core)
+    assert isinstance(adapter.runner, XhsApiRunner)
