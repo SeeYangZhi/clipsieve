@@ -425,7 +425,7 @@ class MediaCrawlerRunner(RunnerProtocol):
 
 The argv is the verified MediaCrawler invocation (`--lt qrcode`, `--get_comment yes`); overview Addendum C.2 is amended to match.
 
-- [ ] **Step 1: Write the failing runner tests**
+- [x] **Step 1: Write the failing runner tests**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/test_runner.py
@@ -580,12 +580,12 @@ def test_relative_mc_dir_resolves_against_repo_root_not_cwd(tmp_path, monkeypatc
     assert r.build_argv("x", 1)[3] == str(r.mc_dir)
 ```
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest tests/test_runner.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve_xhs.runner'`.
 
-- [ ] **Step 3: Implement the runner**
+- [x] **Step 3: Implement the runner**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/runner.py
@@ -746,12 +746,12 @@ class MediaCrawlerRunner:
         return RunnerOutput(notes=notes, comments=comments, errors=errors, returncode=returncode, stderr_tail=stderr_tail)
 ```
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest tests/test_runner.py -v`
 Expected: `11 passed`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/clipsieve_xhs/runner.py contrib/adapter-xhs-mediacrawler/tests/test_runner.py
