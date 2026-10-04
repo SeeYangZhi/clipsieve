@@ -25,9 +25,9 @@ def settings(mc_dir: Path) -> XhsSettings:
     return XhsSettings(_env_file=None, clipsieve_xhs_mediacrawler_dir=mc_dir)
 
 
-def test_build_argv_matches_mediacrawler_cli(settings, mc_dir):
+def test_build_argv_matches_mediacrawler_cli(settings, mc_dir, tmp_path):
     r = MediaCrawlerRunner(settings)
-    argv = r.build_argv("新加坡人 上海 vlog", start_page=2)
+    argv = r.build_argv("新加坡人 上海 vlog", start_page=2, workdir=tmp_path)
     assert argv[:4] == ["uv", "run", "--project", str(mc_dir)]
     assert argv[4:6] == ["python", str(mc_dir / "main.py")]
     rest = argv[6:]
@@ -50,14 +50,17 @@ def test_build_argv_matches_mediacrawler_cli(settings, mc_dir):
         "no",
         "--save_data_option",
         "jsonl",
+        "--save_data_path",
+        str(tmp_path),
         "--headless",
         "no",
     ]
 
 
 def test_output_dir_is_under_workdir(settings, tmp_path):
+    # MediaCrawler writes f"{SAVE_DATA_PATH}/{platform}/{file_type}" (tools/async_file_writer.py)
     r = MediaCrawlerRunner(settings)
-    assert r.output_dir(tmp_path) == tmp_path / "data" / "xhs" / "jsonl"
+    assert r.output_dir(tmp_path) == tmp_path / "xhs" / "jsonl"
 
 
 def test_read_records_skips_truncated_last_line(settings, tmp_path):
@@ -124,13 +127,17 @@ def test_healthcheck_wrong_commit(settings, monkeypatch):
     assert h.ok is False and "pinned" in h.message
 
 
-def test_search_runs_subprocess_in_workdir_and_collects(settings, tmp_path, monkeypatch):
+def test_search_runs_in_the_checkout_and_collects_from_workdir(settings, tmp_path, monkeypatch):
+    """MediaCrawler opens libs/*.js relative to cwd, so cwd must be the checkout; the output goes
+    to the per-run workdir through --save_data_path."""
     calls = {}
+    workdir = tmp_path / "work"
+    workdir.mkdir()
 
     def fake_run(argv, **kwargs):
         calls["argv"] = argv
         calls["cwd"] = kwargs["cwd"]
-        out = Path(kwargs["cwd"]) / "data" / "xhs" / "jsonl"
+        out = Path(argv[argv.index("--save_data_path") + 1]) / "xhs" / "jsonl"
         out.mkdir(parents=True)
         (out / "search_contents_2026-10-03.jsonl").write_text(
             '{"note_id": "n1"}\n', encoding="utf-8"
@@ -142,10 +149,11 @@ def test_search_runs_subprocess_in_workdir_and_collects(settings, tmp_path, monk
 
     monkeypatch.setattr(subprocess, "run", fake_run)
     r = MediaCrawlerRunner(settings)
-    out = r.search("关键词", start_page=1, workdir=tmp_path)
+    out = r.search("关键词", start_page=1, workdir=workdir)
     assert isinstance(out, RunnerOutput)
-    assert calls["cwd"] == str(tmp_path)
+    assert calls["cwd"] == str(r.mc_dir)
     assert calls["argv"][7] == "xhs"
+    assert calls["argv"][calls["argv"].index("--save_data_path") + 1] == str(workdir)
     assert out.notes == [{"note_id": "n1"}]
     assert out.comments == [{"comment_id": "c1", "note_id": "n1"}]
     assert out.returncode == 0 and out.errors == []
@@ -153,7 +161,7 @@ def test_search_runs_subprocess_in_workdir_and_collects(settings, tmp_path, monk
 
 def test_search_timeout_returns_partial(settings, tmp_path, monkeypatch):
     def fake_run(argv, **kwargs):
-        out = Path(kwargs["cwd"]) / "data" / "xhs" / "jsonl"
+        out = Path(argv[argv.index("--save_data_path") + 1]) / "xhs" / "jsonl"
         out.mkdir(parents=True)
         (out / "search_contents_2026-10-03.jsonl").write_text(
             '{"note_id": "n1"}\n', encoding="utf-8"
@@ -174,4 +182,4 @@ def test_relative_mc_dir_resolves_against_repo_root_not_cwd(tmp_path, monkeypatc
     r = MediaCrawlerRunner(s)
     assert r.mc_dir == (REPO_ROOT / "../MediaCrawler").resolve()
     assert r.mc_dir != (tmp_path / "../MediaCrawler").resolve()
-    assert r.build_argv("x", 1)[3] == str(r.mc_dir)
+    assert r.build_argv("x", 1, tmp_path)[3] == str(r.mc_dir)

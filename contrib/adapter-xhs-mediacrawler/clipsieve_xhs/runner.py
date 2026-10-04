@@ -51,7 +51,7 @@ class MediaCrawlerRunner:
             d = REPO_ROOT / d  # never the cwd: uvicorn runs from backend/, tests from contrib/
         return d.resolve()
 
-    def build_argv(self, keyword: str, start_page: int) -> list[str]:
+    def build_argv(self, keyword: str, start_page: int, workdir: Path) -> list[str]:
         return [
             "uv",
             "run",
@@ -77,14 +77,17 @@ class MediaCrawlerRunner:
             "no",
             "--save_data_option",
             "jsonl",
+            "--save_data_path",
+            str(workdir),
             "--headless",
             "no",
         ]
 
     def output_dir(self, workdir: Path) -> Path:
-        # MediaCrawler writes f"data/{platform}/{file_type}" relative to cwd when SAVE_DATA_PATH
-        # is unset.
-        return workdir / "data" / "xhs" / "jsonl"
+        # MediaCrawler writes f"{SAVE_DATA_PATH}/{platform}/{file_type}"
+        # (tools/async_file_writer.py); --save_data_path is the workdir, so nothing lands in
+        # the checkout.
+        return workdir / "xhs" / "jsonl"
 
     def read_records(self, path: Path) -> tuple[list[dict], list[str]]:
         text = path.read_text(encoding="utf-8")
@@ -160,15 +163,16 @@ class MediaCrawlerRunner:
 
     def search(self, keyword: str, start_page: int, workdir: Path) -> RunnerOutput:
         workdir.mkdir(parents=True, exist_ok=True)
-        argv = self.build_argv(keyword, start_page)
-        log.info("mediacrawler.start", keyword=keyword, start_page=start_page, cwd=str(workdir))
+        argv = self.build_argv(keyword, start_page, workdir)
+        log.info("mediacrawler.start", keyword=keyword, start_page=start_page, workdir=str(workdir))
         errors: list[str] = []
         returncode = -1
         stderr_tail = ""
         try:
             cp = subprocess.run(
                 argv,
-                cwd=str(workdir),
+                # MediaCrawler opens libs/*.js relative to cwd, so cwd must be the checkout.
+                cwd=str(self.mc_dir),
                 capture_output=True,
                 text=True,
                 timeout=self.settings.clipsieve_xhs_timeout_s,

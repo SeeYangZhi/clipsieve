@@ -10,7 +10,7 @@ Browser-session adapter. It drives the user's own logged-in Chrome through a loc
 
 - Registers `xiaohongshu = "clipsieve_xhs.adapter:XhsMediaCrawlerAdapter"` in entry point group `clipsieve.adapters`.
 - **The core package never imports `clipsieve_xhs`.** If you need something from here in `backend/`, it belongs in the `Adapter` protocol instead.
-- Never vendor MediaCrawler files. Drive the checkout at `CLIPSIEVE_XHS_MEDIACRAWLER_DIR` as a subprocess (`runner.py`) and parse what it writes.
+- Never vendor MediaCrawler files. Drive the checkout at `CLIPSIEVE_XHS_MEDIACRAWLER_DIR` as a subprocess (`runner.py`) and parse what it writes. The subprocess runs with cwd = the checkout (MediaCrawler opens `libs/*.js` relative to cwd) and `--save_data_path <workdir>`, so each run's output is read from `<workdir>/xhs/jsonl/` and the checkout stays clean.
 - Pinned MediaCrawler commit lives in `settings.py::PINNED_COMMIT` and in README step 1. Bump both together after re-running the fixture-based mapping tests against a real output sample.
 - Settings: `XhsSettings` reads `(REPO_ROOT/.env, .env)` with `extra="ignore"` and `env_ignore_empty=True`; a relative `CLIPSIEVE_XHS_MEDIACRAWLER_DIR` resolves against `REPO_ROOT`. The CDP port is owned by core `Settings.clipsieve_xhs_chrome_cdp_port`; do not re-declare it here.
 - `XhsMediaCrawlerAdapter.from_settings(settings)` is what the registry calls; the constructor's `runner`, `http`, `raw_dir`, `cache_dir` and `now` arguments exist for tests. `healthcheck` delegates to the runner.
