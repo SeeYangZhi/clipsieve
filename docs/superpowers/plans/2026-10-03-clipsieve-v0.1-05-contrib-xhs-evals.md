@@ -1701,7 +1701,7 @@ Golden line format (one JSON object per line; lines starting with `#` are commen
 
 Label types: Choice label string; Score 1-based integer level; Noul boolean.
 
-- [ ] **Step 1: Write the golden files**
+- [x] **Step 1: Write the golden files**
 
 `evals/golden/en-100.jsonl` and `evals/golden/zh-100.jsonl` each contain exactly one line:
 
@@ -1749,7 +1749,7 @@ persona_fit:
   5: "例：新加坡人在上海，第一人称真实口吻"
 ```
 
-- [ ] **Step 2: Write the failing scorer tests**
+- [x] **Step 2: Write the failing scorer tests**
 
 ```python
 # backend/tests/evals/test_score.py
@@ -1897,12 +1897,12 @@ def test_pack_summaries_still_lists_only_the_pack_with_the_sidecar_present():
 
 `RecordedJudge(fixture_dir)` reads `<fixture_dir>/judge/<safe post id>.<pass_name>.json`, so tests pass `FIX` (`backend/tests/fixtures`), never `FIX / "judge"`; `score_pack` calls `judge.judge(item.post_id, "pass_two", state, questions, pack.jev_model)`, so the existing `pass_two` fixtures for `local:fx-001` to `fx-005` serve as recorded answers.
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/evals/test_score.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'evals'`.
 
-- [ ] **Step 4: Implement the scorer**
+- [x] **Step 4: Implement the scorer**
 
 ```python
 # evals/__init__.py
@@ -2175,7 +2175,7 @@ def render_markdown(report: EvalReport) -> str:
 
 `pyyaml` is already a backend dependency (the rubric loader uses it); do not touch `backend/pyproject.toml`. Create `evals/ruff.toml` with the single line `extend = "../backend/pyproject.toml"`.
 
-- [ ] **Step 5: Write evals docs and DOX child, update root index**
+- [x] **Step 5: Write evals docs and DOX child, update root index**
 
 ```markdown
 # evals/README.md
@@ -2239,7 +2239,7 @@ Root `AGENTS.md` Child DOX Index: add a TABLE row (after the `contrib/adapter-xh
 | `evals/AGENTS.md` | Golden sets (`golden/`) and `score.py`; agreement rules live in `evals/README.md` |
 ```
 
-- [ ] **Step 6: Run tests and commit**
+- [x] **Step 6: Run tests and commit**
 
 Run: `cd backend && uv run ruff format ../evals tests/evals && uv run ruff check ../evals tests/evals && uv run pytest tests/evals -v`
 Expected: `10 passed` (read_golden, 2 predicted_level, within-one, choice/noul, 2 apply_mode, score_pack, judge-failed skip, pack_summaries sidecar).
