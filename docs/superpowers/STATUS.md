@@ -1,6 +1,16 @@
-# clipsieve build status
+# clipsieve v0.1 — STATUS: DONE
 
-Updated: 2026-10-04T03:19:13Z by iteration 5
+**DONE at commit 5a9d816** (merge of plan/05-contrib-xhs-evals into main, 2026-10-04T03:40:14Z). All five plans are merged into `main` and all seven definition-of-done checks in KICKOFF.md passed in this iteration on `main` at 5a9d816:
+
+1. Every `- [ ]` in plans 01-05 is ticked (0 unticked boxes in each of the five plan files).
+2. `bun run check` exit 0 (schema drift clean, ruff + Biome clean, typecheck clean, backend 421 passed / 1 xfailed, frontend 117 passed).
+3. `cd frontend && bun run e2e` exit 0 (1 passed) against the backend in fake mode.
+4. `CLIPSIEVE_EXPLAIN_BACKEND=fake sieve run --brief "新加坡人搬到上海的生活 vlog" --platforms local --limit 5 --pack creator-hooks-v1 --auto-approve --data-dir /tmp/clipsieve-smoke` exit 0, final stage `done`; `sieve replay <run_id>` printed 27 events, first `run_created`, last `done`.
+5. AGENTS.md present in backend/, frontend/, packages/schema/, rubrics/, evals/, contrib/adapter-xhs-mediacrawler/; the root Child DOX Index lists all six; each plan's whole-branch review sampled the docs against the code.
+6. `git status` clean, `git branch --no-merged main` empty, `main` pushed to origin (5a9d816).
+7. This file.
+
+Updated: 2026-10-04T03:40:14Z by iteration 5 — **DONE**
 
 ## Plans
 | Plan | Branch | Tasks done / total | Merged | Last commit |
@@ -9,7 +19,7 @@ Updated: 2026-10-04T03:19:13Z by iteration 5
 | 02 adapters-evidence | plan/02-adapters-evidence (merged, branch deleted locally) | 12 / 12 | yes (7c3beb5) | 44206fc |
 | 03 judge-select-explain-api | merged into main (2616c2d) | 12 / 12 | yes | 2616c2d |
 | 04 frontend | merged into main (3273b2f) | 12 / 12 | yes | 3273b2f |
-| 05 contrib-xhs-evals | plan/05-contrib-xhs-evals (worktree .worktrees/plan-05-contrib-xhs-evals; main merged at b65495c) | 7 / 7 ticked; whole-branch final review in flight | no | b65495c |
+| 05 contrib-xhs-evals | merged into main (5a9d816) | 7 / 7 | yes | 5a9d816 |
 
 ## Iteration 5 did
 - Plan 04 fix wave (7 fixes: pause intent + bounded re-poll, failed-run alert with the error message, planner-failure alert with start-over link, replay-mode Dashboard without the connection badge, back-to-run link, PostDialog title fallback, `compress: false` after CONFIRMING Next gzip buffered the live SSE stream) + scoped re-review clean. Plan 04 merged into main with --no-ff (3273b2f): on main 397 pytest passed, `bun run check` exit 0, `cd frontend && bun run e2e` 1 passed. Worktree removed.
