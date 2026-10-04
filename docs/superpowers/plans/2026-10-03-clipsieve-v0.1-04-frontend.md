@@ -52,7 +52,7 @@ Plan-04 specific:
 - Consumes: root `biome.jsonc` with `"root": true` (plan 01); root `package.json` workspaces including `frontend` (plan 01).
 - Produces: a `frontend` workspace package with scripts `dev`, `build`, `typecheck`, `test`, `e2e`; shadcn components under `src/components/ui/`; `@/` alias to `src/`.
 
-- [ ] **Step 1: Create the app**
+- [x] **Step 1: Create the app**
 
 Run from repo root:
 
@@ -62,7 +62,7 @@ bunx --bun create-next-app@latest frontend --ts --tailwind --app --src-dir --use
 
 If the CLI prompts for a linter, choose **Biome**. If it prompts for Turbopack, accept. Expected: `frontend/` exists with `src/app/layout.tsx`, `src/app/page.tsx`, `next.config.ts`, `tsconfig.json`.
 
-- [ ] **Step 2: Read the Next 16 docs that ship with the package and note the facts**
+- [x] **Step 2: Read the Next 16 docs that ship with the package and note the facts**
 
 ```bash
 ls frontend/node_modules/next/dist/docs/
@@ -72,7 +72,7 @@ grep -ril "useParams" frontend/node_modules/next/dist/docs/ | head -3
 
 Open the files found and confirm three things, then write them into `frontend/AGENTS.md` in Step 8: the `rewrites()` signature in `next.config.ts`; that `params` in server page components is a `Promise` in Next 16 and client pages should use `useParams()`; how `"use client"` route files are declared. If any Step below contradicts the shipped docs, the docs win: adjust the code and record the difference in `frontend/AGENTS.md`.
 
-- [ ] **Step 3: Remove any eslint remnants and set Biome**
+- [x] **Step 3: Remove any eslint remnants and set Biome**
 
 ```bash
 cd frontend && rm -f eslint.config.mjs .eslintrc.json && bun remove eslint eslint-config-next 2>/dev/null; cd ..
@@ -87,7 +87,7 @@ Create `frontend/biome.jsonc`:
 }
 ```
 
-- [ ] **Step 4: Configure the API rewrite**
+- [x] **Step 4: Configure the API rewrite**
 
 Replace `frontend/next.config.ts`:
 
@@ -105,7 +105,7 @@ const nextConfig: NextConfig = {
 export default nextConfig;
 ```
 
-- [ ] **Step 5: Install test tooling and shadcn**
+- [x] **Step 5: Install test tooling and shadcn**
 
 ```bash
 cd frontend
@@ -118,7 +118,7 @@ cd ..
 
 Expected: `frontend/components.json` exists; `frontend/src/components/ui/button.tsx` and the others exist.
 
-- [ ] **Step 6: Scripts and Vitest config**
+- [x] **Step 6: Scripts and Vitest config**
 
 Edit `frontend/package.json` so `name` is `"frontend"` and `scripts` is exactly:
 
@@ -162,7 +162,7 @@ import "@testing-library/jest-dom/vitest";
 
 In `frontend/tsconfig.json`, ensure `"strict": true` and add `"vitest.setup.ts"` to `include`. Add `"types": ["vitest/globals"]` only if a later step needs it (it does not; tests import from `vitest`).
 
-- [ ] **Step 7: Write the first test and watch it fail**
+- [x] **Step 7: Write the first test and watch it fail**
 
 Create `frontend/src/lib/smoke.test.ts`:
 
@@ -192,7 +192,7 @@ Expected: `1 passed`.
 Run: `cd frontend && bun run typecheck && bunx ultracite check`
 Expected: no errors. If ultracite flags generated shadcn files, add `"files": { "includes": ["**", "!src/components/ui/**"] }` to `frontend/biome.jsonc` and note it in `frontend/AGENTS.md`.
 
-- [ ] **Step 8: DOX child and root index**
+- [x] **Step 8: DOX child and root index**
 
 Create `frontend/AGENTS.md`:
 
@@ -225,7 +225,7 @@ None.
 
 Edit root `AGENTS.md` Child DOX Index: replace `None yet. ...` list so it includes a line `- frontend/ — Next.js client; see frontend/AGENTS.md`.
 
-- [ ] **Step 9: Commit**
+- [x] **Step 9: Commit**
 
 ```bash
 git add frontend package.json bun.lock AGENTS.md
@@ -245,7 +245,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Produces: `type Locale = "en" | "zh"`; `t(key, locale, vars?)`; `tOr(key, fallback, locale)`; `useLocale(): [Locale, (l: Locale) => void]`; `STORAGE_KEY = "clipsieve.locale"`; `detectLocale(language)`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 Create `frontend/src/lib/i18n.test.ts`:
 
@@ -297,7 +297,7 @@ describe("detectLocale", () => {
 Run: `cd frontend && bun run test`
 Expected: FAIL, cannot find `./i18n`.
 
-- [ ] **Step 2: Dictionaries**
+- [x] **Step 2: Dictionaries**
 
 Create `frontend/src/lib/i18n/en.ts` with every key used by later tasks:
 
@@ -464,7 +464,7 @@ export const en: Record<string, string> = {
 
 Create `frontend/src/lib/i18n/zh.ts` with the same keys, Chinese values. Required exact values used by tests: `"brief.submit": "开始研究"`, `"grid.progress": "{done} / {total}"`. Translate every other key; for example `"app.tagline": "从成千上万条内容中筛出值得研究的几条"`, `"brief.title": "你在研究什么？"`, `"plan.approve": "批准并运行"`, `"run.stage.collecting": "采集中"`, `"counters.cost": "Jev 花费"`, `"review.title": "难以判断"`, `"report.concepts": "待测试的内容概念"`, `"replay.play": "播放"`, `"label.curiosity_gap": "好奇缺口"`. The dictionary-parity tests enforce completeness.
 
-- [ ] **Step 3: i18n module**
+- [x] **Step 3: i18n module**
 
 Create `frontend/src/lib/i18n.ts`:
 
@@ -560,7 +560,7 @@ export function LocaleSwitch() {
 Run: `cd frontend && bun run test`
 Expected: all i18n tests pass. Fix any parity failures by adding the missing key to the other dictionary.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/lib/i18n.ts frontend/src/lib/i18n frontend/src/lib/i18n.test.ts frontend/src/components/LocaleSwitch.tsx
@@ -581,7 +581,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: generated `frontend/src/lib/types.ts` exporting `Post, Plan, Run, Report, JudgeResult, RunEvent, Stage, Counters` (plan 01).
 - Produces: `api` object per the overview Frontend contract; `ApiError`; types `CreateRunBody, PostState, PostView, Selection, AdapterStatus, RubricPackSummary`; helpers `mediaUrl(runId, postId, filename)`, `eventsUrl(runId, after)`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 Create `frontend/src/lib/api.test.ts`:
 
@@ -645,7 +645,7 @@ describe("api", () => {
 Run: `cd frontend && bun run test src/lib/api.test.ts`
 Expected: FAIL, cannot find `./api`.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Create `frontend/src/lib/api.ts`:
 
@@ -744,7 +744,7 @@ export function eventsUrl(runId: string, after: number): string {
 Run: `cd frontend && bun run test src/lib/api.test.ts`
 Expected: 5 passed.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/lib/api.ts frontend/src/lib/api.test.ts
@@ -765,7 +765,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `RunEvent, Post, JudgeResult, Counters, Stage` from `@/lib/types`.
 - Produces: `DashboardState` (contract fields plus `lastSeq: number` and `startedAt: string | null`), `PostTile`, `initialState()`, `reduceEvent(state, event)`, `reduceAll(events)`, `answersPerSecond(events, windowMs = 5000)`, `emptyCounters()`, `JEV_USD_PER_MILLION_INPUT = 0.042`; fixture exports `fixturePosts: Post[]` and `fixtureEvents: RunEvent[]` (about 40 events, run id `FIXTURE`).
 
-- [ ] **Step 1: Fixture posts**
+- [x] **Step 1: Fixture posts**
 
 Create `frontend/src/lib/__fixtures__/posts.ts`:
 
@@ -840,7 +840,7 @@ export const fixturePosts: Post[] = [
 ];
 ```
 
-- [ ] **Step 2: Fixture event builder**
+- [x] **Step 2: Fixture event builder**
 
 Create `frontend/src/lib/__fixtures__/run-events.ts`:
 
@@ -942,7 +942,7 @@ console.log("wrote run-events.json");
 Run: `cd frontend && bun run scripts/write-fixture-events.ts`
 Expected: `wrote run-events.json`; the file has 30 or more events. If `@/` alias fails under `bun run`, change the import to a relative path.
 
-- [ ] **Step 3: Failing reducer tests**
+- [x] **Step 3: Failing reducer tests**
 
 Create `frontend/src/lib/events.test.ts`:
 
@@ -1039,7 +1039,7 @@ describe("answersPerSecond", () => {
 Run: `cd frontend && bun run test src/lib/events.test.ts`
 Expected: FAIL, cannot find `./events`.
 
-- [ ] **Step 4: Implement the reducer**
+- [x] **Step 4: Implement the reducer**
 
 Create `frontend/src/lib/events.ts`:
 
@@ -1199,7 +1199,7 @@ export function answersPerSecond(events: RunEvent[], windowMs = 5000): number {
 Run: `cd frontend && bun run test src/lib/events.test.ts`
 Expected: 11 passed. If `aggregates.persona_fit["4"]` fails, check `Math.round(3.6)` is 4; adjust the fixture, not the reducer.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/lib/events.ts frontend/src/lib/events.test.ts frontend/src/lib/__fixtures__ frontend/scripts/write-fixture-events.ts
@@ -1220,7 +1220,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `eventsUrl` (Task 3), `reduceEvent`, `initialState`, `DashboardState` (Task 4).
 - Produces: `useRunEvents(runId, opts, factory?)` returning `{ state, events, connected, progress }`; `type RunEventsOptions`; `type EventSourceLike`; `type EventSourceFactory = (url: string) => EventSourceLike`.
 
-- [ ] **Step 1: Failing tests with a fake EventSource**
+- [x] **Step 1: Failing tests with a fake EventSource**
 
 Create `frontend/src/lib/useRunEvents.test.tsx`:
 
@@ -1362,7 +1362,7 @@ describe("useRunEvents replay", () => {
 Run: `cd frontend && bun run test src/lib/useRunEvents.test.tsx`
 Expected: FAIL, cannot find `./useRunEvents`.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Create `frontend/src/lib/useRunEvents.ts`:
 
@@ -1501,7 +1501,7 @@ export function useRunEvents(runId: string, opts: RunEventsOptions, factory: Eve
 Run: `cd frontend && bun run test src/lib/useRunEvents.test.tsx`
 Expected: 3 passed. If the replay first-event assertion fails because the first delay is computed against itself, confirm `cursor === 0` yields `delay 0` as written.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/lib/useRunEvents.ts frontend/src/lib/useRunEvents.test.tsx
@@ -1523,7 +1523,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `api.listAdapters`, `api.listRubrics`, `api.createRun`, `api.listRuns`, `CreateRunBody`, `AdapterStatus`, `RubricPackSummary`; `t`, `useLocale`.
 - Produces: `BriefForm({ adapters, rubrics, onSubmit, busy })`, `RecentRuns({ runs })`, `AppHeader()`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 Create `frontend/src/components/brief/BriefForm.test.tsx`:
 
@@ -1578,7 +1578,7 @@ describe("BriefForm", () => {
 Run: `cd frontend && bun run test src/components/brief`
 Expected: FAIL, cannot find `./BriefForm`.
 
-- [ ] **Step 2: Implement BriefForm**
+- [x] **Step 2: Implement BriefForm**
 
 Create `frontend/src/components/brief/BriefForm.tsx`:
 
@@ -1680,7 +1680,7 @@ export function BriefForm({ adapters, rubrics, onSubmit, busy }: Props) {
 
 A native `<select>` is used for the rubric because the shadcn `Select` renders in a portal that jsdom cannot drive with `userEvent.selectOptions`; record this in `frontend/AGENTS.md` in Task 12.
 
-- [ ] **Step 3: RecentRuns, AppHeader, layout, page**
+- [x] **Step 3: RecentRuns, AppHeader, layout, page**
 
 Create `frontend/src/components/brief/RecentRuns.tsx`:
 
@@ -1818,7 +1818,7 @@ export default function HomePage() {
 Run: `cd frontend && bun run test src/components/brief && bun run typecheck`
 Expected: 3 passed, typecheck clean.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/components frontend/src/app/layout.tsx frontend/src/app/page.tsx
@@ -1839,7 +1839,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `Plan, Query` types; `api.getRun`, `api.savePlan`, `api.approveRun`; `useRunEvents` (to notice `plan_ready` while planning).
 - Produces: `PlanEditor({ plan, onSave, onApprove, busy })`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 Create `frontend/src/components/plan/PlanEditor.test.tsx`:
 
@@ -1899,7 +1899,7 @@ describe("PlanEditor", () => {
 Run: `cd frontend && bun run test src/components/plan`
 Expected: FAIL, cannot find `./PlanEditor`.
 
-- [ ] **Step 2: Implement PlanEditor**
+- [x] **Step 2: Implement PlanEditor**
 
 Create `frontend/src/components/plan/PlanEditor.tsx`:
 
@@ -2008,7 +2008,7 @@ export function PlanEditor({ plan, onSave, onApprove, busy }: Props) {
 }
 ```
 
-- [ ] **Step 3: Plan page**
+- [x] **Step 3: Plan page**
 
 Create `frontend/src/app/runs/[id]/plan/page.tsx`:
 
@@ -2074,7 +2074,7 @@ export default function PlanPage() {
 Run: `cd frontend && bun run test src/components/plan && bun run typecheck`
 Expected: 3 passed, typecheck clean.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/src/components/plan frontend/src/app/runs
@@ -2095,7 +2095,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `DashboardState, PostTile`, `answersPerSecond`, `reduceAll`, fixture events; `mediaUrl`; `api.pauseRun/resumeRun`; `t, tOr`.
 - Produces: `Counters({ counters, rate })`, `PostGrid({ runId, posts, total })`, `CurrentItem({ latest })`, `Aggregates({ aggregates })`, `ReviewBucket({ review, posts })`, `Dashboard({ runId, state, events, connected, controls? })`.
 
-- [ ] **Step 1: Failing tests**
+- [x] **Step 1: Failing tests**
 
 Create `frontend/src/components/dashboard/dashboard.test.tsx`:
 
@@ -2170,7 +2170,7 @@ describe("ReviewBucket", () => {
 Run: `cd frontend && bun run test src/components/dashboard`
 Expected: FAIL, modules not found.
 
-- [ ] **Step 2: Counters and PostGrid**
+- [x] **Step 2: Counters and PostGrid**
 
 Create `frontend/src/components/dashboard/Counters.tsx`:
 
@@ -2273,7 +2273,7 @@ export function PostGrid({ runId, posts, total }: { runId: string; posts: Record
 
 `total` is the sum of the plan's quantities when known, else the collected count; the page computes it.
 
-- [ ] **Step 3: CurrentItem, Aggregates, ReviewBucket**
+- [x] **Step 3: CurrentItem, Aggregates, ReviewBucket**
 
 Create `frontend/src/components/dashboard/CurrentItem.tsx`:
 
@@ -2440,7 +2440,7 @@ export function ReviewBucket({ review, posts }: { review: string[]; posts: Recor
 Run: `cd frontend && bun run test src/components/dashboard`
 Expected: 7 passed. If `Progress` lacks `role="progressbar"` in the installed shadcn version, add `role="progressbar"` to the `Progress` usage in `CurrentItem.tsx`.
 
-- [ ] **Step 4: Dashboard composition and the run page**
+- [x] **Step 4: Dashboard composition and the run page**
 
 Create `frontend/src/components/dashboard/Dashboard.tsx`:
 
@@ -2541,7 +2541,7 @@ export default function RunPage() {
 Run: `cd frontend && bun run typecheck && bun run test`
 Expected: clean, all tests pass.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add frontend/src/components/dashboard "frontend/src/app/runs/[id]/page.tsx"
@@ -2562,7 +2562,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `Report`, `PostView`, `api.getReport`, `api.getPosts`, `answerLabel` (Task 8).
 - Produces: `ReportView({ report, posts })` where `posts: Record<string, PostView>`; `PostDialog({ view, open, onOpenChange })`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 Create `frontend/src/components/report/ReportView.test.tsx`:
 
@@ -2604,7 +2604,7 @@ describe("ReportView", () => {
 Run: `cd frontend && bun run test src/components/report`
 Expected: FAIL, modules not found.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Create `frontend/src/components/report/PostDialog.tsx`:
 
@@ -2811,7 +2811,7 @@ export default function ReportPage() {
 Run: `cd frontend && bun run test src/components/report && bun run typecheck`
 Expected: 2 passed, clean.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/components/report "frontend/src/app/runs/[id]/report"
@@ -2832,7 +2832,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 - Consumes: `Dashboard`, `useRunEvents` replay mode.
 - Produces: `ReplayControls({ playing, speed, progress, done, total, onToggle, onSpeed })`; `SPEEDS = [1, 4, 16]`.
 
-- [ ] **Step 1: Failing test**
+- [x] **Step 1: Failing test**
 
 Create `frontend/src/components/dashboard/ReplayControls.test.tsx`:
 
@@ -2860,7 +2860,7 @@ describe("ReplayControls", () => {
 Run: `cd frontend && bun run test src/components/dashboard/ReplayControls.test.tsx`
 Expected: FAIL.
 
-- [ ] **Step 2: Implement**
+- [x] **Step 2: Implement**
 
 Create `frontend/src/components/dashboard/ReplayControls.tsx`:
 
@@ -2930,7 +2930,7 @@ export default function ReplayPage() {
 Run: `cd frontend && bun run test && bun run typecheck`
 Expected: all pass.
 
-- [ ] **Step 3: Commit**
+- [x] **Step 3: Commit**
 
 ```bash
 git add frontend/src/components/dashboard/ReplayControls.tsx frontend/src/components/dashboard/ReplayControls.test.tsx "frontend/src/app/runs/[id]/replay"
@@ -2950,7 +2950,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: backend from plan 03 running with `CLIPSIEVE_EXPLAIN_BACKEND=fake` so that the `local` adapter serves `backend/tests/fixtures/posts`, `RecordedJudge` answers, and `FakeExplainBackend` plans and reports. A run completes in under 30 seconds in that mode.
 
-- [ ] **Step 1: Install browsers and write the config**
+- [x] **Step 1: Install browsers and write the config**
 
 ```bash
 cd frontend && bunx playwright install chromium && cd ..
@@ -2992,7 +2992,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 2: The flow**
+- [x] **Step 2: The flow**
 
 Create `frontend/e2e/run-flow.spec.ts`:
 
@@ -3038,12 +3038,12 @@ test-results/
 playwright-report/
 ```
 
-- [ ] **Step 3: Run it**
+- [x] **Step 3: Run it**
 
 Run: `cd frontend && bun run e2e`
 Expected: 1 passed. If the backend's fake mode exposes the `local` adapter under a different fixture path, fix the backend configuration (plan 03), not this test. If the "Done" badge text collides with another element, tighten the locator to `page.locator("header, h1 ~ *").getByText("Done")`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/playwright.config.ts frontend/e2e frontend/.gitignore frontend/package.json
@@ -3057,9 +3057,9 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 ### Task 12: DOX closeout and green `bun run check`
 
 **Files:**
-- Modify: `frontend/AGENTS.md`, root `AGENTS.md`, root `.github/workflows/check.yml` (plan 01) to run `bun run --filter frontend e2e` only when `RUN_E2E=1`
+- Modify: `frontend/AGENTS.md`, root `AGENTS.md`, root `.github/workflows/check.yml` (plan 01) to run `bun run --filter frontend e2e` only when the repository variable `RUN_E2E` is `1`
 
-- [ ] **Step 1: Complete `frontend/AGENTS.md`**
+- [x] **Step 1: Complete `frontend/AGENTS.md`**
 
 Replace the file with the Task 1 content plus these sections:
 
@@ -3081,7 +3081,7 @@ Replace the file with the Task 1 content plus these sections:
 - Fixture event log: `src/lib/__fixtures__/run-events.ts` (builder) and `run-events.json` (regenerate with `bun run scripts/write-fixture-events.ts`).
 ```
 
-- [ ] **Step 2: Root index and CI**
+- [x] **Step 2: Root index and CI**
 
 In root `AGENTS.md` Child DOX Index ensure the `frontend/` line reads `- frontend/ — Next.js 16 client; contracts in frontend/AGENTS.md`.
 
@@ -3089,16 +3089,16 @@ In `.github/workflows/check.yml` add after the existing check step:
 
 ```yaml
       - name: Playwright e2e (opt-in)
-        if: ${{ env.RUN_E2E == '1' }}
+        if: ${{ vars.RUN_E2E == '1' }}
         run: cd frontend && bunx playwright install --with-deps chromium && bun run e2e
 ```
 
-- [ ] **Step 3: Full check**
+- [x] **Step 3: Full check**
 
 Run from repo root: `bun run check`
 Expected: schema drift check passes (types.ts unchanged), ultracite and ruff clean, `tsc --noEmit` clean, pytest and vitest green.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/AGENTS.md AGENTS.md .github/workflows/check.yml

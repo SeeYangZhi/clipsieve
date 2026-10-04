@@ -24,3 +24,6 @@ jobs:
         run: cd backend && uv sync --frozen
       - name: Check
         run: bun run check
+      - name: Playwright e2e (opt-in)
+        if: ${{ vars.RUN_E2E == '1' }}
+        run: cd frontend && bunx playwright install --with-deps chromium && bun run e2e

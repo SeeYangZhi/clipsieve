@@ -1,0 +1,1208 @@
+[
+  {
+    "payload": {
+      "brief": {
+        "audience": "Singaporeans relocating",
+        "persona": "friendly expat vlogger",
+        "text": "Singaporean moving to Shanghai, vlog style",
+        "topic": "moving to Shanghai"
+      },
+      "platforms": ["local"],
+      "quantities": {
+        "local": 5
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 1,
+    "stage": "planning",
+    "ts": "2026-10-03T10:00:00.000Z",
+    "type": "run_created"
+  },
+  {
+    "payload": {
+      "plan": {
+        "brief": {
+          "audience": "Singaporeans relocating",
+          "persona": "friendly expat vlogger",
+          "text": "Singaporean moving to Shanghai, vlog style",
+          "topic": "moving to Shanghai"
+        },
+        "persona_fit_criteria": [
+          "Unrelated",
+          "Adjacent niche",
+          "Same niche, different voice",
+          "Close match",
+          "Could be the user's own channel"
+        ],
+        "quantities": {
+          "local": 5
+        },
+        "queries": [
+          {
+            "lang": "en",
+            "platform": "local",
+            "query": "shanghai"
+          }
+        ],
+        "rubric_pack": "creator-hooks-v1",
+        "run_id": "FIXTURE"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 2,
+    "stage": "planning",
+    "ts": "2026-10-03T10:00:00.500Z",
+    "type": "plan_ready"
+  },
+  {
+    "payload": {
+      "plan": {
+        "brief": {
+          "audience": "Singaporeans relocating",
+          "persona": "friendly expat vlogger",
+          "text": "Singaporean moving to Shanghai, vlog style",
+          "topic": "moving to Shanghai"
+        },
+        "persona_fit_criteria": [
+          "Unrelated",
+          "Adjacent niche",
+          "Same niche, different voice",
+          "Close match",
+          "Could be the user's own channel"
+        ],
+        "quantities": {
+          "local": 5
+        },
+        "queries": [
+          {
+            "lang": "en",
+            "platform": "local",
+            "query": "shanghai"
+          }
+        ],
+        "rubric_pack": "creator-hooks-v1",
+        "run_id": "FIXTURE"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 3,
+    "stage": "planning",
+    "ts": "2026-10-03T10:00:01.500Z",
+    "type": "plan_approved"
+  },
+  {
+    "payload": {
+      "from": "planning",
+      "to": "collecting"
+    },
+    "run_id": "FIXTURE",
+    "seq": 4,
+    "stage": "collecting",
+    "ts": "2026-10-03T10:00:01.600Z",
+    "type": "stage_changed"
+  },
+  {
+    "payload": {
+      "post": {
+        "collected_at": "2026-10-03T10:00:00Z",
+        "media": [],
+        "metrics": {
+          "comments": 10,
+          "likes": 100,
+          "views": 1000
+        },
+        "comments": [
+          {
+            "likes": 12,
+            "text": "relatable!"
+          }
+        ],
+        "creator_display": "Mei",
+        "creator_hash": "a1",
+        "id": "local:fx-001",
+        "kind": "video",
+        "lang": "en",
+        "platform": "local",
+        "raw_ref": "raw/local__fx-001.json",
+        "text": {
+          "caption": "Stop scrolling. I moved from Singapore to Shanghai with two suitcases.",
+          "hashtags": ["shanghai", "expat"],
+          "title": "First week in Shanghai"
+        },
+        "url": "file:///fx/001.mp4"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 5,
+    "stage": "collecting",
+    "ts": "2026-10-03T10:00:02.000Z",
+    "type": "post_collected"
+  },
+  {
+    "payload": {
+      "post": {
+        "collected_at": "2026-10-03T10:00:00Z",
+        "media": [],
+        "metrics": {
+          "comments": 10,
+          "likes": 100,
+          "views": 1000
+        },
+        "comments": [
+          {
+            "likes": 40,
+            "text": "太真实了"
+          },
+          {
+            "likes": 8,
+            "text": "求租房攻略"
+          }
+        ],
+        "creator_display": "阿杰",
+        "creator_hash": "a2",
+        "id": "local:fx-002",
+        "kind": "video",
+        "lang": "zh",
+        "platform": "local",
+        "raw_ref": "raw/local__fx-002.json",
+        "text": {
+          "caption": "从新加坡搬到上海的第一周，租房踩了三个坑。",
+          "hashtags": ["上海生活", "新加坡人"],
+          "title": "新加坡人在上海的第一周"
+        },
+        "url": "file:///fx/002.mp4"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 6,
+    "stage": "collecting",
+    "ts": "2026-10-03T10:00:02.200Z",
+    "type": "post_collected"
+  },
+  {
+    "payload": {
+      "post": {
+        "collected_at": "2026-10-03T10:00:00Z",
+        "media": [],
+        "metrics": {
+          "comments": 10,
+          "likes": 100,
+          "views": 1000
+        },
+        "comments": [],
+        "creator_hash": "a3",
+        "id": "local:fx-003",
+        "kind": "video",
+        "lang": "zh",
+        "platform": "local",
+        "raw_ref": "raw/local__fx-003.json",
+        "text": {
+          "caption": "上海地铁早高峰 vlog｜一个新加坡人的日常",
+          "hashtags": ["vlog"]
+        },
+        "url": "file:///fx/003.mp4"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 7,
+    "stage": "collecting",
+    "ts": "2026-10-03T10:00:02.400Z",
+    "type": "post_collected"
+  },
+  {
+    "payload": {
+      "post": {
+        "collected_at": "2026-10-03T10:00:00Z",
+        "media": [],
+        "metrics": {
+          "comments": 10,
+          "likes": 100,
+          "views": 1000
+        },
+        "comments": [
+          {
+            "likes": 3,
+            "text": "saving this"
+          }
+        ],
+        "creator_hash": "a4",
+        "id": "local:fx-004",
+        "kind": "image_note",
+        "lang": "en",
+        "platform": "local",
+        "raw_ref": "raw/local__fx-004.json",
+        "text": {
+          "caption": "7 things I wish I knew before signing.",
+          "hashtags": ["shanghai", "checklist"],
+          "title": "Shanghai apartment hunting checklist"
+        },
+        "url": "file:///fx/004"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 8,
+    "stage": "collecting",
+    "ts": "2026-10-03T10:00:02.600Z",
+    "type": "post_collected"
+  },
+  {
+    "payload": {
+      "post": {
+        "collected_at": "2026-10-03T10:00:00Z",
+        "media": [],
+        "metrics": {
+          "comments": 10,
+          "likes": 100,
+          "views": 1000
+        },
+        "comments": [
+          {
+            "likes": 5,
+            "text": "有用"
+          }
+        ],
+        "creator_hash": "a5",
+        "id": "local:fx-005",
+        "kind": "image_note",
+        "lang": "zh",
+        "platform": "local",
+        "raw_ref": "raw/local__fx-005.json",
+        "text": {
+          "caption": "新加坡护照办卡需要的材料清单。",
+          "hashtags": ["上海", "攻略"],
+          "title": "在上海办银行卡全攻略"
+        },
+        "url": "file:///fx/005"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 9,
+    "stage": "collecting",
+    "ts": "2026-10-03T10:00:02.800Z",
+    "type": "post_collected"
+  },
+  {
+    "payload": {
+      "from": "collecting",
+      "to": "pass_one"
+    },
+    "run_id": "FIXTURE",
+    "seq": 10,
+    "stage": "pass_one",
+    "ts": "2026-10-03T10:00:03.200Z",
+    "type": "stage_changed"
+  },
+  {
+    "payload": {
+      "composite": 0.7,
+      "judge": {
+        "answers": {
+          "format_guess": {
+            "confidence": 0.5,
+            "probabilities": {
+              "image_carousel": 0.3,
+              "talking_head": 0.1,
+              "vlog_montage": 0.6
+            },
+            "type": "choice",
+            "value": "vlog_montage"
+          },
+          "niche_relevance": {
+            "confidence": 0.7,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Mentions in passing",
+              "3": "Partly about it",
+              "4": "Mainly about it",
+              "5": "Entirely about it"
+            },
+            "probabilities": {
+              "1": 0,
+              "2": 0.1,
+              "3": 0.3,
+              "4": 0.5,
+              "5": 0.1
+            },
+            "type": "score",
+            "value": 3.2
+          }
+        },
+        "input_tokens": 900,
+        "latency_ms": 120,
+        "model": "jev-1.13.0",
+        "pass_name": "pass_one",
+        "post_id": "local:fx-001"
+      },
+      "kept": true
+    },
+    "run_id": "FIXTURE",
+    "seq": 11,
+    "stage": "pass_one",
+    "ts": "2026-10-03T10:00:03.400Z",
+    "type": "pass_one_judged"
+  },
+  {
+    "payload": {
+      "composite": 0.7,
+      "judge": {
+        "answers": {
+          "format_guess": {
+            "confidence": 0.5,
+            "probabilities": {
+              "image_carousel": 0.3,
+              "talking_head": 0.1,
+              "vlog_montage": 0.6
+            },
+            "type": "choice",
+            "value": "vlog_montage"
+          },
+          "niche_relevance": {
+            "confidence": 0.7,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Mentions in passing",
+              "3": "Partly about it",
+              "4": "Mainly about it",
+              "5": "Entirely about it"
+            },
+            "probabilities": {
+              "1": 0,
+              "2": 0.1,
+              "3": 0.3,
+              "4": 0.5,
+              "5": 0.1
+            },
+            "type": "score",
+            "value": 3.8000000000000003
+          }
+        },
+        "input_tokens": 910,
+        "latency_ms": 120,
+        "model": "jev-1.13.0",
+        "pass_name": "pass_one",
+        "post_id": "local:fx-002"
+      },
+      "kept": true
+    },
+    "run_id": "FIXTURE",
+    "seq": 12,
+    "stage": "pass_one",
+    "ts": "2026-10-03T10:00:03.550Z",
+    "type": "pass_one_judged"
+  },
+  {
+    "payload": {
+      "composite": 0.7,
+      "judge": {
+        "answers": {
+          "format_guess": {
+            "confidence": 0.5,
+            "probabilities": {
+              "image_carousel": 0.3,
+              "talking_head": 0.1,
+              "vlog_montage": 0.6
+            },
+            "type": "choice",
+            "value": "vlog_montage"
+          },
+          "niche_relevance": {
+            "confidence": 0.7,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Mentions in passing",
+              "3": "Partly about it",
+              "4": "Mainly about it",
+              "5": "Entirely about it"
+            },
+            "probabilities": {
+              "1": 0,
+              "2": 0.1,
+              "3": 0.3,
+              "4": 0.5,
+              "5": 0.1
+            },
+            "type": "score",
+            "value": 3.2
+          }
+        },
+        "input_tokens": 920,
+        "latency_ms": 120,
+        "model": "jev-1.13.0",
+        "pass_name": "pass_one",
+        "post_id": "local:fx-003"
+      },
+      "kept": true
+    },
+    "run_id": "FIXTURE",
+    "seq": 13,
+    "stage": "pass_one",
+    "ts": "2026-10-03T10:00:03.700Z",
+    "type": "pass_one_judged"
+  },
+  {
+    "payload": {
+      "composite": 0.7,
+      "judge": {
+        "answers": {
+          "format_guess": {
+            "confidence": 0.5,
+            "probabilities": {
+              "image_carousel": 0.3,
+              "talking_head": 0.1,
+              "vlog_montage": 0.6
+            },
+            "type": "choice",
+            "value": "image_carousel"
+          },
+          "niche_relevance": {
+            "confidence": 0.7,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Mentions in passing",
+              "3": "Partly about it",
+              "4": "Mainly about it",
+              "5": "Entirely about it"
+            },
+            "probabilities": {
+              "1": 0,
+              "2": 0.1,
+              "3": 0.3,
+              "4": 0.5,
+              "5": 0.1
+            },
+            "type": "score",
+            "value": 3.8000000000000003
+          }
+        },
+        "input_tokens": 930,
+        "latency_ms": 120,
+        "model": "jev-1.13.0",
+        "pass_name": "pass_one",
+        "post_id": "local:fx-004"
+      },
+      "kept": true
+    },
+    "run_id": "FIXTURE",
+    "seq": 14,
+    "stage": "pass_one",
+    "ts": "2026-10-03T10:00:03.850Z",
+    "type": "pass_one_judged"
+  },
+  {
+    "payload": {
+      "composite": 0.2,
+      "judge": {
+        "answers": {
+          "format_guess": {
+            "confidence": 0.5,
+            "probabilities": {
+              "image_carousel": 0.3,
+              "talking_head": 0.1,
+              "vlog_montage": 0.6
+            },
+            "type": "choice",
+            "value": "image_carousel"
+          },
+          "niche_relevance": {
+            "confidence": 0.7,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Mentions in passing",
+              "3": "Partly about it",
+              "4": "Mainly about it",
+              "5": "Entirely about it"
+            },
+            "probabilities": {
+              "1": 0,
+              "2": 0.1,
+              "3": 0.3,
+              "4": 0.5,
+              "5": 0.1
+            },
+            "type": "score",
+            "value": 3.2
+          }
+        },
+        "input_tokens": 940,
+        "latency_ms": 120,
+        "model": "jev-1.13.0",
+        "pass_name": "pass_one",
+        "post_id": "local:fx-005"
+      },
+      "kept": false
+    },
+    "run_id": "FIXTURE",
+    "seq": 15,
+    "stage": "pass_one",
+    "ts": "2026-10-03T10:00:04.000Z",
+    "type": "pass_one_judged"
+  },
+  {
+    "payload": {
+      "from": "pass_one",
+      "to": "extracting"
+    },
+    "run_id": "FIXTURE",
+    "seq": 16,
+    "stage": "extracting",
+    "ts": "2026-10-03T10:00:04.300Z",
+    "type": "stage_changed"
+  },
+  {
+    "payload": {
+      "evidence": {
+        "comment_summary": {
+          "count": 1,
+          "sample": ["relatable!"],
+          "top_terms": []
+        },
+        "keyframes": [],
+        "ocr": [],
+        "post_id": "local:fx-001",
+        "token_estimate": 400,
+        "transcript": [
+          {
+            "end_s": 2.5,
+            "start_s": 0,
+            "text": "Stop scrolling. I moved from Singapore to Shanghai with two suitcases."
+          }
+        ],
+        "truncated": false
+      },
+      "post_id": "local:fx-001"
+    },
+    "run_id": "FIXTURE",
+    "seq": 17,
+    "stage": "extracting",
+    "ts": "2026-10-03T10:00:04.500Z",
+    "type": "evidence_ready"
+  },
+  {
+    "payload": {
+      "evidence": {
+        "comment_summary": {
+          "count": 2,
+          "sample": ["太真实了", "求租房攻略"],
+          "top_terms": []
+        },
+        "keyframes": [],
+        "ocr": [],
+        "post_id": "local:fx-002",
+        "token_estimate": 400,
+        "transcript": [
+          {
+            "end_s": 2.5,
+            "start_s": 0,
+            "text": "从新加坡搬到上海的第一周，租房踩了三个坑。"
+          }
+        ],
+        "truncated": false
+      },
+      "post_id": "local:fx-002"
+    },
+    "run_id": "FIXTURE",
+    "seq": 18,
+    "stage": "extracting",
+    "ts": "2026-10-03T10:00:04.900Z",
+    "type": "evidence_ready"
+  },
+  {
+    "payload": {
+      "evidence": {
+        "comment_summary": {
+          "count": 0,
+          "sample": [],
+          "top_terms": []
+        },
+        "keyframes": [],
+        "ocr": [],
+        "post_id": "local:fx-003",
+        "token_estimate": 400,
+        "transcript": [
+          {
+            "end_s": 2.5,
+            "start_s": 0,
+            "text": "上海地铁早高峰 vlog｜一个新加坡人的日常"
+          }
+        ],
+        "truncated": false
+      },
+      "post_id": "local:fx-003"
+    },
+    "run_id": "FIXTURE",
+    "seq": 19,
+    "stage": "extracting",
+    "ts": "2026-10-03T10:00:05.300Z",
+    "type": "evidence_ready"
+  },
+  {
+    "payload": {
+      "evidence": {
+        "comment_summary": {
+          "count": 1,
+          "sample": ["saving this"],
+          "top_terms": []
+        },
+        "keyframes": [],
+        "ocr": [],
+        "post_id": "local:fx-004",
+        "token_estimate": 400,
+        "transcript": [
+          {
+            "end_s": 2.5,
+            "start_s": 0,
+            "text": "7 things I wish I knew before signing."
+          }
+        ],
+        "truncated": false
+      },
+      "post_id": "local:fx-004"
+    },
+    "run_id": "FIXTURE",
+    "seq": 20,
+    "stage": "extracting",
+    "ts": "2026-10-03T10:00:05.700Z",
+    "type": "evidence_ready"
+  },
+  {
+    "payload": {
+      "from": "extracting",
+      "to": "pass_two"
+    },
+    "run_id": "FIXTURE",
+    "seq": 21,
+    "stage": "pass_two",
+    "ts": "2026-10-03T10:00:06.200Z",
+    "type": "stage_changed"
+  },
+  {
+    "payload": {
+      "composite": 0.55,
+      "judge": {
+        "answers": {
+          "format": {
+            "confidence": 0.9,
+            "probabilities": {
+              "talking_head": 0.9
+            },
+            "type": "choice",
+            "value": "talking_head"
+          },
+          "format_guess": {
+            "confidence": 0.5,
+            "probabilities": {
+              "image_carousel": 0.3,
+              "talking_head": 0.1,
+              "vlog_montage": 0.6
+            },
+            "type": "choice",
+            "value": "vlog_montage"
+          },
+          "hook_strength": {
+            "confidence": 0.8,
+            "legend": {
+              "1": "No hook",
+              "2": "Weak",
+              "3": "Moderate",
+              "4": "Strong",
+              "5": "Exceptional"
+            },
+            "probabilities": {
+              "3": 0.6,
+              "4": 0.4
+            },
+            "type": "score",
+            "value": 2
+          },
+          "hook_type": {
+            "confidence": 0.75,
+            "probabilities": {
+              "bold_claim": 0.75,
+              "none": 0.25
+            },
+            "type": "choice",
+            "value": "bold_claim"
+          },
+          "niche_relevance": {
+            "confidence": 0.7,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Mentions in passing",
+              "3": "Partly about it",
+              "4": "Mainly about it",
+              "5": "Entirely about it"
+            },
+            "probabilities": {
+              "1": 0,
+              "2": 0.1,
+              "3": 0.3,
+              "4": 0.5,
+              "5": 0.1
+            },
+            "type": "score",
+            "value": 3.2
+          },
+          "persona_fit": {
+            "confidence": 0.8,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Adjacent niche",
+              "3": "Same niche, different voice",
+              "4": "Close match",
+              "5": "Could be the user's own channel"
+            },
+            "probabilities": {
+              "3": 0.3,
+              "4": 0.7
+            },
+            "type": "score",
+            "value": 3.6
+          },
+          "risky_claim": {
+            "type": "noul",
+            "value": 0.05
+          }
+        },
+        "input_tokens": 2400,
+        "latency_ms": 380,
+        "model": "jev-1.13.0",
+        "pass_name": "pass_two",
+        "post_id": "local:fx-001"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 22,
+    "stage": "pass_two",
+    "ts": "2026-10-03T10:00:06.400Z",
+    "type": "judged"
+  },
+  {
+    "payload": {
+      "composite": 0.65,
+      "judge": {
+        "answers": {
+          "format": {
+            "confidence": 0.9,
+            "probabilities": {
+              "vlog_montage": 0.9
+            },
+            "type": "choice",
+            "value": "vlog_montage"
+          },
+          "format_guess": {
+            "confidence": 0.5,
+            "probabilities": {
+              "image_carousel": 0.3,
+              "talking_head": 0.1,
+              "vlog_montage": 0.6
+            },
+            "type": "choice",
+            "value": "vlog_montage"
+          },
+          "hook_strength": {
+            "confidence": 0.8,
+            "legend": {
+              "1": "No hook",
+              "2": "Weak",
+              "3": "Moderate",
+              "4": "Strong",
+              "5": "Exceptional"
+            },
+            "probabilities": {
+              "3": 0.6,
+              "4": 0.4
+            },
+            "type": "score",
+            "value": 2.5
+          },
+          "hook_type": {
+            "confidence": 0.75,
+            "probabilities": {
+              "problem": 0.75,
+              "none": 0.25
+            },
+            "type": "choice",
+            "value": "problem"
+          },
+          "niche_relevance": {
+            "confidence": 0.7,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Mentions in passing",
+              "3": "Partly about it",
+              "4": "Mainly about it",
+              "5": "Entirely about it"
+            },
+            "probabilities": {
+              "1": 0,
+              "2": 0.1,
+              "3": 0.3,
+              "4": 0.5,
+              "5": 0.1
+            },
+            "type": "score",
+            "value": 3.8000000000000003
+          },
+          "persona_fit": {
+            "confidence": 0.8,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Adjacent niche",
+              "3": "Same niche, different voice",
+              "4": "Close match",
+              "5": "Could be the user's own channel"
+            },
+            "probabilities": {
+              "3": 0.3,
+              "4": 0.7
+            },
+            "type": "score",
+            "value": 3.9
+          },
+          "risky_claim": {
+            "type": "noul",
+            "value": 0.05
+          }
+        },
+        "input_tokens": 2450,
+        "latency_ms": 380,
+        "model": "jev-1.13.0",
+        "pass_name": "pass_two",
+        "post_id": "local:fx-002"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 23,
+    "stage": "pass_two",
+    "ts": "2026-10-03T10:00:06.700Z",
+    "type": "judged"
+  },
+  {
+    "payload": {
+      "composite": 0.75,
+      "judge": {
+        "answers": {
+          "format": {
+            "confidence": 0.9,
+            "probabilities": {
+              "vlog_montage": 0.9
+            },
+            "type": "choice",
+            "value": "vlog_montage"
+          },
+          "format_guess": {
+            "confidence": 0.5,
+            "probabilities": {
+              "image_carousel": 0.3,
+              "talking_head": 0.1,
+              "vlog_montage": 0.6
+            },
+            "type": "choice",
+            "value": "vlog_montage"
+          },
+          "hook_strength": {
+            "confidence": 0.8,
+            "legend": {
+              "1": "No hook",
+              "2": "Weak",
+              "3": "Moderate",
+              "4": "Strong",
+              "5": "Exceptional"
+            },
+            "probabilities": {
+              "3": 0.6,
+              "4": 0.4
+            },
+            "type": "score",
+            "value": 3
+          },
+          "hook_type": {
+            "confidence": 0.75,
+            "probabilities": {
+              "story": 0.75,
+              "none": 0.25
+            },
+            "type": "choice",
+            "value": "story"
+          },
+          "niche_relevance": {
+            "confidence": 0.7,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Mentions in passing",
+              "3": "Partly about it",
+              "4": "Mainly about it",
+              "5": "Entirely about it"
+            },
+            "probabilities": {
+              "1": 0,
+              "2": 0.1,
+              "3": 0.3,
+              "4": 0.5,
+              "5": 0.1
+            },
+            "type": "score",
+            "value": 3.2
+          },
+          "persona_fit": {
+            "confidence": 0.3,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Adjacent niche",
+              "3": "Same niche, different voice",
+              "4": "Close match",
+              "5": "Could be the user's own channel"
+            },
+            "probabilities": {
+              "3": 0.3,
+              "4": 0.7
+            },
+            "type": "score",
+            "value": 3.6
+          },
+          "risky_claim": {
+            "type": "noul",
+            "value": 0.05
+          }
+        },
+        "input_tokens": 2500,
+        "latency_ms": 380,
+        "model": "jev-1.13.0",
+        "pass_name": "pass_two",
+        "post_id": "local:fx-003"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 24,
+    "stage": "pass_two",
+    "ts": "2026-10-03T10:00:07.000Z",
+    "type": "judged"
+  },
+  {
+    "payload": {
+      "composite": 0.8500000000000001,
+      "judge": {
+        "answers": {
+          "format": {
+            "confidence": 0.9,
+            "probabilities": {
+              "image_carousel": 0.9
+            },
+            "type": "choice",
+            "value": "image_carousel"
+          },
+          "format_guess": {
+            "confidence": 0.5,
+            "probabilities": {
+              "image_carousel": 0.3,
+              "talking_head": 0.1,
+              "vlog_montage": 0.6
+            },
+            "type": "choice",
+            "value": "image_carousel"
+          },
+          "hook_strength": {
+            "confidence": 0.8,
+            "legend": {
+              "1": "No hook",
+              "2": "Weak",
+              "3": "Moderate",
+              "4": "Strong",
+              "5": "Exceptional"
+            },
+            "probabilities": {
+              "3": 0.6,
+              "4": 0.4
+            },
+            "type": "score",
+            "value": 3.5
+          },
+          "hook_type": {
+            "confidence": 0.75,
+            "probabilities": {
+              "result_first": 0.75,
+              "none": 0.25
+            },
+            "type": "choice",
+            "value": "result_first"
+          },
+          "niche_relevance": {
+            "confidence": 0.7,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Mentions in passing",
+              "3": "Partly about it",
+              "4": "Mainly about it",
+              "5": "Entirely about it"
+            },
+            "probabilities": {
+              "1": 0,
+              "2": 0.1,
+              "3": 0.3,
+              "4": 0.5,
+              "5": 0.1
+            },
+            "type": "score",
+            "value": 3.8000000000000003
+          },
+          "persona_fit": {
+            "confidence": 0.8,
+            "legend": {
+              "1": "Unrelated",
+              "2": "Adjacent niche",
+              "3": "Same niche, different voice",
+              "4": "Close match",
+              "5": "Could be the user's own channel"
+            },
+            "probabilities": {
+              "3": 0.3,
+              "4": 0.7
+            },
+            "type": "score",
+            "value": 3.9
+          },
+          "risky_claim": {
+            "type": "noul",
+            "value": 0.05
+          }
+        },
+        "input_tokens": 2550,
+        "latency_ms": 380,
+        "model": "jev-1.13.0",
+        "pass_name": "pass_two",
+        "post_id": "local:fx-004"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 25,
+    "stage": "pass_two",
+    "ts": "2026-10-03T10:00:07.300Z",
+    "type": "judged"
+  },
+  {
+    "payload": {
+      "message": "429 after 5 retries",
+      "post_id": "local:fx-004",
+      "recoverable": true,
+      "where": "judge"
+    },
+    "run_id": "FIXTURE",
+    "seq": 26,
+    "stage": "pass_two",
+    "ts": "2026-10-03T10:00:07.700Z",
+    "type": "error"
+  },
+  {
+    "payload": {
+      "from": "pass_two",
+      "to": "selecting"
+    },
+    "run_id": "FIXTURE",
+    "seq": 27,
+    "stage": "selecting",
+    "ts": "2026-10-03T10:00:07.800Z",
+    "type": "stage_changed"
+  },
+  {
+    "payload": {
+      "dropped": {
+        "local:fx-004": "judge_failed",
+        "local:fx-005": "pass_one"
+      },
+      "review": ["local:fx-003"],
+      "scores": {
+        "local:fx-001": 0.55,
+        "local:fx-002": 0.65,
+        "local:fx-003": 0.75
+      },
+      "shortlist": ["local:fx-001", "local:fx-002"]
+    },
+    "run_id": "FIXTURE",
+    "seq": 28,
+    "stage": "selecting",
+    "ts": "2026-10-03T10:00:07.900Z",
+    "type": "selected"
+  },
+  {
+    "payload": {
+      "from": "selecting",
+      "to": "explaining"
+    },
+    "run_id": "FIXTURE",
+    "seq": 29,
+    "stage": "explaining",
+    "ts": "2026-10-03T10:00:08.000Z",
+    "type": "stage_changed"
+  },
+  {
+    "payload": {
+      "report": {
+        "caveats": ["Only five posts in this fixture run."],
+        "clips": [
+          {
+            "hook_quote": "租房踩了三个坑",
+            "post_id": "local:fx-002",
+            "weaknesses": "No visual hook.",
+            "why_it_works": "Three concrete mistakes promised in the first line."
+          }
+        ],
+        "concepts": [
+          {
+            "cta": "save for later",
+            "hook": "I signed a Shanghai lease without reading this",
+            "inspired_by_post_ids": ["local:fx-002"],
+            "proof": "contract screenshot",
+            "structure": "problem, three mistakes, fix",
+            "visual": "walk-through"
+          }
+        ],
+        "gaps": [],
+        "patterns": [
+          {
+            "hypothesis": "Specific friction signals authenticity.",
+            "observation": "Both shortlisted clips open on a concrete pain.",
+            "post_ids": ["local:fx-001", "local:fx-002"],
+            "title": "Problem-first openings"
+          }
+        ],
+        "run_id": "FIXTURE"
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 30,
+    "stage": "explaining",
+    "ts": "2026-10-03T10:00:12.000Z",
+    "type": "explained"
+  },
+  {
+    "payload": {
+      "from": "explaining",
+      "to": "done"
+    },
+    "run_id": "FIXTURE",
+    "seq": 31,
+    "stage": "done",
+    "ts": "2026-10-03T10:00:12.100Z",
+    "type": "stage_changed"
+  },
+  {
+    "payload": {
+      "counters": {
+        "collected": 5,
+        "elapsed_s": 12.2,
+        "errors": 1,
+        "jev_cost_usd": 0.000609,
+        "jev_input_tokens": 14500,
+        "judged": 4,
+        "pass_one_kept": 4,
+        "review": 1,
+        "shortlisted": 2
+      }
+    },
+    "run_id": "FIXTURE",
+    "seq": 32,
+    "stage": "done",
+    "ts": "2026-10-03T10:00:12.200Z",
+    "type": "done"
+  }
+]
