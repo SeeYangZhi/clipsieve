@@ -13,6 +13,7 @@ import random
 import time
 from collections.abc import Callable
 from typing import Any, Protocol
+from urllib.parse import quote
 
 import httpx
 
@@ -59,6 +60,13 @@ def search_id() -> str:
         n, r = divmod(n, 36)
         out = _B36[r] + out
     return out or "0"
+
+
+def _query_uri(uri: str, params: dict) -> str:
+    """`uri?k=v&...` encoded exactly as xhshow's `_build_content_string` signs it."""
+    if not params:
+        return uri
+    return uri + "?" + "&".join(f"{k}={quote(str(v), safe=',')}" for k, v in params.items())
 
 
 class XhsApiClient:
@@ -157,8 +165,12 @@ class XhsApiClient:
             signed = self.signer.sign_headers_get(
                 uri=uri, cookies=self.cookies, params=params or {}
             )
+            # Build the query by hand so the wire string equals the signed string: xhshow quotes
+            # each value with safe="," (httpx would send %2C), keeps dict order and `k=` for "".
             return self.http.get(
-                API_HOST + uri, params=params, headers=self._headers(signed), timeout=15.0
+                API_HOST + _query_uri(uri, params or {}),
+                headers=self._headers(signed),
+                timeout=15.0,
             )
         signed = self.signer.sign_headers_post(uri=uri, cookies=self.cookies, payload=payload or {})
         # The signer saw `payload`; send exactly its compact, non-ASCII-escaped serialisation.
@@ -181,7 +193,10 @@ class XhsApiClient:
                 )
             if resp.status_code >= 400:
                 raise XhsApiError(f"{uri}: HTTP {resp.status_code}", status=resp.status_code)
-            body: dict[str, Any] = resp.json()
+            try:
+                body: dict[str, Any] = resp.json()
+            except ValueError as exc:  # HTML challenge page served with 200; never echo it
+                raise XhsApiError(f"{uri}: non-JSON response (HTTP 200)", status=200) from exc
             if body.get("success") or body.get("code") == 0:
                 return body.get("data") or {}
             code = int(body.get("code") or 0)

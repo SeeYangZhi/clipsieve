@@ -108,15 +108,28 @@ def test_comments_is_a_signed_get_with_the_platform_params():
     )
     client, signer, _ = make_client()
     client.comments("n1", "TOKEN", cursor="c2")
-    params = dict(route.calls.last.request.url.params)
-    assert params == {
-        "note_id": "n1",
-        "cursor": "c2",
-        "top_comment_id": "",
-        "image_formats": "jpg,webp,avif",
-        "xsec_token": "TOKEN",
-    }
-    assert signer.calls[0][:2] == ("GET", COMMENTS_URI)
+    # The wire query string must equal what xhshow signed: platform order, literal comma
+    # (xhshow quotes with safe=","), empty values kept as `k=`.
+    raw = route.calls.last.request.url.raw_path.decode()
+    assert raw == (
+        COMMENTS_URI
+        + "?note_id=n1&cursor=c2&top_comment_id=&image_formats=jpg,webp,avif&xsec_token=TOKEN"
+    )
+    assert "image_formats=jpg,webp,avif" in raw and "cursor=c2&top_comment_id=&" in raw
+    assert signer.calls == [
+        (
+            "GET",
+            COMMENTS_URI,
+            COOKIES,
+            {
+                "note_id": "n1",
+                "cursor": "c2",
+                "top_comment_id": "",
+                "image_formats": "jpg,webp,avif",
+                "xsec_token": "TOKEN",
+            },
+        )
+    ]
 
 
 @respx.mock
@@ -182,6 +195,18 @@ def test_http_error_is_an_api_error_with_status():
     with pytest.raises(XhsApiError) as info:
         client.search_notes("k", 1)
     assert info.value.status == 403
+
+
+@respx.mock
+def test_non_json_200_is_an_api_error_without_echoing_the_body():
+    respx.post(API_HOST + SEARCH_URI).mock(
+        return_value=httpx.Response(200, text="<html><body>secret challenge page</body></html>")
+    )
+    client, _, _ = make_client()
+    with pytest.raises(XhsApiError, match="non-JSON") as info:
+        client.search_notes("k", 1)
+    assert info.value.status == 200
+    assert "secret" not in str(info.value)
 
 
 def test_search_id_is_base36_and_fresh():
