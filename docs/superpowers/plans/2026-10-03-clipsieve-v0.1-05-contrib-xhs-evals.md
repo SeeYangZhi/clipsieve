@@ -2281,7 +2281,7 @@ def repo_root() -> Path   # returns clipsieve.config.REPO_ROOT (overview C.11)
 
 `sieve eval` options (all `Annotated`, like the other commands): `--pack`, `--golden`, `--mode raw|translate|bilingual` (default `raw`), `--rubrics-dir` (default `<repo>/rubrics`), `--judge-fixtures DIR` (a fixtures directory; `RecordedJudge` reads `<DIR>/judge/`, so tests pass `FIX`, not `FIX / "judge"`). Exit codes follow E.10: bad `--mode`, unknown pack (`PackNotFound`), or no `TYPESAFE_API_KEY` without `--judge-fixtures` exit 2 with a message on stderr; success exits 0.
 
-- [ ] **Step 1: Write the failing CLI tests**
+- [x] **Step 1: Write the failing CLI tests**
 
 ```python
 # backend/tests/test_cli_eval.py
@@ -2372,12 +2372,12 @@ def test_eval_without_typesafe_key_or_fixtures_exits_2():
 
 Also delete `test_eval_is_a_stub` from `backend/tests/test_cli.py` (it asserts the plan 03 stub's exit 2 and "plan 05" text, which this task removes).
 
-- [ ] **Step 2: Run tests to verify they fail**
+- [x] **Step 2: Run tests to verify they fail**
 
 Run: `cd backend && uv run pytest tests/test_cli_eval.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve.calibration'`.
 
-- [ ] **Step 3: Implement calibration writer and the command**
+- [x] **Step 3: Implement calibration writer and the command**
 
 ```python
 # backend/clipsieve/calibration.py
@@ -2536,7 +2536,7 @@ Add one line to `rubrics/AGENTS.md` after the calibration bullet: "`sieve eval` 
 
 Update `backend/AGENTS.md`: in the `cli.py` section replace "`eval --pack P --golden FILE [--mode M]` (stub until plan 05)" with "`eval --pack P --golden FILE [--mode M] [--rubrics-dir DIR] [--judge-fixtures DIR]`", and in the exit-codes bullet replace ", or `eval`" with "; `eval` also exits 2 for an unknown pack or a missing `TYPESAFE_API_KEY` without `--judge-fixtures`"; in the Layout table change the `clipsieve/cli.py` row's "`eval` stub" to "`eval`" and add the row ``| `clipsieve/calibration.py` | `write_results(path, stem, mode, table_md, when)`: rewrites one `### <stem> <mode> (<date>)` section between the results markers of `<pack>.calibration.md`; `repo_root()` |``. The `evals/` scorer is documented in `evals/AGENTS.md`.
 
-- [ ] **Step 4: Run tests to verify they pass**
+- [x] **Step 4: Run tests to verify they pass**
 
 Run:
 ```bash
@@ -2544,7 +2544,7 @@ cd backend && uv run ruff format clipsieve tests && uv run ruff check clipsieve 
 ```
 Expected: `test_cli_eval.py` 7 passed (3 writer, 4 command) and `tests/evals` 10 passed; `tests/test_cli.py` passes with `test_eval_is_a_stub` removed.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add backend/clipsieve/cli.py backend/clipsieve/calibration.py backend/tests/test_cli_eval.py backend/tests/test_cli.py backend/AGENTS.md rubrics/AGENTS.md rubrics/creator-hooks-v1.calibration.md
