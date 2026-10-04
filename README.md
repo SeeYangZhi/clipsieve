@@ -18,6 +18,26 @@ Status: plans 01 (schemas, run store, event log), 02 (adapters, evidence) and 03
 
 Built in: `local` (folder of media or a CSV export) and `youtube` (yt-dlp, Shorts under 180 s, auto-captions). Community adapters that drive a logged-in browser live in `contrib/` with their own terms. See `backend/AGENTS.md` for the adapter contract.
 
+## Community adapters
+
+Browser-session adapters live under `contrib/` as separate packages with their own licences and disclaimers. They are **not** part of the core and the core never imports them.
+
+| Adapter | Platform | How it works | Licence constraints |
+|---|---|---|---|
+| [`contrib/adapter-xhs-mediacrawler`](contrib/adapter-xhs-mediacrawler/README.md) | Xiaohongshu (小红书) | Drives a local [MediaCrawler](https://github.com/NanmiCoder/MediaCrawler) checkout in CDP mode against your own logged-in Chrome | MediaCrawler is Non-Commercial Learning License 1.1: learning and research only, no commercial use |
+
+Install one into the backend environment and clipsieve discovers it:
+
+```bash
+cd backend && uv pip install -e ../contrib/adapter-xhs-mediacrawler
+```
+
+You are responsible for complying with each platform's terms of service and the laws that apply to you.
+
+## Evaluation
+
+Rubric packs ship with calibration numbers. `sieve eval` scores a pack against a hand-labelled golden set per question, in `raw`, `translate` and `bilingual` modes, and writes the results into `rubrics/<pack>.calibration.md`. See [`evals/README.md`](evals/README.md) for the golden format and labelling protocol.
+
 ## Development
 
 Requirements: Bun 1.3+, uv, Python 3.12 (uv installs it), ffmpeg.
