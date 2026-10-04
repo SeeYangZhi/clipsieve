@@ -1215,7 +1215,7 @@ Per Addendum B1, raw payloads are written to `incoming_dir(settings.clipsieve_da
 
 The stored raw payload is privacy-stripped: comment records drop `creator_hash`, `nickname` and `pictures`, and the note drops `xsec_token` (backend/AGENTS.md: comment author identifiers are not stored in raw). The Post is still mapped from the unstripped records in memory.
 
-- [ ] **Step 1: Add FakeRunner to conftest**
+- [x] **Step 1: Add FakeRunner to conftest**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/conftest.py  (append)
@@ -1250,7 +1250,7 @@ def fake_runner() -> FakeRunner:
     return FakeRunner()
 ```
 
-- [ ] **Step 2: Write the failing adapter tests**
+- [x] **Step 2: Write the failing adapter tests**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/test_adapter.py
@@ -1439,12 +1439,12 @@ def test_passes_shared_adapter_contract(adapter, tmp_path):
 
 `FakeRunner` and the `fake_runner` fixture in `conftest.py` are unchanged.
 
-- [ ] **Step 3: Run tests to verify they fail**
+- [x] **Step 3: Run tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest tests/test_adapter.py -q`
 Expected: FAIL with `ModuleNotFoundError: No module named 'clipsieve_xhs.adapter'`.
 
-- [ ] **Step 4: Implement the adapter**
+- [x] **Step 4: Implement the adapter**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/adapter.py
@@ -1626,7 +1626,7 @@ class XhsMediaCrawlerAdapter(Adapter):
 
 `Adapter` is a `runtime_checkable` `typing.Protocol`; subclassing it explicitly is fine (`FixtureAdapter` does the same). `fetch_media` creates `dest` only after the cache lookup succeeds, so a missing cache entry leaves no empty directory behind.
 
-- [ ] **Step 5: Run the contrib tests**
+- [x] **Step 5: Run the contrib tests**
 
 Run:
 ```bash
@@ -1634,7 +1634,7 @@ cd contrib/adapter-xhs-mediacrawler && uv run ruff format . && uv run ruff check
 ```
 Expected: contrib `42 passed` (3 settings + 11 runner + 16 mapping + 12 adapter).
 
-- [ ] **Step 6: Verify real discovery after install, then commit**
+- [x] **Step 6: Verify real discovery after install, then commit**
 
 Run:
 ```bash
