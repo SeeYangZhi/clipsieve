@@ -1,6 +1,6 @@
 # clipsieve build status
 
-Updated: 2026-10-04T02:22:43Z by iteration 5
+Updated: 2026-10-04T03:19:13Z by iteration 5
 
 ## Plans
 | Plan | Branch | Tasks done / total | Merged | Last commit |
@@ -9,11 +9,11 @@ Updated: 2026-10-04T02:22:43Z by iteration 5
 | 02 adapters-evidence | plan/02-adapters-evidence (merged, branch deleted locally) | 12 / 12 | yes (7c3beb5) | 44206fc |
 | 03 judge-select-explain-api | merged into main (2616c2d) | 12 / 12 | yes | 2616c2d |
 | 04 frontend | merged into main (3273b2f) | 12 / 12 | yes | 3273b2f |
-| 05 contrib-xhs-evals | plan/05-contrib-xhs-evals (worktree .worktrees/plan-05-contrib-xhs-evals) | 2 / 7 (task 3 mapping in flight) | no | db29dc5 |
+| 05 contrib-xhs-evals | plan/05-contrib-xhs-evals (worktree .worktrees/plan-05-contrib-xhs-evals; main merged at b65495c) | 7 / 7 ticked; whole-branch final review in flight | no | b65495c |
 
 ## Iteration 5 did
 - Plan 04 fix wave (7 fixes: pause intent + bounded re-poll, failed-run alert with the error message, planner-failure alert with start-over link, replay-mode Dashboard without the connection badge, back-to-run link, PostDialog title fallback, `compress: false` after CONFIRMING Next gzip buffered the live SSE stream) + scoped re-review clean. Plan 04 merged into main with --no-ff (3273b2f): on main 397 pytest passed, `bun run check` exit 0, `cd frontend && bun run e2e` 1 passed. Worktree removed.
-- Plan 05 Tasks 1 (contrib skeleton + XhsSettings) and 2 (MediaCrawler runner) complete, reviewed, ticked; contrib suite 14 passed. Task 3 (record mapping) dispatched.
+- Plan 05 Tasks 1-7 complete, each reviewed and ticked (contrib skeleton, runner, mapping, adapter with persistent media-URL cache and privacy stripping, evals scorer, sieve eval + calibration writer, root docs/CI/lint coverage). Controller fixed an order-sensitive plan 03 runner test that flaked once. Main merged into the branch (root AGENTS.md index and check.yml conflicts resolved by keeping both sides). On the merged branch: backend 419 passed 1 xfailed, contrib 47 passed, `bun run check` exit 0. Whole-branch final review dispatched.
 
 ## Iteration 4 did
 - Plan 04 Tasks 11 (Playwright e2e vs fake backend: 1 passed, re-run by controller) and 12 (DOX closeout, CI opt-in e2e gated on vars.RUN_E2E) complete and ticked. Whole-branch review: mergeable after fixes — pause button uses pre-transition run; failed run shows no reason; planner failure leaves plan page spinning; replay page shows reconnecting badge; Next gzip may buffer live SSE (verify, compress:false). Fix wave dispatched.
