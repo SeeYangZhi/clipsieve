@@ -604,3 +604,94 @@ def test_post_state_mapping():
     assert post_state("b", state, sel, {"a", "b", "c"}) == "review"
     assert post_state("c", state, sel, {"a", "b", "c"}) == "judged"
     assert post_state("c", state, None, set()) == "collected"
+
+
+# -- covers (plan 07): a thumbnail for every collected post ---------------------------------------
+
+
+def _media_dirs(data_dir, run_id):
+    paths = RunPaths(data_dir, run_id)
+    return [paths.media_dir(f"local:fx-00{i}") for i in range(1, 6)]
+
+
+async def test_cover_is_fetched_for_every_collected_post(data_dir, repo):
+    seen: list[tuple[str, str]] = []
+
+    class Spy(FixtureAdapter):
+        def fetch_cover(self, post, dest):
+            seen.append((post.id, post.raw_ref))
+            dest.mkdir(parents=True, exist_ok=True)
+            (dest / "thumb.jpg").write_bytes(b"\xff")
+            return dest / "thumb.jpg"
+
+    runner, run_id = make_runner(data_dir, repo, adapter=Spy(FIXTURES, data_dir))
+    await run_to_done(runner)
+    run = repo.get_run(run_id)
+    assert run.stage.value == "done" and run.counters.errors == 0
+    # once per post, after the raw payload was relocated (B.10 holds for covers too)
+    assert sorted(seen) == sorted(
+        (f"local:fx-00{i}", f"raw/local__fx-00{i}.json") for i in range(1, 6)
+    )
+    for media_dir in _media_dirs(data_dir, run_id):
+        assert (media_dir / "thumb.jpg").is_file()
+    # the cover arrives before the next post is announced
+    evs = events(data_dir, run_id)
+    first_collected = next(i for i, e in enumerate(evs) if e.type.value == "post_collected")
+    assert evs[first_collected].payload["post"]["id"] == "local:fx-001"
+
+
+async def test_fixture_adapter_run_has_a_cover_on_every_tile(data_dir, repo):
+    """Fake mode: dropped posts show a cover too, kept posts keep the extraction thumbnail."""
+    runner, run_id = make_runner(data_dir, repo)
+    await run_to_done(runner)
+    assert repo.get_run(run_id).stage.value == "done"
+    for media_dir in _media_dirs(data_dir, run_id):
+        assert (media_dir / "thumb.jpg").is_file(), media_dir
+
+
+async def test_cover_failure_never_emits_an_error_or_fails_the_post(data_dir, repo):
+    class Broken(FixtureAdapter):
+        def fetch_cover(self, post, dest):
+            raise RuntimeError("cdn down")
+
+    runner, run_id = make_runner(data_dir, repo, adapter=Broken(FIXTURES, data_dir))
+    with capture_logs() as logs:
+        await run_to_done(runner)
+    run = repo.get_run(run_id)
+    assert run.stage.value == "done" and run.counters.collected == 5
+    assert run.counters.errors == 0
+    assert "error" not in event_types(data_dir, run_id)
+    failed = [e for e in logs if e["event"] == "cover_failed"]
+    assert sorted(e["post_id"] for e in failed) == [f"local:fx-00{i}" for i in range(1, 6)]
+    assert all("cdn down" in e["error"] for e in failed)
+    # kept posts still get their thumbnail from extraction
+    paths = RunPaths(data_dir, run_id)
+    assert all((paths.media_dir(pid) / "thumb.jpg").is_file() for pid in KEPT)
+
+
+async def test_adapter_without_fetch_cover_is_unchanged(data_dir, repo):
+    class NoCover:
+        platform = "local"
+
+        def __init__(self, inner):
+            self._inner = inner
+
+        def search(self, queries, limit):
+            return self._inner.search(queries, limit)
+
+        def fetch_media(self, post, dest):
+            return self._inner.fetch_media(post, dest)
+
+        def healthcheck(self):
+            return self._inner.healthcheck()
+
+    adapter = NoCover(FixtureAdapter(FIXTURES, data_dir))
+    assert not hasattr(adapter, "fetch_cover")
+    runner, run_id = make_runner(data_dir, repo, adapter=adapter)
+    await run_to_done(runner)
+    run = repo.get_run(run_id)
+    assert run.stage.value == "done" and run.counters.errors == 0
+    paths = RunPaths(data_dir, run_id)
+    dropped = [f"local:fx-00{i}" for i in range(1, 6) if f"local:fx-00{i}" not in KEPT]
+    assert all((paths.media_dir(pid) / "thumb.jpg").is_file() for pid in KEPT)
+    assert not any((paths.media_dir(pid) / "thumb.jpg").exists() for pid in dropped)

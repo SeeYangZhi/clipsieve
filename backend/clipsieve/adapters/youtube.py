@@ -14,6 +14,7 @@ from typing import Any
 import httpx
 
 from clipsieve.adapters.base import (
+    COVER_NAME,
     AdapterHealth,
     MediaDownloadError,
     hash_creator,
@@ -47,6 +48,9 @@ RAW_COMMENT_KEYS = frozenset({"id", "parent", "text", "like_count", "timestamp",
 _NOT_MEDIA_SUFFIXES = {".vtt", ".part", ".ytdl", ".json"}
 # A live, scheduled or just-ended stream is not a Short, whatever its duration says.
 _LIVE_STATUSES = {"is_live", "is_upcoming", "post_live"}
+# Cover downloads (`fetch_cover`): one small GET per post against i.ytimg.com.
+COVER_TIMEOUT_S = 10.0
+USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) clipsieve/0.1"
 
 
 def _watch_url(video_id: str) -> str:
@@ -63,6 +67,15 @@ def _posted_at(info: dict[str, Any]) -> datetime | None:
     if info.get("upload_date"):
         return datetime.strptime(info["upload_date"], "%Y%m%d").replace(tzinfo=UTC)
     return None
+
+
+def _thumbnail_url(info: dict[str, Any]) -> str | None:
+    """yt-dlp's best thumbnail: `thumbnail`, else the last (highest preference) of `thumbnails`."""
+    url = info.get("thumbnail")
+    if not url:
+        urls = [t.get("url") for t in (info.get("thumbnails") or []) if t.get("url")]
+        url = urls[-1] if urls else None
+    return url if isinstance(url, str) and url.startswith(("http://", "https://")) else None
 
 
 def _strip_comment_authors(info: dict[str, Any]) -> dict[str, Any]:
@@ -171,6 +184,8 @@ class YouTubeAdapter:
         self._api_key = api_key
         self._http = http
         self._max_duration_s = max_duration_s
+        # post id -> thumbnail URL, remembered at search time for `fetch_cover` (same process).
+        self._covers: dict[str, str] = {}
 
     @classmethod
     def from_settings(cls, settings: Settings) -> YouTubeAdapter:
@@ -205,8 +220,7 @@ class YouTubeAdapter:
         return [e["id"] for e in entries if e.get("id") and self._flat_entry_may_be_short(e)]
 
     def _data_api_ids(self, query: Query, n: int) -> list[str]:
-        if self._http is None:
-            self._http = httpx.Client(timeout=20.0)
+        http = self._client_http()
         # The key goes in a header, never the URL, so it cannot reach logs or error messages.
         headers = {"x-goog-api-key": self._api_key}
         ids: list[str] = []
@@ -226,7 +240,7 @@ class YouTubeAdapter:
                 )
             if page_token:
                 params["pageToken"] = page_token
-            resp = self._http.get(DATA_API_SEARCH, params=params, headers=headers)
+            resp = http.get(DATA_API_SEARCH, params=params, headers=headers)
             resp.raise_for_status()
             body = resp.json()
             ids.extend(
@@ -254,6 +268,9 @@ class YouTubeAdapter:
             return None
         raw = _strip_comment_authors(info)
         post_id = f"youtube:{raw['id']}"
+        thumbnail = _thumbnail_url(info)
+        if thumbnail:
+            self._covers[post_id] = thumbnail
         # Persist the raw payload before normalising it. default=str: yt-dlp info dicts can hold
         # values json cannot encode.
         raw_path = self._raw_dir / f"{safe_post_filename(post_id)}.json"
@@ -285,6 +302,47 @@ class YouTubeAdapter:
                     yielded += 1
 
     # -- media ----------------------------------------------------------------
+
+    def _client_http(self) -> httpx.Client:
+        if self._http is None:
+            self._http = httpx.Client(timeout=20.0)
+        return self._http
+
+    def fetch_cover(self, post: Post, dest: Path) -> Path | None:
+        """Download the thumbnail remembered at search time into `dest/thumb.jpg`.
+
+        Optional adapter contract (`adapters/base.py`): None when no URL is known or the GET
+        fails; never raises for a network error or a 404, and never logs the URL.
+        """
+        url = self._covers.get(post.id)
+        if url is None:
+            return None
+        target = dest / COVER_NAME
+        if target.exists():
+            return target
+        try:
+            resp = self._client_http().get(
+                url,
+                headers={"User-Agent": USER_AGENT},
+                follow_redirects=True,
+                timeout=COVER_TIMEOUT_S,
+            )
+            resp.raise_for_status()
+        except httpx.HTTPError as exc:
+            # The type and status only: an httpx message embeds the request URL.
+            status = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
+            log.info(
+                "youtube_cover_failed",
+                post_id=post.id,
+                error_type=type(exc).__name__,
+                status=status,
+            )
+            return None
+        dest.mkdir(parents=True, exist_ok=True)
+        part = target.with_name(target.name + ".part")
+        part.write_bytes(resp.content)
+        os.replace(part, target)
+        return target
 
     def fetch_media(self, post: Post, dest: Path) -> Post:
         """Download once into `dest`; `local_path` is relative to `dest`. Idempotent."""

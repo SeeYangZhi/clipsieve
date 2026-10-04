@@ -522,3 +522,104 @@ def test_ytdlp_search_over_fetches_three_times_and_stops_at_the_limit(settings, 
     assert [p.id for p in posts] == ["youtube:aB3dEfGhIjK"]
     assert client.search_sizes == [3]
     assert len(client.info_calls) == 1, "no info fetch (and no raw payload) past the limit"
+
+
+# -- covers (plan 07): thumbnails for every collected post ---------------------------------------
+
+JPEG_BYTES = b"\xff\xd8\xff\xd9"
+
+
+def _cover_adapter(settings, handler):
+    http = httpx.Client(transport=httpx.MockTransport(handler))
+    return YouTubeAdapter(
+        client=FakeYtDlpClient(FIXTURES), data_dir=settings.clipsieve_data_dir, salt="s", http=http
+    )
+
+
+def test_fetch_cover_downloads_the_remembered_thumbnail(settings, tmp_path):
+    seen: list[httpx.Request] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(request)
+        if request.url.path.endswith("/redirect.jpg"):
+            return httpx.Response(
+                302, headers={"location": str(request.url).replace("redirect", "hq")}
+            )
+        return httpx.Response(200, content=JPEG_BYTES, headers={"content-type": "image/jpeg"})
+
+    adapter = _cover_adapter(settings, handler)
+    posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], 2))
+    info = json.loads((FIXTURES / "aB3dEfGhIjK.json").read_text(encoding="utf-8"))
+    assert info["thumbnail"].startswith("https://")  # the fixture carries a thumbnail URL
+    post = next(p for p in posts if p.id == "youtube:aB3dEfGhIjK")
+    dest = tmp_path / "media" / "aB3dEfGhIjK"
+    got = adapter.fetch_cover(post, dest)
+    assert got == dest / "thumb.jpg" and got.read_bytes() == JPEG_BYTES
+    assert [str(r.url) for r in seen][0] == info["thumbnail"]
+    assert all(r.headers.get("user-agent") for r in seen)
+
+
+def test_fetch_cover_follows_redirects(settings, tmp_path):
+    def handler(request: httpx.Request) -> httpx.Response:
+        if "moved" not in request.url.path:
+            return httpx.Response(302, headers={"location": "https://i.ytimg.test/moved.jpg"})
+        return httpx.Response(200, content=JPEG_BYTES)
+
+    adapter = _cover_adapter(settings, handler)
+    posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], 2))
+    got = adapter.fetch_cover(posts[0], tmp_path / "m")
+    assert got is not None and got.read_bytes() == JPEG_BYTES
+
+
+def test_fetch_cover_is_none_for_an_unknown_post(settings, tmp_path):
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(200, content=JPEG_BYTES)
+
+    adapter = _cover_adapter(settings, handler)
+    info = json.loads((FIXTURES / "aB3dEfGhIjK.json").read_text(encoding="utf-8"))
+    post = map_info_to_post(info, salt="s", raw_ref="/tmp/raw.json")  # never searched
+    assert adapter.fetch_cover(post, tmp_path / "m") is None
+    assert calls == 0 and not (tmp_path / "m" / "thumb.jpg").exists()
+
+
+def test_fetch_cover_returns_none_on_404_and_connect_error_without_raising(settings, tmp_path):
+    mode = {"fail": "404"}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        if mode["fail"] == "404":
+            return httpx.Response(404, text="not found")
+        raise httpx.ConnectError("boom", request=request)
+
+    adapter = _cover_adapter(settings, handler)
+    posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], 1))
+    with capture_logs() as logs:
+        assert adapter.fetch_cover(posts[0], tmp_path / "a") is None
+        mode["fail"] = "connect"
+        assert adapter.fetch_cover(posts[0], tmp_path / "b") is None
+    assert not (tmp_path / "a" / "thumb.jpg").exists()
+    assert not list((tmp_path / "a").glob("thumb*")) if (tmp_path / "a").exists() else True
+    failures = [e for e in logs if e["event"] == "youtube_cover_failed"]
+    assert len(failures) == 2 and all(e["log_level"] == "info" for e in failures)
+    assert all(e["post_id"] == posts[0].id for e in failures)
+    assert "ytimg" not in repr(failures) and "http" not in repr(failures)  # no URL in logs
+
+
+def test_fetch_cover_keeps_an_existing_thumbnail(settings, tmp_path):
+    calls = 0
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        nonlocal calls
+        calls += 1
+        return httpx.Response(200, content=JPEG_BYTES)
+
+    adapter = _cover_adapter(settings, handler)
+    posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], 1))
+    dest = tmp_path / "m"
+    dest.mkdir()
+    (dest / "thumb.jpg").write_bytes(b"keyframe")
+    assert adapter.fetch_cover(posts[0], dest) == dest / "thumb.jpg"
+    assert (dest / "thumb.jpg").read_bytes() == b"keyframe" and calls == 0

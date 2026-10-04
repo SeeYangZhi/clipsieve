@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from clipsieve.adapters.base import Adapter
+from clipsieve.adapters.base import COVER_NAME, Adapter, cover_fetcher
 from clipsieve.config import Settings
 from clipsieve.events.writer import EventWriter
 from clipsieve.evidence.asr import ASR
@@ -464,6 +464,7 @@ class Runner:
                     self.events.emit(
                         "post_collected", Stage.collecting, {"post": post.model_dump(mode="json")}
                     )
+                    await self._fetch_cover(adapter, post)
                 if seen >= ADAPTER_ERROR_MIN_SEEN and errors / seen > ADAPTER_ERROR_ABORT_RATIO:
                     self._error(run, where, f"{platform} aborted: {errors}/{seen} posts failed")
                     break
@@ -475,6 +476,20 @@ class Runner:
             close = getattr(it, "close", None)
             if close is not None:
                 close()
+
+    async def _fetch_cover(self, adapter: Adapter, post: Post) -> None:
+        """Optional adapter cover into `media_dir/thumb.jpg` (B.15), one small GET inline per
+        post. Never an `error` event: a failure only costs the tile its image."""
+        fetch = cover_fetcher(adapter)
+        if fetch is None:
+            return
+        dest = self.paths.media_dir(post.id)
+        if (dest / COVER_NAME).exists():
+            return
+        try:
+            await asyncio.to_thread(fetch, post, dest)
+        except Exception as exc:  # noqa: BLE001 - a cover must never fail the post
+            log.warning("cover_failed", post_id=post.id, error=repr(exc))
 
     def _relocate_raw(self, post: Post) -> Post:
         """Move the adapter's incoming raw payload into the run (B.1/B.10). Runs at collection,
