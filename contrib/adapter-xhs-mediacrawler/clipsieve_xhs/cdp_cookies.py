@@ -31,7 +31,11 @@ def _default_connect(url: str) -> AbstractContextManager[Any]:
 
 def fetch_cookies(port: int, http: httpx.Client, connect: Connect = _default_connect) -> list[dict]:
     """All cookies the browser on `port` holds, via `Storage.getCookies`."""
-    version = http.get(f"http://127.0.0.1:{port}/json/version", timeout=5.0)
+    # "Connection: close": a pooled keep-alive socket to the browser would outlive the runner
+    # (one per adapter build) and surface as an unclosed-socket ResourceWarning.
+    version = http.get(
+        f"http://127.0.0.1:{port}/json/version", timeout=5.0, headers={"Connection": "close"}
+    )
     version.raise_for_status()
     ws_url = version.json()["webSocketDebuggerUrl"]
     with connect(ws_url) as ws:

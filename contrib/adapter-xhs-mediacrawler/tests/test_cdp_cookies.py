@@ -92,3 +92,20 @@ def test_cdp_error_is_a_login_problem_with_the_message():
 def test_unreachable_port_raises_httpx_error():
     with pytest.raises(httpx.HTTPStatusError):
         fetch_cookies(9222, http_with_version(port_ok=False), connect=fake_connect(FakeSocket([])))
+
+
+def test_version_request_asks_the_browser_to_close_the_connection():
+    """A pooled keep-alive socket to the browser outlives the runner and leaks (ResourceWarning
+    under -W error in the backend suite when a browser is running)."""
+    seen: list[dict] = []
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen.append(dict(request.headers))
+        return httpx.Response(200, json=VERSION)
+
+    fetch_cookies(
+        9222,
+        httpx.Client(transport=httpx.MockTransport(handler)),
+        connect=fake_connect(FakeSocket(COOKIES)),
+    )
+    assert seen[0].get("connection") == "close"
