@@ -27,3 +27,20 @@ def test_empty_values_fall_back_to_defaults(monkeypatch):
     s = XhsSettings(_env_file=None)
     assert s.clipsieve_xhs_timeout_s == 900
     assert s.clipsieve_xhs_mediacrawler_dir == Path("../MediaCrawler")
+
+
+def test_note_kinds_and_max_pages_defaults(monkeypatch):
+    monkeypatch.delenv("CLIPSIEVE_XHS_NOTE_KINDS", raising=False)
+    monkeypatch.delenv("CLIPSIEVE_XHS_MAX_PAGES", raising=False)
+    s = XhsSettings(_env_file=None)
+    assert s.clipsieve_xhs_note_kinds == "all"
+    assert s.clipsieve_xhs_max_pages == 5
+
+
+def test_note_kinds_rejects_unknown_value():
+    import pytest
+
+    with pytest.raises(ValueError):
+        XhsSettings(_env_file=None, clipsieve_xhs_note_kinds="audio")
+    with pytest.raises(ValueError):
+        XhsSettings(_env_file=None, clipsieve_xhs_max_pages=0)

@@ -90,10 +90,14 @@ class XhsMediaCrawlerAdapter(Adapter):
         return self.runner.healthcheck()
 
     def search(self, queries: list[Query], limit: int) -> Iterator[Post]:
-        """One MediaCrawler run per page, from page 1, until `limit` posts are yielded or a page
-        adds no new note. Notes are deduped by id across pages and queries."""
+        """One MediaCrawler run per page, from page 1, until `limit` posts are yielded, a page
+        adds no unseen note, or `clipsieve_xhs_max_pages` is reached. Notes are deduped by id
+        across pages and queries; with `clipsieve_xhs_note_kinds == "video"` image notes are
+        dropped before any raw payload or media cache is written."""
         seen: set[str] = set()
         yielded = 0
+        video_only = self.xhs.clipsieve_xhs_note_kinds == "video"
+        max_pages = self.xhs.clipsieve_xhs_max_pages
         salt = ensure_creator_salt(self.settings)
         self.raw_dir.mkdir(parents=True, exist_ok=True)
         for q in queries:
@@ -101,19 +105,41 @@ class XhsMediaCrawlerAdapter(Adapter):
                 continue
             page = 1
             while yielded < limit:
-                new_posts = 0
+                new_notes = new_posts = skipped = 0
                 for note, comments in self._run_page(q.query, page):
                     nid = note_id(note)
                     if not nid or nid in seen:
                         continue
                     seen.add(nid)
+                    new_notes += 1
+                    if video_only and note_type(note) != "video":
+                        skipped += 1
+                        continue
                     new_posts += 1
                     yield self._collect(note, comments, q.query, salt)
                     yielded += 1
                     if yielded >= limit:
                         break
-                log.info("xhs.page", query=q.query, page=page, new_posts=new_posts, total=yielded)
-                if new_posts == 0:
+                log.info(
+                    "xhs.page",
+                    query=q.query,
+                    page=page,
+                    new_notes=new_notes,
+                    new_posts=new_posts,
+                    skipped=skipped,
+                    total=yielded,
+                )
+                if new_notes == 0:
+                    break
+                if page >= max_pages:
+                    if yielded < limit:
+                        log.warning(
+                            "xhs.page_cap",
+                            query=q.query,
+                            pages=page,
+                            total=yielded,
+                            limit=limit,
+                        )
                     break
                 page += 1
 

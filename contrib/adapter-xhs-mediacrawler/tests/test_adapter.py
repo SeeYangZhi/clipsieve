@@ -249,3 +249,77 @@ def test_field_map_override_keeps_post_id_raw_file_and_media_cache_consistent(
     assert (tmp_path / "raw" / "xiaohongshu__66f1a2b3c4d5e6f700000001.json").exists()
     cache = tmp_path / "cache" / "xiaohongshu__66f1a2b3c4d5e6f700000002.media.json"
     assert json.loads(cache.read_text(encoding="utf-8")) == {"urls": IMAGE_URLS}
+
+
+class EndlessRunner:
+    """Every page returns one new video note (id = page number)."""
+
+    def __init__(self) -> None:
+        self.pages: list[int] = []
+        self.template = json.loads((FIX / "notes.json").read_text(encoding="utf-8"))[0]
+
+    def search(self, keyword: str, start_page: int, workdir: Path) -> RunnerOutput:
+        self.pages.append(start_page)
+        note = dict(self.template, note_id=f"66f1a2b3c4d5e6f7000000{start_page:02d}")
+        return RunnerOutput(notes=[note], comments=[])
+
+    def healthcheck(self):
+        raise AssertionError("not used")
+
+
+def make_adapter_with(tmp_path, runner, **xhs_overrides):
+    core = Settings(
+        _env_file=None, clipsieve_data_dir=tmp_path / "data", clipsieve_creator_salt="salt"
+    )
+    xhs = XhsSettings(
+        _env_file=None, clipsieve_xhs_mediacrawler_dir=tmp_path / "mc", **xhs_overrides
+    )
+    return XhsMediaCrawlerAdapter(
+        core, xhs, runner=runner, raw_dir=tmp_path / "raw", cache_dir=tmp_path / "cache"
+    )
+
+
+def test_video_only_skips_image_notes_before_anything_is_written(tmp_path, fake_runner):
+    adapter = make_adapter_with(tmp_path, fake_runner, clipsieve_xhs_note_kinds="video")
+    posts = list(adapter.search(Q, limit=10))
+    assert [p.id for p in posts] == ["xiaohongshu:66f1a2b3c4d5e6f700000001"]
+    assert all(p.kind.value == "video" for p in posts)
+    assert sorted(p.name for p in (tmp_path / "raw").iterdir()) == [
+        "xiaohongshu__66f1a2b3c4d5e6f700000001.json"
+    ]
+    assert sorted(p.name for p in (tmp_path / "cache").iterdir()) == [
+        "xiaohongshu__66f1a2b3c4d5e6f700000001.media.json"
+    ]
+
+
+def test_video_only_keeps_paging_when_a_page_has_only_image_notes(tmp_path):
+    class ImagesThenVideo:
+        def __init__(self) -> None:
+            self.pages: list[int] = []
+            notes = json.loads((FIX / "notes.json").read_text(encoding="utf-8"))
+            self.video, self.images = notes[0], notes[1:]
+
+        def search(self, keyword: str, start_page: int, workdir: Path) -> RunnerOutput:
+            self.pages.append(start_page)
+            if start_page == 1:
+                return RunnerOutput(notes=self.images, comments=[])
+            if start_page == 2:
+                return RunnerOutput(notes=[self.video], comments=[])
+            return RunnerOutput(notes=[self.video], comments=[])
+
+        def healthcheck(self):
+            raise AssertionError("not used")
+
+    runner = ImagesThenVideo()
+    adapter = make_adapter_with(tmp_path, runner, clipsieve_xhs_note_kinds="video")
+    posts = list(adapter.search(Q, limit=5))
+    assert [p.id[-1] for p in posts] == ["1"]
+    assert runner.pages == [1, 2, 3]  # page 1 had unseen notes (filtered), page 3 added nothing new
+
+
+def test_max_pages_caps_paging_short_of_limit(tmp_path):
+    runner = EndlessRunner()
+    adapter = make_adapter_with(tmp_path, runner, clipsieve_xhs_max_pages=2)
+    posts = list(adapter.search(Q, limit=10))
+    assert len(posts) == 2
+    assert runner.pages == [1, 2]

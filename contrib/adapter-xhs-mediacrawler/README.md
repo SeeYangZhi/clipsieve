@@ -50,6 +50,10 @@ clipsieve itself is Apache-2.0, but **this adapter does not change MediaCrawler'
 
 Per note: title, caption (`desc`), hashtags (`tag_list`), likes, saves, comments count, shares, post time, image URLs or video URL, up to 50 top-level comments sorted by likes, and the untouched MediaCrawler record as `raw_ref`. `creator_hash` is clipsieve's salted hash of MediaCrawler's already-anonymised `creator_hash`. Nicknames are kept only as `creator_display`.
 
+## Video-only runs
+
+Set `CLIPSIEVE_XHS_NOTE_KINDS=video` to keep only video notes. The pinned MediaCrawler cannot ask Xiaohongshu for videos only, so image notes are discarded after the crawl and a video-only run needs more search pages per query. `CLIPSIEVE_XHS_MAX_PAGES` (default 5) bounds how many pages one query may crawl.
+
 ## Limits
 
 - Search only (`--type search`). Creator and detail modes are out of scope.
