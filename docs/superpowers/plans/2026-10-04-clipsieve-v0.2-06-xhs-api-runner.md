@@ -45,7 +45,7 @@
 - Consumes: `XhsSettings` (existing fields `clipsieve_xhs_mediacrawler_dir`, `clipsieve_xhs_timeout_s`, `clipsieve_xhs_pinned_commit`, `clipsieve_xhs_note_kinds: Literal["all","video"]`, `clipsieve_xhs_max_pages`).
 - Produces: `XhsSettings.clipsieve_xhs_runner: Literal["api", "mediacrawler"] = "api"`, `clipsieve_xhs_comments: bool = False`, `clipsieve_xhs_request_interval_s: float = 1.0` (`ge=0`), `clipsieve_xhs_page_size: int = 20` (`ge=1, le=20`); `clipsieve_xhs_max_pages` default raised from 5 to 10.
 
-- [ ] **Step 1: Write the failing settings tests**
+- [x] **Step 1: Write the failing settings tests**
 
 Append to `contrib/adapter-xhs-mediacrawler/tests/test_settings.py`:
 
@@ -90,12 +90,12 @@ def test_api_runner_settings_from_env(monkeypatch):
     assert s.clipsieve_xhs_request_interval_s == 0.5
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_settings.py`
 Expected: 3 failed (`AttributeError: ... has no attribute 'clipsieve_xhs_runner'`, and the validation tests pass trivially only after the fields exist, so they fail on the first assertion).
 
-- [ ] **Step 3: Add the dependencies and the fields**
+- [x] **Step 3: Add the dependencies and the fields**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv add "xhshow>=0.2.0,<0.3" "websockets>=13"`
 
@@ -127,12 +127,12 @@ class XhsSettings(BaseSettings):
     clipsieve_xhs_page_size: int = Field(default=20, ge=1, le=20)
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_settings.py && uv run ruff check . && uv run ruff format --check .`
 Expected: all settings tests pass; ruff clean. (The adapter test `test_max_pages_caps_paging_short_of_limit` sets its own `clipsieve_xhs_max_pages=2`, so the default change does not break it; confirm with the full suite.)
 
-- [ ] **Step 5: Document the variables**
+- [x] **Step 5: Document the variables**
 
 Append to `.env.example` after the `CLIPSIEVE_XHS_MAX_PAGES=5` line, and change that default to `10`:
 
@@ -149,7 +149,7 @@ CLIPSIEVE_XHS_REQUEST_INTERVAL_S=1.0
 CLIPSIEVE_XHS_PAGE_SIZE=20
 ```
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/pyproject.toml contrib/adapter-xhs-mediacrawler/uv.lock contrib/adapter-xhs-mediacrawler/clipsieve_xhs/settings.py contrib/adapter-xhs-mediacrawler/tests/test_settings.py .env.example
@@ -176,7 +176,7 @@ Claude-Session: https://claude.ai/code/session_01XC9nMme23mc4K4ZUvwK5Bu"
   - `cdp_cookies.cookie_header(port: int, http: httpx.Client, connect: Connect = _default_connect) -> str` (`"a1=...; web_session=...; ..."`, xiaohongshu.com cookies only; raises `XhsLoginRequired` when `a1` or `web_session` is missing).
   - `cdp_cookies.Connect = Callable[[str], AbstractContextManager[Any]]` where the context manager exposes `send(str)` and `recv() -> str`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/test_cdp_cookies.py
@@ -272,12 +272,12 @@ def test_unreachable_port_raises_httpx_error():
         fetch_cookies(9222, http_with_version(port_ok=False), connect=fake_connect(FakeSocket([])))
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_cdp_cookies.py`
 Expected: `ModuleNotFoundError: No module named 'clipsieve_xhs.cdp_cookies'`
 
-- [ ] **Step 3: Write the errors module**
+- [x] **Step 3: Write the errors module**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/errors.py
@@ -303,7 +303,7 @@ class XhsRateLimited(XhsApiError):
     """The platform throttled us (访问频次异常); retried with backoff before this was raised."""
 ```
 
-- [ ] **Step 4: Write the cookie reader**
+- [x] **Step 4: Write the cookie reader**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/cdp_cookies.py
@@ -369,12 +369,12 @@ def cookie_header(port: int, http: httpx.Client, connect: Connect = _default_con
     return "; ".join(f"{c['name']}={c['value']}" for c in cookies)
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_cdp_cookies.py && uv run ruff check . && uv run ruff format --check .`
 Expected: 5 passed; ruff clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/clipsieve_xhs/errors.py contrib/adapter-xhs-mediacrawler/clipsieve_xhs/cdp_cookies.py contrib/adapter-xhs-mediacrawler/tests/test_cdp_cookies.py
@@ -402,7 +402,7 @@ Claude-Session: https://claude.ai/code/session_01XC9nMme23mc4K4ZUvwK5Bu"
   - `.comments(note_id: str, xsec_token: str, cursor: str = "") -> dict` (the response `data`: `comments`, `cursor`, `has_more`)
   - constants `API_HOST`, `WEB_ORIGIN`, `SEARCH_URI`, `FEED_URI`, `COMMENTS_URI`, `NOTE_TYPE = {"all": 0, "video": 1, "image": 2}`, `MAX_ATTEMPTS = 3`; `search_id() -> str`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/test_api_client.py
@@ -601,12 +601,12 @@ def test_real_signer_produces_the_required_headers():
     assert {"x-s", "x-t", "x-s-common"} <= set(headers)
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_api_client.py`
 Expected: `ModuleNotFoundError: No module named 'clipsieve_xhs.api_client'`
 
-- [ ] **Step 3: Write the client**
+- [x] **Step 3: Write the client**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/api_client.py
@@ -801,12 +801,12 @@ class XhsApiClient:
         raise XhsApiError(f"{uri}: gave up")  # pragma: no cover - loop always returns or raises
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_api_client.py && uv run ruff check . && uv run ruff format --check .`
 Expected: 12 passed; ruff clean. If ruff flags `S311` as unknown (the backend config may not enable `S`), drop that `noqa`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/clipsieve_xhs/api_client.py contrib/adapter-xhs-mediacrawler/tests/test_api_client.py
@@ -836,7 +836,7 @@ Claude-Session: https://claude.ai/code/session_01XC9nMme23mc4K4ZUvwK5Bu"
   - `api_runner.build_comment_records(note_id: str, data: dict, now_ms: int) -> list[dict]`
   - `api_runner.XhsApiRunner(settings: XhsSettings, cdp_port: int, http: httpx.Client | None = None, *, cookies_provider: Callable[[], str] | None = None, client_factory: Callable[[str], XhsApiClient] | None = None, now_ms: Callable[[], int] = ...)` implementing `RunnerProtocol` (`search(keyword, start_page, workdir) -> RunnerOutput`, `healthcheck() -> AdapterHealth`).
 
-- [ ] **Step 1: Write the synthetic fixtures**
+- [x] **Step 1: Write the synthetic fixtures**
 
 Synthetic data only (ids, tokens and URLs are made up; no real creators). Note `n1` is a video, `n2` is an image note, `n3` is a video whose detail is missing; the search also carries a `rec_query` row.
 
@@ -900,7 +900,7 @@ Synthetic data only (ids, tokens and URLs are made up; no real creators). Note `
 
 Run from the repo root after writing them: `bunx ultracite fix contrib/adapter-xhs-mediacrawler/tests/fixtures/xhs-api` (Biome formats JSON).
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/test_api_runner.py
@@ -1125,12 +1125,12 @@ def test_healthcheck_reports_the_session_or_the_login_problem():
     assert down.ok is False and "9222" in down.message
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_api_runner.py`
 Expected: `ModuleNotFoundError: No module named 'clipsieve_xhs.api_runner'`
 
-- [ ] **Step 4: Write the records and the runner**
+- [x] **Step 4: Write the records and the runner**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/api_runner.py
@@ -1361,12 +1361,12 @@ class XhsApiRunner:
             self._client = None  # the next page re-reads cookies from the browser
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error && uv run ruff check . && uv run ruff format --check .`
 Expected: all tests pass (54 before this plan + 3 settings + 5 cookies + 12 client + 15 runner = 89); ruff clean. From the repo root `bun run check` exit 0 (Biome lints the new fixture JSON; ruff covers `contrib/`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/clipsieve_xhs/api_runner.py contrib/adapter-xhs-mediacrawler/tests/test_api_runner.py contrib/adapter-xhs-mediacrawler/tests/fixtures/xhs-api
@@ -1391,7 +1391,7 @@ Claude-Session: https://claude.ai/code/session_01XC9nMme23mc4K4ZUvwK5Bu"
 - Consumes: `XhsApiRunner` (Task 4), `MediaCrawlerRunner`, `XhsSettings.clipsieve_xhs_runner`.
 - Produces: `XhsMediaCrawlerAdapter.__init__` picks the runner from settings when none is injected; `from_settings` unchanged; `healthcheck` unchanged (delegates).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/test_adapter.py`:
 
@@ -1422,12 +1422,12 @@ def test_from_settings_builds_the_api_runner_by_default(tmp_path):
 
 If the adapter stores the runner under another attribute name than `runner`, read `adapter.py` and use that name in both tests; do not add a second attribute.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_adapter.py -k "default_runner or from_settings_builds"`
 Expected: 2 failed (`MediaCrawlerRunner` is built regardless of the setting).
 
-- [ ] **Step 3: Select the runner from settings**
+- [x] **Step 3: Select the runner from settings**
 
 In `clipsieve_xhs/adapter.py`, where `__init__` currently does `runner or MediaCrawlerRunner(self.xhs, cdp_port=...)` (see the line after `self.xhs = xhs_settings or get_xhs_settings()`), replace the runner construction with:
 
@@ -1449,12 +1449,12 @@ and add the method to the class (next to `healthcheck`):
 
 `RunnerProtocol` is already imported from `clipsieve_xhs.runner`; if the adapter's httpx client attribute is named differently from `self.http`, use that name.
 
-- [ ] **Step 4: Run the whole contrib suite and the repo check**
+- [x] **Step 4: Run the whole contrib suite and the repo check**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error && uv run ruff check . && uv run ruff format --check . && cd ../.. && bun run check`
 Expected: 91 passed; ruff clean; `bun run check` exit 0.
 
-- [ ] **Step 5: Update the contrib docs**
+- [x] **Step 5: Update the contrib docs**
 
 `contrib/adapter-xhs-mediacrawler/AGENTS.md`: in the contract list replace the bullet that begins "Never vendor MediaCrawler files." with two bullets:
 
@@ -1467,7 +1467,7 @@ Add under Layout: `clipsieve_xhs/errors.py`, `cdp_cookies.py`, `api_client.py`, 
 
 `contrib/adapter-xhs-mediacrawler/README.md`: in Setup, make step 1 (the MediaCrawler clone) conditional: "Only for `CLIPSIEVE_XHS_RUNNER=mediacrawler`"; step 2 (browser with remote debugging, logged in) is required for both runners; add a "How the api runner works" section with the five bullets from the design note's Decision section, and a "Performance" section with the table from the design note marked "measured in Task 6".
 
-- [ ] **Step 6: Root README and the overview addendum**
+- [x] **Step 6: Root README and the overview addendum**
 
 Root `README.md`, Community adapters table: change the "How it works" cell to "Calls the web search API from your own logged-in browser session (video-only search, 20 notes per request), signed with `xhshow`; a MediaCrawler checkout is the optional fallback runner".
 
@@ -1477,7 +1477,7 @@ Root `README.md`, Community adapters table: change the "How it works" cell to "C
 19. **XHS api runner (plan 06).** `CLIPSIEVE_XHS_RUNNER=api` (default) collects through `https://edith.xiaohongshu.com` with cookies read from the user's browser over CDP and `xhshow` signatures; `note_type=1` when `CLIPSIEVE_XHS_NOTE_KINDS=video`; one `/feed` detail request per note for the stream URL; comments opt-in. Records keep the MediaCrawler jsonl keys, so `mapping.py`, raw-payload stripping (C.17), the media-URL cache (C.15) and `fetch_media` are unchanged. `mediacrawler` keeps C.2's invocation as the fallback.
 ```
 
-- [ ] **Step 7: Lint the docs and commit**
+- [x] **Step 7: Lint the docs and commit**
 
 Run from the repo root: `bunx ultracite check contrib/adapter-xhs-mediacrawler/AGENTS.md contrib/adapter-xhs-mediacrawler/README.md README.md docs/superpowers/plans/2026-10-03-clipsieve-v0.1-00-overview.md`
 Expected: exit 0.
@@ -1505,7 +1505,7 @@ This task talks to xiaohongshu.com through the user's own logged-in Brave on por
 - Consumes: `XhsApiRunner`, `get_settings`, `get_xhs_settings`.
 - Produces: measured throughput numbers; a go/no-go on the `1.0` s default interval.
 
-- [ ] **Step 1: Write the probe script**
+- [x] **Step 1: Write the probe script**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/scripts/probe_api_runner.py
@@ -1586,7 +1586,7 @@ With `.env` holding `CLIPSIEVE_XHS_RUNNER=api`, `CLIPSIEVE_XHS_NOTE_KINDS=video`
 
 Record in `contrib/adapter-xhs-mediacrawler/README.md` Performance: notes per page, seconds per page, videos per minute, and the interval that worked.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/scripts/probe_api_runner.py contrib/adapter-xhs-mediacrawler/README.md

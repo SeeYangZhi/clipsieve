@@ -35,6 +35,7 @@ USER_AGENT = (
 )
 CACHE_SUBDIR = "adapter-cache"
 DOWNLOAD_TIMEOUT_S = 30.0
+API_TIMEOUT_S = 15.0
 # Dropped before the raw payload is written (backend/AGENTS.md: author identifiers are not stored).
 RAW_NOTE_DROP = frozenset({"xsec_token"})
 RAW_COMMENT_DROP = frozenset({"creator_hash", "nickname", "pictures"})
@@ -65,14 +66,12 @@ class XhsMediaCrawlerAdapter(Adapter):
     ) -> None:
         self.settings = settings or get_settings()
         self.xhs = xhs_settings or get_xhs_settings()
-        self.runner = runner or MediaCrawlerRunner(
-            self.xhs, cdp_port=self.settings.clipsieve_xhs_chrome_cdp_port
-        )
         self.http = http or httpx.Client(
             timeout=DOWNLOAD_TIMEOUT_S,
             follow_redirects=True,
             headers={"Referer": REFERER, "User-Agent": USER_AGENT},
         )
+        self.runner = runner or self._runner_from_settings()
         self.raw_dir = raw_dir or incoming_dir(self.settings.clipsieve_data_dir, self.platform)
         self.cache_dir = cache_dir or (
             self.settings.clipsieve_data_dir / CACHE_SUBDIR / self.platform
@@ -88,6 +87,22 @@ class XhsMediaCrawlerAdapter(Adapter):
 
     def healthcheck(self) -> AdapterHealth:
         return self.runner.healthcheck()
+
+    def _runner_from_settings(self) -> RunnerProtocol:
+        port = self.settings.clipsieve_xhs_chrome_cdp_port
+        if self.xhs.clipsieve_xhs_runner == "api":
+            from clipsieve_xhs.api_runner import (
+                XhsApiRunner,
+            )  # keeps MediaCrawler-only installs importable
+
+            # Own client: the media-download one follows redirects, which must never happen
+            # with the signed headers and the session cookie.
+            return XhsApiRunner(
+                self.xhs,
+                cdp_port=port,
+                http=httpx.Client(follow_redirects=False, timeout=API_TIMEOUT_S),
+            )
+        return MediaCrawlerRunner(self.xhs, cdp_port=port)
 
     def search(self, queries: list[Query], limit: int) -> Iterator[Post]:
         """One MediaCrawler run per page, from page 1, until `limit` posts are yielded, a page
@@ -106,7 +121,8 @@ class XhsMediaCrawlerAdapter(Adapter):
             page = 1
             while yielded < limit:
                 new_notes = new_posts = skipped = 0
-                for note, comments in self._run_page(q.query, page):
+                page_notes, fatal = self._run_page(q.query, page)
+                for note, comments in page_notes:
                     nid = note_id(note)
                     if not nid or nid in seen:
                         continue
@@ -129,6 +145,10 @@ class XhsMediaCrawlerAdapter(Adapter):
                     skipped=skipped,
                     total=yielded,
                 )
+                if fatal is not None:
+                    # The runner's session is dead for this run: this page's notes are out, and
+                    # core records `xiaohongshu search failed: ...` and stops the platform.
+                    raise RuntimeError(f"xiaohongshu session halted: {fatal}")
                 if new_notes == 0:
                     break
                 if page >= max_pages:
@@ -181,14 +201,19 @@ class XhsMediaCrawlerAdapter(Adapter):
 
     # ---- helpers ----------------------------------------------------------
 
-    def _run_page(self, keyword: str, page: int) -> Iterator[tuple[dict, list[dict]]]:
+    def _run_page(
+        self, keyword: str, page: int
+    ) -> tuple[list[tuple[dict, list[dict]]], str | None]:
+        """One runner page as `(note, comments)` pairs plus the first error when the runner
+        reports the session dead (`RunnerOutput.fatal`), else `None`."""
         with tempfile.TemporaryDirectory(prefix="clipsieve-xhs-") as tmp:
             out = self.runner.search(keyword, start_page=page, workdir=Path(tmp))
         for err in out.errors:
             log.warning("xhs.runner.error", query=keyword, page=page, error=err)
         grouped = group_comments(out.comments)
-        for note in out.notes:
-            yield note, grouped.get(note_id(note), [])
+        pairs = [(note, grouped.get(note_id(note), [])) for note in out.notes]
+        fatal = (out.errors[0] if out.errors else "session dead") if out.fatal else None
+        return pairs, fatal
 
     def _collect(self, note: dict, comments: list[dict], query: str, salt: str) -> Post:
         post_id = f"{PLATFORM}:{note_id(note)}"

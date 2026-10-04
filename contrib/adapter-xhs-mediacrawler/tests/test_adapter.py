@@ -89,6 +89,9 @@ def test_from_settings_uses_incoming_dir_and_data_dir_cache(tmp_path, monkeypatc
     assert a.raw_dir == incoming_dir(tmp_path / "data", "xiaohongshu")
     assert a.cache_dir == tmp_path / "data" / "adapter-cache" / "xiaohongshu"
     assert a.runner.cdp_port == 9444  # the core Settings owns the CDP port
+    # The api runner gets its own non-redirecting client, not the media-download one.
+    assert a.runner.http is not a.http
+    assert a.runner.http.follow_redirects is False and a.http.follow_redirects is True
 
 
 def test_search_stops_at_limit_and_dedupes_across_queries(adapter):
@@ -127,6 +130,43 @@ def test_search_pages_stop_at_limit(tmp_path):
     posts = list(make_adapter(tmp_path, runner).search(Q, limit=2))
     assert len(posts) == 2
     assert runner.pages == [1, 2]  # limit reached on page 2; page 3 never requested
+
+
+class HaltingRunner:
+    """Page 1 returns one note and reports the session dead (`fatal=True`), like the api runner
+    after a -104 or a rate limit."""
+
+    def __init__(self) -> None:
+        self.calls: list[tuple[str, int]] = []
+        self.notes = json.loads((FIX / "notes.json").read_text(encoding="utf-8"))[:1]
+
+    def search(self, keyword: str, start_page: int, workdir: Path) -> RunnerOutput:
+        self.calls.append((keyword, start_page))
+        return RunnerOutput(
+            notes=self.notes,
+            comments=[],
+            errors=[f"{self.notes[0]['note_id']}: /feed: login expired (-104 no permission)"],
+            returncode=1,
+            stderr_tail="",
+            fatal=True,
+        )
+
+    def healthcheck(self):
+        raise AssertionError("not used")
+
+
+def test_search_yields_a_fatal_pages_notes_then_raises_and_stops_the_platform(tmp_path):
+    """Core catches the exception and records `xiaohongshu search failed: ...`, so the dashboard
+    shows why the run stopped instead of silently crawling every remaining query/page."""
+    runner = HaltingRunner()
+    qs = Q + [Query(platform="xiaohongshu", query="上海 新加坡 留学生", lang="zh")]
+    posts = []
+    with pytest.raises(RuntimeError, match="halted") as info:
+        for post in make_adapter(tmp_path, runner).search(qs, limit=10):
+            posts.append(post)
+    assert [p.id for p in posts] == ["xiaohongshu:66f1a2b3c4d5e6f700000001"]
+    assert runner.calls == [("新加坡人 上海 vlog", 1)]  # no page 2, no second query
+    assert "login expired (-104" in str(info.value)
 
 
 def test_search_ignores_queries_for_other_platforms(adapter, fake_runner):
@@ -323,3 +363,31 @@ def test_max_pages_caps_paging_short_of_limit(tmp_path):
     posts = list(adapter.search(Q, limit=10))
     assert len(posts) == 2
     assert runner.pages == [1, 2]
+
+
+def test_default_runner_follows_the_setting(tmp_path):
+    from clipsieve.config import Settings
+    from clipsieve_xhs.api_runner import XhsApiRunner
+    from clipsieve_xhs.runner import MediaCrawlerRunner
+
+    core = Settings(
+        _env_file=None, clipsieve_data_dir=tmp_path / "data", clipsieve_creator_salt="salt"
+    )
+    api = XhsMediaCrawlerAdapter(core, XhsSettings(_env_file=None, clipsieve_xhs_runner="api"))
+    assert isinstance(api.runner, XhsApiRunner)
+    assert api.runner.cdp_port == core.clipsieve_xhs_chrome_cdp_port
+    mc = XhsMediaCrawlerAdapter(
+        core, XhsSettings(_env_file=None, clipsieve_xhs_runner="mediacrawler")
+    )
+    assert isinstance(mc.runner, MediaCrawlerRunner)
+
+
+def test_from_settings_builds_the_api_runner_by_default(tmp_path):
+    from clipsieve.config import Settings
+    from clipsieve_xhs.api_runner import XhsApiRunner
+
+    core = Settings(
+        _env_file=None, clipsieve_data_dir=tmp_path / "data", clipsieve_creator_salt="salt"
+    )
+    adapter = XhsMediaCrawlerAdapter.from_settings(core)
+    assert isinstance(adapter.runner, XhsApiRunner)

@@ -27,6 +27,10 @@ class RunnerOutput:
     errors: list[str] = field(default_factory=list)
     returncode: int = 0
     stderr_tail: str = ""
+    # The runner's session is dead for the rest of the run (login expired, risk control, rate
+    # limit): the adapter yields this page's notes, then raises so core stops the platform.
+    # Only the api runner sets it.
+    fatal: bool = False
 
 
 class RunnerProtocol(Protocol):

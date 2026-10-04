@@ -1,0 +1,48 @@
+{
+  "note_id": "66f1a2b3c4d5e6f700000101",
+  "type": "video",
+  "title": "搬来上海第一周｜新加坡人的真实感受",
+  "desc": "从新加坡搬到上海的第一周，租房踩了三个坑。#上海生活 #新加坡人在上海",
+  "time": 1727000000000,
+  "last_update_time": 1727000500000,
+  "user": { "user_id": "u-1", "nickname": "小*" },
+  "interact_info": {
+    "liked_count": "1.2万",
+    "collected_count": "3,210",
+    "comment_count": "15",
+    "share_count": "7"
+  },
+  "image_list": [
+    { "url_default": "https://sns-img.example/n1-cover.jpg", "info_list": [] }
+  ],
+  "tag_list": [
+    { "name": "上海生活", "type": "topic" },
+    { "name": "@someone", "type": "mention" }
+  ],
+  "video": {
+    "media": {
+      "stream": {
+        "h264": [
+          {
+            "master_url": "https://sns-video.example/n1-720.mp4",
+            "height": 720,
+            "avg_bitrate": 900
+          }
+        ],
+        "h265": [
+          {
+            "master_url": "https://sns-video.example/n1-1080.mp4",
+            "height": 1080,
+            "avg_bitrate": 1500
+          },
+          {
+            "master_url": "https://sns-video.example/n1-720.mp4",
+            "height": 720,
+            "avg_bitrate": 800
+          }
+        ],
+        "av1": []
+      }
+    }
+  }
+}

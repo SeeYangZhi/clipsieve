@@ -24,7 +24,7 @@ Browser-session adapters live under `contrib/` as separate packages with their o
 
 | Adapter | Platform | How it works | Licence constraints |
 |---|---|---|---|
-| [`contrib/adapter-xhs-mediacrawler`](contrib/adapter-xhs-mediacrawler/README.md) | Xiaohongshu (小红书) | Drives a local [MediaCrawler](https://github.com/NanmiCoder/MediaCrawler) checkout in CDP mode against your own logged-in Chrome | MediaCrawler is Non-Commercial Learning License 1.1: learning and research only, no commercial use |
+| [`contrib/adapter-xhs-mediacrawler`](contrib/adapter-xhs-mediacrawler/README.md) | Xiaohongshu (小红书) | Calls the web search API from your own logged-in browser session (video-only search, 20 notes per request), signed with `xhshow`; a [MediaCrawler](https://github.com/NanmiCoder/MediaCrawler) checkout is the optional fallback runner | MediaCrawler is Non-Commercial Learning License 1.1: learning and research only, no commercial use |
 
 Install one into the backend environment and clipsieve discovers it:
 

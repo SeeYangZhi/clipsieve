@@ -1,0 +1,23 @@
+{
+  "has_more": false,
+  "cursor": "",
+  "comments": [
+    {
+      "id": "c1",
+      "content": "太真实了",
+      "like_count": "12",
+      "create_time": 1727001000000,
+      "sub_comment_count": "2",
+      "user_info": { "user_id": "u-9", "nickname": "路*" },
+      "pictures": []
+    },
+    {
+      "id": "c2",
+      "content": "求房源",
+      "like_count": "3",
+      "create_time": 1727002000000,
+      "sub_comment_count": "0",
+      "user_info": { "user_id": "u-8", "nickname": "甲*" }
+    }
+  ]
+}
