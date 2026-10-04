@@ -106,7 +106,7 @@ Facts from the merged plan 03: `backend/clipsieve/cli.py` has `@app.command("eva
 - Produces: `clipsieve_xhs.settings.XhsSettings` with fields `clipsieve_xhs_mediacrawler_dir: Path = Path("../MediaCrawler")`, `clipsieve_xhs_timeout_s: int = 900`, `clipsieve_xhs_pinned_commit: str = "380b426000aac3d612837ed72c99808347dc94c9"`; `get_xhs_settings() -> XhsSettings`. `model_config`: `env_file=(REPO_ROOT / ".env", ".env")` (the same tuple as core `Settings`, so the repo-root `.env` is found when uvicorn runs from `backend/`), `extra="ignore"` (the shared `.env` holds every core variable), `env_ignore_empty=True` (an empty `CLIPSIEVE_XHS_TIMEOUT_S=` falls back to the default instead of failing validation).
 - **Single owner of the CDP port: core `Settings.clipsieve_xhs_chrome_cdp_port`.** `XhsSettings` has no port field; the adapter reads the core setting in `from_settings`/`__init__` and passes it to `MediaCrawlerRunner(cdp_port=...)` (Task 2). A relative `clipsieve_xhs_mediacrawler_dir` is resolved against `REPO_ROOT` by the runner (Task 2), never against the cwd.
 
-- [ ] **Step 1: Write the failing settings test**
+- [x] **Step 1: Write the failing settings test**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/test_settings.py
@@ -141,7 +141,7 @@ def test_empty_values_fall_back_to_defaults(monkeypatch):
     assert s.clipsieve_xhs_mediacrawler_dir == Path("../MediaCrawler")
 ```
 
-- [ ] **Step 2: Create the uv project**
+- [x] **Step 2: Create the uv project**
 
 ```toml
 # contrib/adapter-xhs-mediacrawler/pyproject.toml
@@ -187,7 +187,7 @@ target-version = "py312"
 
 Why a path dependency and not a MediaCrawler dependency: MediaCrawler has no build backend, so `uv add git+https://github.com/NanmiCoder/MediaCrawler@380b426` fails to build. The checkout is a runtime requirement located through `CLIPSIEVE_XHS_MEDIACRAWLER_DIR`.
 
-- [ ] **Step 3: Write settings module and package init**
+- [x] **Step 3: Write settings module and package init**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/__init__.py
@@ -252,7 +252,7 @@ def _clear_settings_cache():
 
 `tests/__init__.py` is empty.
 
-- [ ] **Step 4: Install and run the test**
+- [x] **Step 4: Install and run the test**
 
 Run:
 ```bash
@@ -260,7 +260,7 @@ cd contrib/adapter-xhs-mediacrawler && uv sync && uv run pytest tests/test_setti
 ```
 Expected: `3 passed`.
 
-- [ ] **Step 5: Write README with disclaimer and setup**
+- [x] **Step 5: Write README with disclaimer and setup**
 
 ````markdown
 # clipsieve-adapter-xhs
@@ -322,7 +322,7 @@ Per note: title, caption (`desc`), hashtags (`tag_list`), likes, saves, comments
 - Media download is done by the adapter with plain HTTP GETs on the URLs in the record. Some CDN URLs expire; a failed download is reported as a recoverable error for that post.
 ````
 
-- [ ] **Step 6: Write the DOX child and update the root index and `.env.example`**
+- [x] **Step 6: Write the DOX child and update the root index and `.env.example`**
 
 ```markdown
 # contrib/adapter-xhs-mediacrawler — AGENTS.md
@@ -371,7 +371,7 @@ Then rewrite the paragraph that follows the table so it no longer promises these
 `frontend/` currently holds a placeholder `package.json` so root scripts resolve; plan 04 replaces it and adds `frontend/AGENTS.md`.
 ```
 
-- [ ] **Step 7: Lint and commit**
+- [x] **Step 7: Lint and commit**
 
 Run:
 ```bash
