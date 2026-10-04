@@ -58,16 +58,26 @@ clipsieve itself is Apache-2.0, but **this adapter does not change MediaCrawler'
 
 ## Performance
 
-Expected (design note). Not yet measured: the live probe on 2026-10-04 (`scripts/probe_api_runner.py`) reached the search endpoint through the browser session, but the session was under `-104` risk control for every request shape, including a byte-for-byte replica of the MediaCrawler runner's request that had collected 20 notes through the same session 95 minutes earlier. Re-run the probe once the browser tab can search again and replace this table with the measured notes per page, seconds per page and videos per minute. The `1.0` s default interval is unchanged and still unvalidated.
+Measured on 2026-10-04 with `scripts/probe_api_runner.py`, video-only (`CLIPSIEVE_XHS_NOTE_KINDS=video`), comments off, `CLIPSIEVE_XHS_REQUEST_INTERVAL_S=1.0`, Brave logged in on the CDP port, after the account's earlier `-104` restriction had lifted:
 
-| | MediaCrawler runner | API runner |
+| Probe | Result |
+|---|---|
+| `--search-only` (1 request) | 22 items, `has_more` true |
+| 1 page (`新加坡搬到上海`) | 20 notes, 20 videos, 0 errors, 20.5 s |
+| 3 pages (`新加坡人 上海 vlog`) | 60 notes, 60 videos, 0 errors, 61 s (59 videos per minute); no rate-limit code |
+
+Every note carried `video_url`, `note_url` with `xsec_token`, `title`, `desc`, `tag_list` and `time`, and mapped to a `Post` of kind `video`. Compared with the MediaCrawler runner on the same topic earlier that day (about 150 s per page of 20 notes, of which 2 to 7 were videos), that is roughly 20 times more videos per minute.
+
+| | MediaCrawler runner | API runner (measured) |
 |---|---|---|
-| Requests per 20 videos | 1 browser crawl, all note types, ~150 s | 1 search + 20 detail calls, ~25 to 35 s |
+| Requests per 20 videos | 1 browser crawl, all note types, ~150 s per page, 2 to 7 videos | 1 search + 20 detail calls, ~20 s |
 | Video share per page | 30 to 50 % | 100 % |
-| 50 videos collected | 25 to 50 min | 2 to 3 min |
+| 60 videos collected | 25 to 50 min | 61 s |
 | Comments | always | opt-in |
 
-To measure, from this directory with Brave or Chrome on the CDP port and logged in: first `uv run python scripts/probe_api_runner.py "新加坡搬到上海" --search-only` (one request; confirms the session can search again), then `... "新加坡搬到上海" 1`, then with a second keyword and `3` pages. The script prints counts and timings only and writes nothing.
+Evidence extraction (Whisper and OCR, two posts at a time) is now the slow stage: roughly one to two minutes per video on an Apple Silicon laptop.
+
+The smallest safe re-probe after a restriction is `uv run python scripts/probe_api_runner.py "<keyword>" 1 --search-only` (one request), then one page without the flag.
 
 ## What it collects
 
