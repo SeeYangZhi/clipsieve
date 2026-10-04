@@ -111,3 +111,35 @@ async def test_last_event_id_header_resumes_exactly(client):
 
 async def test_events_for_unknown_run_is_404(client):
     assert (await client.get("/api/runs/run_nope/events")).status_code == 404
+
+
+async def test_stream_starts_with_a_connected_comment(client):
+    """The first bytes flush the response headers through proxies before any event exists."""
+    run_id = await approved_run(client)
+    await wait_for_stage(client, run_id, "done")
+    raw: list[str] = []
+    await read_sse(client, f"/api/runs/{run_id}/events?after=0", raw=raw)
+    assert raw[0] == ": connected"
+
+
+async def test_keepalive_pings_while_source_is_idle():
+    import asyncio
+
+    from clipsieve.api.events import _with_keepalive
+
+    async def slow():
+        await asyncio.sleep(0.12)
+        yield "a"
+        await asyncio.sleep(0.12)
+        yield "b"
+
+    out = [chunk async for chunk in _with_keepalive(slow(), interval=0.05)]
+    assert [c for c in out if c != ": ping\n\n"] == ["a", "b"]
+    assert out.count(": ping\n\n") >= 2
+    assert out[-1] == "b"
+
+    async def fast():
+        yield "x"
+        yield "y"
+
+    assert [c async for c in _with_keepalive(fast(), interval=1.0)] == ["x", "y"]
