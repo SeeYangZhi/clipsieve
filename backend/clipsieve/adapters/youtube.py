@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import contextlib
 import json
 import os
 import re
@@ -48,8 +49,10 @@ RAW_COMMENT_KEYS = frozenset({"id", "parent", "text", "like_count", "timestamp",
 _NOT_MEDIA_SUFFIXES = {".vtt", ".part", ".ytdl", ".json"}
 # A live, scheduled or just-ended stream is not a Short, whatever its duration says.
 _LIVE_STATUSES = {"is_live", "is_upcoming", "post_live"}
-# Cover downloads (`fetch_cover`): one small GET per post against i.ytimg.com.
+# Cover downloads (`fetch_cover`): one small GET per post against i.ytimg.com, streamed to a
+# `.part` file and abandoned above COVER_MAX_BYTES (a real thumbnail is well under 200 KB).
 COVER_TIMEOUT_S = 10.0
+COVER_MAX_BYTES = 2 * 1024 * 1024
 USER_AGENT = "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) clipsieve/0.1"
 
 
@@ -320,14 +323,27 @@ class YouTubeAdapter:
         target = dest / COVER_NAME
         if target.exists():
             return target
+        part = target.with_name(target.name + ".part")
         try:
-            resp = self._client_http().get(
+            with self._client_http().stream(
+                "GET",
                 url,
                 headers={"User-Agent": USER_AGENT},
                 follow_redirects=True,
                 timeout=COVER_TIMEOUT_S,
-            )
-            resp.raise_for_status()
+            ) as resp:
+                resp.raise_for_status()
+                dest.mkdir(parents=True, exist_ok=True)
+                written = 0
+                with part.open("wb") as fh:
+                    for chunk in resp.iter_bytes():
+                        written += len(chunk)
+                        if written > COVER_MAX_BYTES:
+                            log.info("youtube_cover_too_large", post_id=post.id, bytes=written)
+                            return None
+                        fh.write(chunk)
+            os.replace(part, target)
+            return target
         except httpx.HTTPError as exc:
             # The type and status only: an httpx message embeds the request URL.
             status = exc.response.status_code if isinstance(exc, httpx.HTTPStatusError) else None
@@ -338,11 +354,13 @@ class YouTubeAdapter:
                 status=status,
             )
             return None
-        dest.mkdir(parents=True, exist_ok=True)
-        part = target.with_name(target.name + ".part")
-        part.write_bytes(resp.content)
-        os.replace(part, target)
-        return target
+        except OSError as exc:
+            log.info("youtube_cover_failed", post_id=post.id, error_type=type(exc).__name__)
+            return None
+        finally:
+            # Any exit but the rename leaves a `.part` behind; the rename leaves none.
+            with contextlib.suppress(OSError):
+                part.unlink(missing_ok=True)
 
     def fetch_media(self, post: Post, dest: Path) -> Post:
         """Download once into `dest`; `local_path` is relative to `dest`. Idempotent."""

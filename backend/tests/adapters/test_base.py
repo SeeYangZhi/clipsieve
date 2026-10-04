@@ -60,3 +60,12 @@ def test_cover_fetcher_returns_the_bound_method_when_callable():
         fetch_cover = "thumb.jpg"
 
     assert cover_fetcher(NotCallable()) is None
+
+
+def test_cover_name_matches_the_extraction_thumbnail_name():
+    # adapters/ and evidence/ may not import each other (backend/AGENTS.md), so the shared file
+    # name is pinned here: extract.write_thumbnail keeps an existing COVER_NAME file.
+    from clipsieve.adapters.base import COVER_NAME
+    from clipsieve.evidence.extract import THUMB_NAME
+
+    assert COVER_NAME == THUMB_NAME == "thumb.jpg"

@@ -623,3 +623,102 @@ def test_fetch_cover_keeps_an_existing_thumbnail(settings, tmp_path):
     (dest / "thumb.jpg").write_bytes(b"keyframe")
     assert adapter.fetch_cover(posts[0], dest) == dest / "thumb.jpg"
     assert (dest / "thumb.jpg").read_bytes() == b"keyframe" and calls == 0
+
+
+def _searched_post(settings, handler):
+    adapter = _cover_adapter(settings, handler)
+    posts = list(adapter.search([Query(platform="youtube", query="x", lang="en")], 1))
+    return adapter, posts[0]
+
+
+def test_fetch_cover_aborts_above_the_byte_cap_and_leaves_nothing_behind(settings, tmp_path):
+    from clipsieve.adapters.youtube import COVER_MAX_BYTES
+
+    big = b"\xff" * (COVER_MAX_BYTES + 1)
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        # no content-length: the cap must hold on the streamed bytes themselves
+        return httpx.Response(200, stream=httpx.ByteStream(big))
+
+    adapter, post = _searched_post(settings, handler)
+    dest = tmp_path / "m"
+    with capture_logs() as logs:
+        assert adapter.fetch_cover(post, dest) is None
+    assert not list(dest.glob("thumb*")) if dest.exists() else True
+    [entry] = [e for e in logs if e["event"] == "youtube_cover_too_large"]
+    assert entry["post_id"] == post.id and entry["log_level"] == "info"
+    assert "ytimg" not in repr(logs) and "http" not in repr(logs)
+
+
+def test_fetch_cover_accepts_a_cover_exactly_at_the_cap(settings, tmp_path):
+    from clipsieve.adapters.youtube import COVER_MAX_BYTES
+
+    body = b"\xff" * COVER_MAX_BYTES
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=body)
+
+    adapter, post = _searched_post(settings, handler)
+    got = adapter.fetch_cover(post, tmp_path / "m")
+    assert got is not None and got.stat().st_size == COVER_MAX_BYTES
+    assert not got.with_name("thumb.jpg.part").exists()
+
+
+def test_fetch_cover_cleans_up_the_part_file_when_the_stream_breaks(settings, tmp_path):
+    class Breaks(httpx.SyncByteStream):
+        def __iter__(self):
+            yield b"\xff\xd8"
+            yield b"\x00" * 1024
+            raise httpx.ReadError("connection reset")
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, stream=Breaks())
+
+    adapter, post = _searched_post(settings, handler)
+    dest = tmp_path / "m"
+    with capture_logs() as logs:
+        assert adapter.fetch_cover(post, dest) is None
+    assert not list(dest.glob("thumb*")) if dest.exists() else True
+    [entry] = [e for e in logs if e["event"] == "youtube_cover_failed"]
+    assert entry["error_type"] == "ReadError" and entry["post_id"] == post.id
+    assert "ytimg" not in repr(logs) and "http" not in repr(logs)
+
+
+def test_fetch_cover_cleans_up_the_part_file_after_a_mid_write_os_error(
+    settings, tmp_path, monkeypatch
+):
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(200, content=b"\xff\xd8" + b"\x00" * 4096)
+
+    adapter, post = _searched_post(settings, handler)
+    dest = tmp_path / "m"
+    real_open = Path.open
+    written: list[Path] = []
+
+    class FullDisk:
+        def __init__(self, fh):
+            self._fh = fh
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            self._fh.close()
+            return False
+
+        def write(self, data):
+            self._fh.write(data[:1])  # a partial .part exists when the error hits
+            written.append(Path(self._fh.name))
+            raise OSError(28, "No space left on device")
+
+    def open_part(self, *args, **kwargs):
+        fh = real_open(self, *args, **kwargs)
+        return FullDisk(fh) if self.name.endswith(".part") else fh
+
+    monkeypatch.setattr(Path, "open", open_part)
+    with capture_logs() as logs:
+        assert adapter.fetch_cover(post, dest) is None
+    assert written and all(p.name == "thumb.jpg.part" for p in written)
+    assert not list(dest.glob("thumb*"))
+    [entry] = [e for e in logs if e["event"] == "youtube_cover_failed"]
+    assert entry["error_type"] == "OSError" and entry["post_id"] == post.id

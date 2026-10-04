@@ -11,7 +11,8 @@ Downloads a small cover image for `post` into `dest / COVER_NAME` (`thumb.jpg`),
 `dest`, and returns that path; returns `None` when the adapter has no cover for the post. An
 existing `dest / COVER_NAME` is kept and returned. It must never raise for ordinary failures
 (network, 404, bad image): return `None` and log at info with `post_id` only, never the URL.
-Core calls it through `cover_fetcher(adapter)` right after `post_collected`, so a cover exists
+Core calls it through `cover_fetcher(adapter)` after storing a post and before emitting its
+`post_collected`, and once more on resume for stored posts without a cover, so a cover exists
 for every collected post, including those pass one drops before any `fetch_media`.
 """
 

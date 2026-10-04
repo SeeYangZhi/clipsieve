@@ -619,12 +619,32 @@ async def test_cover_is_fetched_for_every_collected_post(data_dir, repo):
 
     class Spy(FixtureAdapter):
         def fetch_cover(self, post, dest):
+            # the post is stored, but its `post_collected` event is not written yet (B.15)
+            announced = [
+                e.payload["post"]["id"]
+                for e in events(data_dir, run_id)
+                if e.type.value == "post_collected"
+            ]
+            assert post.id not in announced, f"{post.id} announced before its cover"
             seen.append((post.id, post.raw_ref))
             dest.mkdir(parents=True, exist_ok=True)
             (dest / "thumb.jpg").write_bytes(b"\xff")
             return dest / "thumb.jpg"
 
     runner, run_id = make_runner(data_dir, repo, adapter=Spy(FIXTURES, data_dir))
+    paths = RunPaths(data_dir, run_id)
+    # a live dashboard tile requests thumb.jpg as soon as it sees post_collected, so the cover
+    # must be on disk at the moment that event is written
+    cover_at_emit: dict[str, bool] = {}
+    real_emit = runner.events.emit
+
+    def spy_emit(type_, stage, payload):
+        if type_ == "post_collected":
+            pid = payload["post"]["id"]
+            cover_at_emit[pid] = (paths.media_dir(pid) / "thumb.jpg").is_file()
+        return real_emit(type_, stage, payload)
+
+    runner.events.emit = spy_emit
     await run_to_done(runner)
     run = repo.get_run(run_id)
     assert run.stage.value == "done" and run.counters.errors == 0
@@ -634,14 +654,59 @@ async def test_cover_is_fetched_for_every_collected_post(data_dir, repo):
     )
     for media_dir in _media_dirs(data_dir, run_id):
         assert (media_dir / "thumb.jpg").is_file()
-    # the cover arrives before the next post is announced
-    evs = events(data_dir, run_id)
-    first_collected = next(i for i, e in enumerate(evs) if e.type.value == "post_collected")
-    assert evs[first_collected].payload["post"]["id"] == "local:fx-001"
+    assert cover_at_emit == {f"local:fx-00{i}": True for i in range(1, 6)}
+    # post_collected still carries the post without media paths and in search order
+    collected = [
+        e.payload["post"] for e in events(data_dir, run_id) if e.type.value == "post_collected"
+    ]
+    assert [p["id"] for p in collected] == [f"local:fx-00{i}" for i in range(1, 6)]
+    assert all("local_path" not in m for p in collected for m in p["media"])
+
+
+async def test_resume_fetches_covers_for_posts_stored_before_the_restart(
+    data_dir, repo, fixture_posts
+):
+    """Posts already in the store are skipped by collection; their cover is still fetched once."""
+    calls: list[str] = []
+
+    class Spy(FixtureAdapter):
+        def fetch_cover(self, post, dest):
+            calls.append(post.id)
+            return super().fetch_cover(post, dest)
+
+    runner, run_id = make_runner(data_dir, repo, adapter=Spy(FIXTURES, data_dir))
+    paths = RunPaths(data_dir, run_id)
+    # as if a previous process stored fx-002 (dropped by pass one, so never fetched) and died
+    # before its cover; fx-003 was stored with its cover already on disk
+    stored_without_cover = next(p for p in fixture_posts if p.id == "local:fx-002")
+    stored_with_cover = next(p for p in fixture_posts if p.id == "local:fx-003")
+    assert stored_without_cover.id not in KEPT
+    repo.upsert_post(run_id, stored_without_cover)
+    repo.upsert_post(run_id, stored_with_cover)
+    paths.media_dir(stored_with_cover.id).mkdir(parents=True)
+    (paths.media_dir(stored_with_cover.id) / "thumb.jpg").write_bytes(b"keep")
+    await run_to_done(runner)
+    run = repo.get_run(run_id)
+    assert run.stage.value == "done" and run.counters.errors == 0
+    # the counter is count_posts at run start, so the stored posts count; they are not
+    # collected or announced again
+    assert run.counters.collected == 5
+    assert event_types(data_dir, run_id).count("post_collected") == 3
+    assert (paths.media_dir(stored_without_cover.id) / "thumb.jpg").is_file()
+    assert (paths.media_dir(stored_with_cover.id) / "thumb.jpg").read_bytes() == b"keep"
+    # one attempt for the stored post without a cover, none for the one that has it
+    assert calls.count(stored_without_cover.id) == 1 and stored_with_cover.id not in calls
+    assert sorted(calls) == ["local:fx-001", "local:fx-002", "local:fx-004", "local:fx-005"]
+    # the stored posts' covers come before any post is announced
+    first_collected = event_types(data_dir, run_id).index("post_collected")
+    assert first_collected > 0 and calls[0] == stored_without_cover.id
 
 
 async def test_fixture_adapter_run_has_a_cover_on_every_tile(data_dir, repo):
-    """Fake mode: dropped posts show a cover too, kept posts keep the extraction thumbnail."""
+    """Fake mode: every fixture post has `evidence/<safe_id>/thumb.jpg`, which `fetch_cover`
+    copies at collection time, so dropped posts show a cover too. For kept posts `fetch_media`
+    copies the same fixture dir (keeping existing files) and `write_thumbnail` keeps an existing
+    `thumb.jpg`, so the collection-time cover survives extraction."""
     runner, run_id = make_runner(data_dir, repo)
     await run_to_done(runner)
     assert repo.get_run(run_id).stage.value == "done"
@@ -663,8 +728,11 @@ async def test_cover_failure_never_emits_an_error_or_fails_the_post(data_dir, re
     assert "error" not in event_types(data_dir, run_id)
     failed = [e for e in logs if e["event"] == "cover_failed"]
     assert sorted(e["post_id"] for e in failed) == [f"local:fx-00{i}" for i in range(1, 6)]
-    assert all("cdn down" in e["error"] for e in failed)
-    # kept posts still get their thumbnail from extraction
+    # the exception type only: an adapter's error message may embed a CDN URL
+    assert all(e["error_type"] == "RuntimeError" for e in failed)
+    assert all("error" not in e and "cdn down" not in repr(e) for e in failed)
+    # kept posts still get thumb.jpg: FixtureAdapter.fetch_media copies the fixture dir, which
+    # holds one, and extraction's write_thumbnail keeps an existing file
     paths = RunPaths(data_dir, run_id)
     assert all((paths.media_dir(pid) / "thumb.jpg").is_file() for pid in KEPT)
 
@@ -693,5 +761,7 @@ async def test_adapter_without_fetch_cover_is_unchanged(data_dir, repo):
     assert run.stage.value == "done" and run.counters.errors == 0
     paths = RunPaths(data_dir, run_id)
     dropped = [f"local:fx-00{i}" for i in range(1, 6) if f"local:fx-00{i}" not in KEPT]
+    # without fetch_cover only kept posts get thumb.jpg, copied by fetch_media from the fixture
+    # dir at extraction; dropped posts never reach fetch_media
     assert all((paths.media_dir(pid) / "thumb.jpg").is_file() for pid in KEPT)
     assert not any((paths.media_dir(pid) / "thumb.jpg").exists() for pid in dropped)
