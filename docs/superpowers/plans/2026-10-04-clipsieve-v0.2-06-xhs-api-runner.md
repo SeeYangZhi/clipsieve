@@ -1505,7 +1505,7 @@ This task talks to xiaohongshu.com through the user's own logged-in Brave on por
 - Consumes: `XhsApiRunner`, `get_settings`, `get_xhs_settings`.
 - Produces: measured throughput numbers; a go/no-go on the `1.0` s default interval.
 
-- [ ] **Step 1: Write the probe script**
+- [x] **Step 1: Write the probe script**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/scripts/probe_api_runner.py
@@ -1586,7 +1586,7 @@ With `.env` holding `CLIPSIEVE_XHS_RUNNER=api`, `CLIPSIEVE_XHS_NOTE_KINDS=video`
 
 Record in `contrib/adapter-xhs-mediacrawler/README.md` Performance: notes per page, seconds per page, videos per minute, and the interval that worked.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/scripts/probe_api_runner.py contrib/adapter-xhs-mediacrawler/README.md
