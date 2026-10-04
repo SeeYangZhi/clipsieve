@@ -148,3 +148,14 @@ def test_field_map_is_overridable(monkeypatch, notes):
     monkeypatch.setitem(mapping.FIELD_MAP, "caption", "title")
     post = map_note(notes[2], [], SALT, raw_ref="r", collected_at=NOW)
     assert post.text.caption == notes[2]["title"]
+
+
+def test_post_url_drops_xsec_query_and_fragment(notes, comments):
+    n = dict(notes[0])
+    n["note_url"] = (
+        "https://www.xiaohongshu.com/explore/66f1a2b3c4d5e6f700000001"
+        "?xsec_token=abc&xsec_source=pc_search#frag"
+    )
+    post = map_note(n, comments[n["note_id"]], SALT, "/tmp/raw.json", NOW)
+    assert post.url == "https://www.xiaohongshu.com/explore/66f1a2b3c4d5e6f700000001"
+    assert "xsec" not in post.url

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import re
 from datetime import UTC, datetime
+from urllib.parse import urlsplit, urlunsplit
 
 from clipsieve.adapters.base import hash_creator
 from clipsieve.models import Comment, Media, Metrics, Post, PostText
@@ -78,6 +79,12 @@ def split_list(value) -> list[str]:
     return [s.strip() for s in str(value).split(LIST_DELIMITER) if s.strip()]
 
 
+def _clean_url(url: str) -> str:
+    """Drop query and fragment: note_url may embed xsec_token."""
+    parts = urlsplit(url)
+    return urlunsplit((parts.scheme, parts.netloc, parts.path, "", ""))
+
+
 def image_urls(note: dict) -> list[str]:
     return split_list(_g(note, "image_list"))
 
@@ -139,7 +146,9 @@ def map_note(
     return Post(
         id=f"{PLATFORM}:{note_id}",
         platform=PLATFORM,
-        url=str(_g(note, "note_url") or f"https://www.xiaohongshu.com/explore/{note_id}"),
+        url=_clean_url(
+            str(_g(note, "note_url") or f"https://www.xiaohongshu.com/explore/{note_id}")
+        ),
         creator_hash=hash_creator(str(_g(note, "creator_hash") or "unknown"), salt),
         creator_display=(str(_g(note, "nickname")) if _g(note, "nickname") else None),
         posted_at=_posted_at(note),
