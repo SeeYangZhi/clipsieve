@@ -33,16 +33,16 @@ FEED_URI = "/api/sns/web/v1/feed"
 COMMENTS_URI = "/api/sns/web/v2/comment/page"
 NOTE_TYPE = {"all": 0, "video": 1, "image": 2}
 LOGIN_CODES = {-100, -101, -104}
-# -104 "您当前登录的账号没有权限访问": the platform's account-level risk control, seen on 2026-10-04
-# for every request shape (including a byte-for-byte MediaCrawler replica) after a heavy crawl
-# through the same session; it is not a signing defect and lifts by itself after a while.
+# -104 "您当前登录的账号没有权限访问": observed on 2026-10-04 for every request shape, including a
+# byte-for-byte MediaCrawler replica through the same session, so on that session it was not a
+# signing defect; MediaCrawler issues describe it as account-level risk control that lifts later.
 NO_PERMISSION_CODE = -104
 RATE_LIMIT_CODES = {300011, 300012, 300013}
 VERIFY_STATUSES = {461, 471}
 MAX_ATTEMPTS = 3
 # Every header xhshow emits for a browser tab's request; anything else it adds is dropped.
-# x-rap-param is the risk-control header the search, feed and comment endpoints require
-# (xhshow README, "x-rap-param"); without it search answers -104 "没有权限访问".
+# x-rap-param: xhshow documents it as required by the search, feed and comment endpoints; not
+# verified live yet (the first probe session answered -104 with and without it).
 SIGNED_HEADER_NAMES = (
     "x-s",
     "x-t",
