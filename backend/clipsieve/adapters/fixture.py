@@ -11,7 +11,7 @@ import shutil
 from collections.abc import Iterator
 from pathlib import Path
 
-from clipsieve.adapters.base import Adapter, AdapterHealth, incoming_dir
+from clipsieve.adapters.base import COVER_NAME, Adapter, AdapterHealth, incoming_dir
 from clipsieve.config import Settings
 from clipsieve.logging import get_logger
 from clipsieve.models import Media, Post, Query
@@ -56,6 +56,20 @@ class FixtureAdapter(Adapter):
                     "media": [m.model_copy(update={"local_path": None}) for m in post.media],
                 }
             )
+
+    def fetch_cover(self, post: Post, dest: Path) -> Path | None:
+        """Copy the fixture's `evidence/<safe_id>/thumb.jpg` into dest; None when it has none.
+
+        Optional adapter contract (`adapters/base.py`). An existing cover is kept.
+        """
+        src = self._fixtures / "evidence" / safe_post_filename(post.id) / COVER_NAME
+        if not src.is_file():
+            return None
+        target = dest / COVER_NAME
+        if not target.exists():
+            dest.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(src, target)
+        return target
 
     def fetch_media(self, post: Post, dest: Path) -> Post:
         """Copy `evidence/<safe_id>/` (media, sidecars, frames/ OCR sidecars) into dest.

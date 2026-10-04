@@ -16,6 +16,7 @@
   "comment_count": 97,
   "language": "zh-Hans",
   "webpage_url": "https://www.youtube.com/watch?v=zH1sH4nGh41",
+  "thumbnail": "https://i.ytimg.invalid/vi/zH1sH4nGh41/hqdefault.jpg",
   "automatic_captions": {
     "zh-Hans": [
       { "ext": "vtt", "url": "https://example.invalid/captions/zh.vtt" }

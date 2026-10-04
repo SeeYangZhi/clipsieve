@@ -117,3 +117,30 @@ def test_registry_fixture_overrides_a_local_entry_point(tmp_path):
         clipsieve_fixture_dir=FIXTURES,
     )
     assert isinstance(registry.load_adapters(fake)["local"], FixtureAdapter)
+
+
+def test_fetch_cover_copies_the_fixture_thumbnail(tmp_path):
+    adapter = FixtureAdapter(FIXTURES, tmp_path)
+    for post in adapter.search([], 5):
+        dest = tmp_path / "media" / safe_post_filename(post.id)
+        got = adapter.fetch_cover(post, dest)
+        src = FIXTURES / "evidence" / safe_post_filename(post.id) / "thumb.jpg"
+        assert got == dest / "thumb.jpg" and got.is_file()
+        assert got.read_bytes() == src.read_bytes()
+        # idempotent: an existing cover is kept, the path is returned again
+        got.write_bytes(b"keep")
+        assert adapter.fetch_cover(post, dest) == got and got.read_bytes() == b"keep"
+
+
+def test_fetch_cover_is_none_without_a_fixture_thumbnail(tmp_path):
+    fixtures = tmp_path / "fx"
+    (fixtures / "posts").mkdir(parents=True)
+    (fixtures / "raw").mkdir()
+    for sub in ("posts", "raw"):
+        src = FIXTURES / sub / "local__fx-001.json"
+        (fixtures / sub / src.name).write_text(src.read_text(encoding="utf-8"), encoding="utf-8")
+    adapter = FixtureAdapter(fixtures, tmp_path / "data")
+    (post,) = list(adapter.search([], 5))
+    dest = tmp_path / "dest"
+    assert adapter.fetch_cover(post, dest) is None
+    assert not (dest / "thumb.jpg").exists()

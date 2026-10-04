@@ -15,7 +15,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
-from clipsieve.adapters.base import Adapter
+from clipsieve.adapters.base import COVER_NAME, Adapter, cover_fetcher
 from clipsieve.config import Settings
 from clipsieve.events.writer import EventWriter
 from clipsieve.evidence.asr import ASR
@@ -409,7 +409,8 @@ class Runner:
 
     async def _collect(self, run: Run) -> None:
         plan = self._plan()
-        existing = {p.id for p in self.repo.list_posts(self.run_id, 0, ALL_POSTS)}
+        stored_posts = self.repo.list_posts(self.run_id, 0, ALL_POSTS)
+        existing = {p.id for p in stored_posts}
         for platform in run.platforms:
             where = f"adapter.{platform}"
             adapter = self.adapters.get(platform)
@@ -424,6 +425,11 @@ class Runner:
             if not health.ok:
                 self._error(run, where, f"{platform} adapter unhealthy: {health.message}")
                 continue
+            # Posts stored before a pause or crash are skipped below, so give each one its cover
+            # now (one attempt; `_fetch_cover` skips those that already have thumb.jpg).
+            for stored in stored_posts:
+                if stored.platform.value == platform:
+                    await self._fetch_cover(adapter, stored)
             queries = [q for q in plan.queries if q.platform == platform]
             limit = run.quantities.get(platform, 0)
             await self._collect_platform(run, platform, adapter, queries, limit, existing)
@@ -461,6 +467,8 @@ class Runner:
                     existing.add(post.id)
                     run.counters.collected += 1
                     self._save_counters(run)
+                    # Cover first: a live tile requests thumb.jpg as soon as it sees the event.
+                    await self._fetch_cover(adapter, post)
                     self.events.emit(
                         "post_collected", Stage.collecting, {"post": post.model_dump(mode="json")}
                     )
@@ -475,6 +483,22 @@ class Runner:
             close = getattr(it, "close", None)
             if close is not None:
                 close()
+
+    async def _fetch_cover(self, adapter: Adapter, post: Post) -> None:
+        """Optional adapter cover into `media_dir/thumb.jpg` (B.15), one small GET inline per
+        stored post, before its `post_collected` event. Never an `error` event: a failure only
+        costs the tile its image."""
+        fetch = cover_fetcher(adapter)
+        if fetch is None:
+            return
+        dest = self.paths.media_dir(post.id)
+        if (dest / COVER_NAME).exists():
+            return
+        try:
+            await asyncio.to_thread(fetch, post, dest)
+        except Exception as exc:  # noqa: BLE001 - a cover must never fail the post
+            # The type only: an adapter's message may embed the cover URL.
+            log.warning("cover_failed", post_id=post.id, error_type=type(exc).__name__)
 
     def _relocate_raw(self, post: Post) -> Post:
         """Move the adapter's incoming raw payload into the run (B.1/B.10). Runs at collection,

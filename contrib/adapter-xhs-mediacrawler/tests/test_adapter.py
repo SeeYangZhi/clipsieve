@@ -68,7 +68,7 @@ def test_search_writes_media_url_cache(adapter, tmp_path):
     ) == {"urls": [VIDEO_URL, VIDEO_LOW_URL]}
     assert json.loads(
         (cache / "xiaohongshu__66f1a2b3c4d5e6f700000002.media.json").read_text(encoding="utf-8")
-    ) == {"urls": IMAGE_URLS}
+    ) == {"urls": IMAGE_URLS, "cover": IMAGE_URLS[0]}
     assert json.loads(
         (cache / "xiaohongshu__66f1a2b3c4d5e6f700000003.media.json").read_text(encoding="utf-8")
     ) == {"urls": []}
@@ -288,7 +288,10 @@ def test_field_map_override_keeps_post_id_raw_file_and_media_cache_consistent(
     ]
     assert (tmp_path / "raw" / "xiaohongshu__66f1a2b3c4d5e6f700000001.json").exists()
     cache = tmp_path / "cache" / "xiaohongshu__66f1a2b3c4d5e6f700000002.media.json"
-    assert json.loads(cache.read_text(encoding="utf-8")) == {"urls": IMAGE_URLS}
+    assert json.loads(cache.read_text(encoding="utf-8")) == {
+        "urls": IMAGE_URLS,
+        "cover": IMAGE_URLS[0],
+    }
 
 
 class EndlessRunner:
@@ -391,3 +394,73 @@ def test_from_settings_builds_the_api_runner_by_default(tmp_path):
     )
     adapter = XhsMediaCrawlerAdapter.from_settings(core)
     assert isinstance(adapter.runner, XhsApiRunner)
+
+
+# ---- cover thumbnails -------------------------------------------------------
+
+COVER_URL = IMAGE_URLS[0]
+NOTE1 = "xiaohongshu:66f1a2b3c4d5e6f700000001"
+NOTE2 = "xiaohongshu:66f1a2b3c4d5e6f700000002"
+NOTE3 = "xiaohongshu:66f1a2b3c4d5e6f700000003"
+
+
+def _post(adapter, post_id):
+    return next(p for p in adapter.search(Q, limit=10) if p.id == post_id)
+
+
+def test_search_caches_cover_url(adapter, tmp_path):
+    list(adapter.search(Q, limit=10))
+    data = json.loads(
+        (tmp_path / "cache" / "xiaohongshu__66f1a2b3c4d5e6f700000002.media.json").read_text(
+            encoding="utf-8"
+        )
+    )
+    assert data["cover"] == COVER_URL
+
+
+@respx.mock
+def test_fetch_cover_downloads_thumb(adapter, tmp_path):
+    post = _post(adapter, NOTE2)
+    route = respx.get(COVER_URL).mock(return_value=httpx.Response(200, content=b"\xff\xd8jpeg"))
+    dest = tmp_path / "dest"
+    out = adapter.fetch_cover(post, dest)
+    assert out == dest / "thumb.jpg"
+    assert out.read_bytes() == b"\xff\xd8jpeg"
+    assert not (dest / "thumb.jpg.part").exists()
+    assert route.calls[0].request.headers["referer"] == "https://www.xiaohongshu.com/"
+
+
+@respx.mock
+def test_fetch_cover_from_disk_cache_in_fresh_adapter(adapter, fake_runner, tmp_path):
+    post = _post(adapter, NOTE2)
+    respx.get(COVER_URL).mock(return_value=httpx.Response(200, content=b"jpeg"))
+    fresh = make_adapter(tmp_path, fake_runner)
+    assert fresh.fetch_cover(post, tmp_path / "dest") == tmp_path / "dest" / "thumb.jpg"
+
+
+@respx.mock
+def test_fetch_cover_404_returns_none(adapter, tmp_path):
+    post = _post(adapter, NOTE2)
+    respx.get(COVER_URL).mock(return_value=httpx.Response(404))
+    dest = tmp_path / "dest"
+    assert adapter.fetch_cover(post, dest) is None
+    assert not (dest / "thumb.jpg").exists()
+    assert not (dest / "thumb.jpg.part").exists()
+
+
+@respx.mock
+def test_fetch_cover_without_cover_returns_none(adapter, tmp_path):
+    post = _post(adapter, NOTE3)
+    assert adapter.fetch_cover(post, tmp_path / "dest") is None
+
+
+@respx.mock
+def test_fetch_cover_keeps_existing_thumb(adapter, tmp_path):
+    post = _post(adapter, NOTE2)
+    route = respx.get(COVER_URL).mock(return_value=httpx.Response(200, content=b"new"))
+    dest = tmp_path / "dest"
+    dest.mkdir()
+    (dest / "thumb.jpg").write_bytes(b"old")
+    assert adapter.fetch_cover(post, dest) == dest / "thumb.jpg"
+    assert (dest / "thumb.jpg").read_bytes() == b"old"
+    assert not route.called

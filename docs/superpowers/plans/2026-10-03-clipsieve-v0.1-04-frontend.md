@@ -3121,7 +3121,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 
 ## Contract decisions made (propagate to plans 01, 02, 03)
 
-1. **Thumbnails:** the frontend requests `GET /api/runs/{id}/media/{post_id}/thumb.jpg` for every tile and falls back to an icon on 404. Plan 02's `fetch_media` should write `thumb.jpg` (first keyframe or first image, 256px wide) into `media_dir(post_id)`; plan 03's media route serves it. Post ids are URL-encoded (`local%3Afx-001`), so the route must decode the path segment.
+1. **Thumbnails:** the frontend requests `GET /api/runs/{id}/media/{post_id}/thumb.jpg` for every tile and falls back to an icon on 404. Overview B.15 (plan 07) owns `thumb.jpg`: the Runner fetches the adapter's cover into `media_dir(post_id)` at collection time, before `post_collected`, and `extract_evidence` writes a 256px keyframe thumbnail for kept posts that have none; plan 03's media route serves it. Post ids are URL-encoded (`local%3Afx-001`), so the route must decode the path segment.
 2. **Fake mode seeds the local adapter:** Task 11 assumes `CLIPSIEVE_EXPLAIN_BACKEND=fake` also makes the `local` adapter return the five posts in `backend/tests/fixtures/posts` regardless of the brief, and that the planner returns `quantities: {local: 5}`. Plan 03's `get_context()` must do this.
 3. **`DashboardState` gains `lastSeq: number` and `startedAt: string | null`** (additive to the overview type). `elapsed_s` before `done` is computed client-side from the first event's `ts`.
 4. **Error-to-tile rule:** an `error` event with a `post_id` and `where` starting with `"judge"` marks that tile `judge_failed`. Plan 03 should emit `where: "judge.pass_two"` or `"judge.pass_one"` for per-post judge failures.
