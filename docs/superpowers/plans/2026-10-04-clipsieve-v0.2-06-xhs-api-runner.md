@@ -176,7 +176,7 @@ Claude-Session: https://claude.ai/code/session_01XC9nMme23mc4K4ZUvwK5Bu"
   - `cdp_cookies.cookie_header(port: int, http: httpx.Client, connect: Connect = _default_connect) -> str` (`"a1=...; web_session=...; ..."`, xiaohongshu.com cookies only; raises `XhsLoginRequired` when `a1` or `web_session` is missing).
   - `cdp_cookies.Connect = Callable[[str], AbstractContextManager[Any]]` where the context manager exposes `send(str)` and `recv() -> str`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/test_cdp_cookies.py
@@ -272,12 +272,12 @@ def test_unreachable_port_raises_httpx_error():
         fetch_cookies(9222, http_with_version(port_ok=False), connect=fake_connect(FakeSocket([])))
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_cdp_cookies.py`
 Expected: `ModuleNotFoundError: No module named 'clipsieve_xhs.cdp_cookies'`
 
-- [ ] **Step 3: Write the errors module**
+- [x] **Step 3: Write the errors module**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/errors.py
@@ -303,7 +303,7 @@ class XhsRateLimited(XhsApiError):
     """The platform throttled us (访问频次异常); retried with backoff before this was raised."""
 ```
 
-- [ ] **Step 4: Write the cookie reader**
+- [x] **Step 4: Write the cookie reader**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/cdp_cookies.py
@@ -369,12 +369,12 @@ def cookie_header(port: int, http: httpx.Client, connect: Connect = _default_con
     return "; ".join(f"{c['name']}={c['value']}" for c in cookies)
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_cdp_cookies.py && uv run ruff check . && uv run ruff format --check .`
 Expected: 5 passed; ruff clean.
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/clipsieve_xhs/errors.py contrib/adapter-xhs-mediacrawler/clipsieve_xhs/cdp_cookies.py contrib/adapter-xhs-mediacrawler/tests/test_cdp_cookies.py
