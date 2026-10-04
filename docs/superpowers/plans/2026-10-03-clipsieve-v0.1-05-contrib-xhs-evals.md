@@ -2569,7 +2569,7 @@ Claude-Session: https://claude.ai/code/session_01XC9nMme23mc4K4ZUvwK5Bu"
 - Consumes: root `bun run check` from plan 01; CI workflow from plan 01.
 - Produces: CI runs contrib tests with the runner faked.
 
-- [ ] **Step 1: Add README sections**
+- [x] **Step 1: Add README sections**
 
 Insert into root `README.md` immediately after the `## Adapters` section (before `## Development`), as two new sections:
 
@@ -2595,7 +2595,7 @@ You are responsible for complying with each platform's terms of service and the 
 Rubric packs ship with calibration numbers. `sieve eval` scores a pack against a hand-labelled golden set per question, in `raw`, `translate` and `bilingual` modes, and writes the results into `rubrics/<pack>.calibration.md`. See [`evals/README.md`](evals/README.md) for the golden format and labelling protocol.
 ```
 
-- [ ] **Step 2: Cover `evals/` and `contrib/` in the root lint script**
+- [x] **Step 2: Cover `evals/` and `contrib/` in the root lint script**
 
 `bun run check` runs `bun run lint`, which today lints only `backend/`. In the root `package.json` replace the `lint` script with:
 
@@ -2605,7 +2605,7 @@ Rubric packs ship with calibration numbers. `sieve eval` scores a pack against a
 
 (`format` gets the same extra paths: `"format": "bunx ultracite fix && (cd backend && uv run ruff format . ../evals ../contrib)"`.) Ruff resolves each file's config from the nearest `pyproject.toml`/`ruff.toml`, so `contrib/adapter-xhs-mediacrawler/` uses its own `[tool.ruff]` and `evals/` uses `evals/ruff.toml`, which extends the backend config.
 
-- [ ] **Step 3: Extend the CI workflow**
+- [x] **Step 3: Extend the CI workflow**
 
 Add a job to `.github/workflows/check.yml` (keep the existing `check` job untouched):
 
@@ -2633,7 +2633,7 @@ Add a job to `.github/workflows/check.yml` (keep the existing `check` job untouc
 
 Run `cd contrib/adapter-xhs-mediacrawler && uv lock` so `uv.lock` exists for `--frozen`, and **commit it** (Step 5 stages it explicitly; the job fails without it).
 
-- [ ] **Step 4: Run the full check locally**
+- [x] **Step 4: Run the full check locally**
 
 Run:
 ```bash
@@ -2642,7 +2642,7 @@ cd contrib/adapter-xhs-mediacrawler && uv run pytest -q
 ```
 Expected: `bun run check` exits 0 (schema unchanged, lint clean including `evals/` and `contrib/`, typecheck clean, backend and frontend tests pass); contrib tests pass (`42 passed`).
 
-- [ ] **Step 5: Commit and push**
+- [x] **Step 5: Commit and push**
 
 ```bash
 git add README.md package.json .github/workflows/check.yml AGENTS.md contrib/adapter-xhs-mediacrawler/uv.lock
