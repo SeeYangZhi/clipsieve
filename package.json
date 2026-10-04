@@ -8,8 +8,8 @@
   "scripts": {
     "check": "bun run check:schema && bun run lint && bun run typecheck && bun run test",
     "check:schema": "bun run schema && git diff --exit-code -- backend/clipsieve/models.py frontend/src/lib/types.ts",
-    "dev": "bun run --filter frontend dev & (cd backend && uv run uvicorn clipsieve.app:app --reload --port 8000); wait",
-    "dev:api": "cd backend && uv run uvicorn clipsieve.app:app --reload --port 8000",
+    "dev": "bun run --filter frontend dev & (cd backend && uv run uvicorn clipsieve.app:app --reload --reload-dir clipsieve --port 8000); wait",
+    "dev:api": "cd backend && uv run uvicorn clipsieve.app:app --reload --reload-dir clipsieve --port 8000",
     "dev:web": "bun run --filter frontend dev",
     "format": "bunx ultracite fix && (cd backend && uv run ruff format . ../evals ../contrib)",
     "lint": "bunx ultracite check && (cd backend && uv run ruff check . ../evals ../contrib && uv run ruff format --check . ../evals ../contrib)",
