@@ -2950,7 +2950,7 @@ Co-Authored-By: Claude Fable 5.1 <noreply@anthropic.com>"
 **Interfaces:**
 - Consumes: backend from plan 03 running with `CLIPSIEVE_EXPLAIN_BACKEND=fake` so that the `local` adapter serves `backend/tests/fixtures/posts`, `RecordedJudge` answers, and `FakeExplainBackend` plans and reports. A run completes in under 30 seconds in that mode.
 
-- [ ] **Step 1: Install browsers and write the config**
+- [x] **Step 1: Install browsers and write the config**
 
 ```bash
 cd frontend && bunx playwright install chromium && cd ..
@@ -2992,7 +2992,7 @@ export default defineConfig({
 });
 ```
 
-- [ ] **Step 2: The flow**
+- [x] **Step 2: The flow**
 
 Create `frontend/e2e/run-flow.spec.ts`:
 
@@ -3038,12 +3038,12 @@ test-results/
 playwright-report/
 ```
 
-- [ ] **Step 3: Run it**
+- [x] **Step 3: Run it**
 
 Run: `cd frontend && bun run e2e`
 Expected: 1 passed. If the backend's fake mode exposes the `local` adapter under a different fixture path, fix the backend configuration (plan 03), not this test. If the "Done" badge text collides with another element, tighten the locator to `page.locator("header, h1 ~ *").getByText("Done")`.
 
-- [ ] **Step 4: Commit**
+- [x] **Step 4: Commit**
 
 ```bash
 git add frontend/playwright.config.ts frontend/e2e frontend/.gitignore frontend/package.json
