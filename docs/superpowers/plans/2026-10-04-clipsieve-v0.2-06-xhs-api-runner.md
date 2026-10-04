@@ -402,7 +402,7 @@ Claude-Session: https://claude.ai/code/session_01XC9nMme23mc4K4ZUvwK5Bu"
   - `.comments(note_id: str, xsec_token: str, cursor: str = "") -> dict` (the response `data`: `comments`, `cursor`, `has_more`)
   - constants `API_HOST`, `WEB_ORIGIN`, `SEARCH_URI`, `FEED_URI`, `COMMENTS_URI`, `NOTE_TYPE = {"all": 0, "video": 1, "image": 2}`, `MAX_ATTEMPTS = 3`; `search_id() -> str`.
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/test_api_client.py
@@ -601,12 +601,12 @@ def test_real_signer_produces_the_required_headers():
     assert {"x-s", "x-t", "x-s-common"} <= set(headers)
 ```
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_api_client.py`
 Expected: `ModuleNotFoundError: No module named 'clipsieve_xhs.api_client'`
 
-- [ ] **Step 3: Write the client**
+- [x] **Step 3: Write the client**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/api_client.py
@@ -801,12 +801,12 @@ class XhsApiClient:
         raise XhsApiError(f"{uri}: gave up")  # pragma: no cover - loop always returns or raises
 ```
 
-- [ ] **Step 4: Run the tests to verify they pass**
+- [x] **Step 4: Run the tests to verify they pass**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_api_client.py && uv run ruff check . && uv run ruff format --check .`
 Expected: 12 passed; ruff clean. If ruff flags `S311` as unknown (the backend config may not enable `S`), drop that `noqa`.
 
-- [ ] **Step 5: Commit**
+- [x] **Step 5: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/clipsieve_xhs/api_client.py contrib/adapter-xhs-mediacrawler/tests/test_api_client.py
