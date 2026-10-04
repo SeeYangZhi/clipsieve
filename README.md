@@ -40,7 +40,7 @@ Rubric packs ship with calibration numbers. `sieve eval` scores a pack against a
 
 ## Development
 
-Requirements: Bun 1.3+, uv, Python 3.12 (uv installs it), ffmpeg.
+Requirements: Bun 1.3+, uv, Python 3.12 (uv installs it), ffmpeg, and [deno](https://deno.com) (`brew install deno`; yt-dlp needs a JavaScript runtime for YouTube). For real runs with transcripts and on-screen text, install the evidence extras once: `cd backend && uv sync --extra asr --extra ocr`.
 
     bun install && (cd backend && uv sync)   # once
     bun run dev                              # API on :8000, web on :3000
