@@ -6,6 +6,8 @@
 # run data (posts, media, evidence, event logs)
 data/
 runs/
+# ...but not the Next.js /runs/* routes
+!frontend/src/app/runs/
 
 # python
 __pycache__/

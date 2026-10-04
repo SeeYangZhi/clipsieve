@@ -73,5 +73,6 @@ Implementation plan: `docs/superpowers/plans/`.
 | `backend/AGENTS.md` | Python package `clipsieve`: config, logging, store, events (plan 01); adapters, evidence (plan 02); judge, select, explain, pipeline, API, CLI (plan 03) |
 | `packages/schema/AGENTS.md` | JSON Schemas and the two generators |
 | `rubrics/AGENTS.md` | Rubric pack YAML (`creator-hooks-v1`) and per-pack calibration notes |
+| `frontend/AGENTS.md` | Next.js client: `/api/*` rewrite, SSE, shadcn UI, Vitest/Playwright, Next 16 notes (plan 04) |
 | `contrib/adapter-xhs-mediacrawler/AGENTS.md` | Community Xiaohongshu adapter driving a MediaCrawler checkout; never imported by core |
 | `evals/AGENTS.md` | Golden sets (`golden/`) and `score.py`; agreement rules live in `evals/README.md` |

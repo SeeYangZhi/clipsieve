@@ -1,15 +1,27 @@
 # clipsieve build status
 
-Updated: 2026-10-03T20:12:32Z by iteration 3 (cut short by usage limit)
+Updated: 2026-10-04T02:22:43Z by iteration 5
 
 ## Plans
 | Plan | Branch | Tasks done / total | Merged | Last commit |
 |---|---|---|---|---|
 | 01 foundation | plan/01-foundation (merged, branch deleted locally) | 8 / 8 | yes (574e57d) | d7b28e8 |
 | 02 adapters-evidence | plan/02-adapters-evidence (merged, branch deleted locally) | 12 / 12 | yes (7c3beb5) | 44206fc |
-| 03 judge-select-explain-api | plan/03-judge-select-explain-api (worktree .worktrees/plan-03-judge-select-explain-api, pushed) | 12 / 12 ticked; whole-branch final review in flight | no | 7ed007c |
-| 04 frontend | plan/04-frontend (worktree .worktrees/plan-04-frontend, pushed) | 10 / 12 (paused: tasks 11-12 need plan 03 API) | no | a33d9d1 |
-| 05 contrib-xhs-evals | | 0 / 7 | no | |
+| 03 judge-select-explain-api | merged into main (2616c2d) | 12 / 12 | yes | 2616c2d |
+| 04 frontend | merged into main (3273b2f) | 12 / 12 | yes | 3273b2f |
+| 05 contrib-xhs-evals | plan/05-contrib-xhs-evals (worktree .worktrees/plan-05-contrib-xhs-evals) | 2 / 7 (task 3 mapping in flight) | no | db29dc5 |
+
+## Iteration 5 did
+- Plan 04 fix wave (7 fixes: pause intent + bounded re-poll, failed-run alert with the error message, planner-failure alert with start-over link, replay-mode Dashboard without the connection badge, back-to-run link, PostDialog title fallback, `compress: false` after CONFIRMING Next gzip buffered the live SSE stream) + scoped re-review clean. Plan 04 merged into main with --no-ff (3273b2f): on main 397 pytest passed, `bun run check` exit 0, `cd frontend && bun run e2e` 1 passed. Worktree removed.
+- Plan 05 Tasks 1 (contrib skeleton + XhsSettings) and 2 (MediaCrawler runner) complete, reviewed, ticked; contrib suite 14 passed. Task 3 (record mapping) dispatched.
+
+## Iteration 4 did
+- Plan 04 Tasks 11 (Playwright e2e vs fake backend: 1 passed, re-run by controller) and 12 (DOX closeout, CI opt-in e2e gated on vars.RUN_E2E) complete and ticked. Whole-branch review: mergeable after fixes — pause button uses pre-transition run; failed run shows no reason; planner failure leaves plan page spinning; replay page shows reconnecting badge; Next gzip may buffer live SSE (verify, compress:false). Fix wave dispatched.
+- Plan 05 pre-flight scan: 13 rulings recorded in its ledger (persistent XHS media-URL cache instead of Media.url; MediaDownloadError from adapters.base; XhsSettings env_file/REPO_ROOT; 0-indexed predicted_level; eval_cmd edited in place; calibration keyed by golden stem+mode; contract test offline via respx; raw comment identifiers stripped; table rows in root index; test counts). Plan text + overview Addendum C (C.2, C.8, C.12 amended; C.15-C.18 added) patched in 9bcd7b2. Task 1 dispatched.
+- Plan 03 whole-branch review: mergeable after fixes (empty shortlist fails before explain; pack_summaries skips non-pack YAML and surfaces load errors; explain packet drops comments and caps text at 4000 chars; two doc fixes). Fix wave + scoped re-review clean. Overview Addendum E.14 records the behaviour changes for plans 04/05.
+- Plan 03 merged into main with --no-ff (2616c2d); on main: 397 pytest passed, `bun run check` exit 0, DoD smoke `sieve run ... --data-dir /tmp/clipsieve-smoke` exit 0 stage done, `sieve replay` 27 events run_created..done. Main pushed. Plan 03 worktree removed.
+- Plan 04: main merged into plan/04-frontend (85f91d7; conflicts in .env.example and root AGENTS.md index resolved); backend suite and `bun run check` green there. Task 11 (Playwright e2e vs fake backend) dispatched.
+- Plan 05: worktree created from main; pre-flight scan dispatched (B.10/Media.url for XHS, MediaDownloadError import, zh-examples sidecar, eval stub options, entry-point discovery, offline tests).
 
 ## Iteration 3 did (cut short by usage limit)
 - Plan 03 Tasks 11 (sieve CLI; DoD smoke passes in fake mode: exit 0, stage done, replay 27 events) and 12 (DOX closeout) implemented, reviewed, ticked. All 12 tasks ticked; suite 384 passed, 1 xfailed; `bun run check` exit 0 on the branch. Branch pushed at 7ed007c.
