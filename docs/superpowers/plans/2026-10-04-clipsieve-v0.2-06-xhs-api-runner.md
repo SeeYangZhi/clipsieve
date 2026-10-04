@@ -836,7 +836,7 @@ Claude-Session: https://claude.ai/code/session_01XC9nMme23mc4K4ZUvwK5Bu"
   - `api_runner.build_comment_records(note_id: str, data: dict, now_ms: int) -> list[dict]`
   - `api_runner.XhsApiRunner(settings: XhsSettings, cdp_port: int, http: httpx.Client | None = None, *, cookies_provider: Callable[[], str] | None = None, client_factory: Callable[[str], XhsApiClient] | None = None, now_ms: Callable[[], int] = ...)` implementing `RunnerProtocol` (`search(keyword, start_page, workdir) -> RunnerOutput`, `healthcheck() -> AdapterHealth`).
 
-- [ ] **Step 1: Write the synthetic fixtures**
+- [x] **Step 1: Write the synthetic fixtures**
 
 Synthetic data only (ids, tokens and URLs are made up; no real creators). Note `n1` is a video, `n2` is an image note, `n3` is a video whose detail is missing; the search also carries a `rec_query` row.
 
@@ -900,7 +900,7 @@ Synthetic data only (ids, tokens and URLs are made up; no real creators). Note `
 
 Run from the repo root after writing them: `bunx ultracite fix contrib/adapter-xhs-mediacrawler/tests/fixtures/xhs-api` (Biome formats JSON).
 
-- [ ] **Step 2: Write the failing tests**
+- [x] **Step 2: Write the failing tests**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/tests/test_api_runner.py
@@ -1125,12 +1125,12 @@ def test_healthcheck_reports_the_session_or_the_login_problem():
     assert down.ok is False and "9222" in down.message
 ```
 
-- [ ] **Step 3: Run the tests to verify they fail**
+- [x] **Step 3: Run the tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_api_runner.py`
 Expected: `ModuleNotFoundError: No module named 'clipsieve_xhs.api_runner'`
 
-- [ ] **Step 4: Write the records and the runner**
+- [x] **Step 4: Write the records and the runner**
 
 ```python
 # contrib/adapter-xhs-mediacrawler/clipsieve_xhs/api_runner.py
@@ -1361,12 +1361,12 @@ class XhsApiRunner:
             self._client = None  # the next page re-reads cookies from the browser
 ```
 
-- [ ] **Step 5: Run the tests to verify they pass**
+- [x] **Step 5: Run the tests to verify they pass**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error && uv run ruff check . && uv run ruff format --check .`
 Expected: all tests pass (54 before this plan + 3 settings + 5 cookies + 12 client + 15 runner = 89); ruff clean. From the repo root `bun run check` exit 0 (Biome lints the new fixture JSON; ruff covers `contrib/`).
 
-- [ ] **Step 6: Commit**
+- [x] **Step 6: Commit**
 
 ```bash
 git add contrib/adapter-xhs-mediacrawler/clipsieve_xhs/api_runner.py contrib/adapter-xhs-mediacrawler/tests/test_api_runner.py contrib/adapter-xhs-mediacrawler/tests/fixtures/xhs-api
