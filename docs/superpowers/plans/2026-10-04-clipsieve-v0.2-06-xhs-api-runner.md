@@ -1391,7 +1391,7 @@ Claude-Session: https://claude.ai/code/session_01XC9nMme23mc4K4ZUvwK5Bu"
 - Consumes: `XhsApiRunner` (Task 4), `MediaCrawlerRunner`, `XhsSettings.clipsieve_xhs_runner`.
 - Produces: `XhsMediaCrawlerAdapter.__init__` picks the runner from settings when none is injected; `from_settings` unchanged; `healthcheck` unchanged (delegates).
 
-- [ ] **Step 1: Write the failing tests**
+- [x] **Step 1: Write the failing tests**
 
 Append to `tests/test_adapter.py`:
 
@@ -1422,12 +1422,12 @@ def test_from_settings_builds_the_api_runner_by_default(tmp_path):
 
 If the adapter stores the runner under another attribute name than `runner`, read `adapter.py` and use that name in both tests; do not add a second attribute.
 
-- [ ] **Step 2: Run the tests to verify they fail**
+- [x] **Step 2: Run the tests to verify they fail**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error tests/test_adapter.py -k "default_runner or from_settings_builds"`
 Expected: 2 failed (`MediaCrawlerRunner` is built regardless of the setting).
 
-- [ ] **Step 3: Select the runner from settings**
+- [x] **Step 3: Select the runner from settings**
 
 In `clipsieve_xhs/adapter.py`, where `__init__` currently does `runner or MediaCrawlerRunner(self.xhs, cdp_port=...)` (see the line after `self.xhs = xhs_settings or get_xhs_settings()`), replace the runner construction with:
 
@@ -1449,12 +1449,12 @@ and add the method to the class (next to `healthcheck`):
 
 `RunnerProtocol` is already imported from `clipsieve_xhs.runner`; if the adapter's httpx client attribute is named differently from `self.http`, use that name.
 
-- [ ] **Step 4: Run the whole contrib suite and the repo check**
+- [x] **Step 4: Run the whole contrib suite and the repo check**
 
 Run: `cd contrib/adapter-xhs-mediacrawler && uv run pytest -q -W error && uv run ruff check . && uv run ruff format --check . && cd ../.. && bun run check`
 Expected: 91 passed; ruff clean; `bun run check` exit 0.
 
-- [ ] **Step 5: Update the contrib docs**
+- [x] **Step 5: Update the contrib docs**
 
 `contrib/adapter-xhs-mediacrawler/AGENTS.md`: in the contract list replace the bullet that begins "Never vendor MediaCrawler files." with two bullets:
 
@@ -1467,7 +1467,7 @@ Add under Layout: `clipsieve_xhs/errors.py`, `cdp_cookies.py`, `api_client.py`, 
 
 `contrib/adapter-xhs-mediacrawler/README.md`: in Setup, make step 1 (the MediaCrawler clone) conditional: "Only for `CLIPSIEVE_XHS_RUNNER=mediacrawler`"; step 2 (browser with remote debugging, logged in) is required for both runners; add a "How the api runner works" section with the five bullets from the design note's Decision section, and a "Performance" section with the table from the design note marked "measured in Task 6".
 
-- [ ] **Step 6: Root README and the overview addendum**
+- [x] **Step 6: Root README and the overview addendum**
 
 Root `README.md`, Community adapters table: change the "How it works" cell to "Calls the web search API from your own logged-in browser session (video-only search, 20 notes per request), signed with `xhshow`; a MediaCrawler checkout is the optional fallback runner".
 
@@ -1477,7 +1477,7 @@ Root `README.md`, Community adapters table: change the "How it works" cell to "C
 19. **XHS api runner (plan 06).** `CLIPSIEVE_XHS_RUNNER=api` (default) collects through `https://edith.xiaohongshu.com` with cookies read from the user's browser over CDP and `xhshow` signatures; `note_type=1` when `CLIPSIEVE_XHS_NOTE_KINDS=video`; one `/feed` detail request per note for the stream URL; comments opt-in. Records keep the MediaCrawler jsonl keys, so `mapping.py`, raw-payload stripping (C.17), the media-URL cache (C.15) and `fetch_media` are unchanged. `mediacrawler` keeps C.2's invocation as the fallback.
 ```
 
-- [ ] **Step 7: Lint the docs and commit**
+- [x] **Step 7: Lint the docs and commit**
 
 Run from the repo root: `bunx ultracite check contrib/adapter-xhs-mediacrawler/AGENTS.md contrib/adapter-xhs-mediacrawler/README.md README.md docs/superpowers/plans/2026-10-03-clipsieve-v0.1-00-overview.md`
 Expected: exit 0.
