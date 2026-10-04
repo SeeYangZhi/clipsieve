@@ -33,17 +33,56 @@ FEED_URI = "/api/sns/web/v1/feed"
 COMMENTS_URI = "/api/sns/web/v2/comment/page"
 NOTE_TYPE = {"all": 0, "video": 1, "image": 2}
 LOGIN_CODES = {-100, -101, -104}
+# -104 "您当前登录的账号没有权限访问": the platform's account-level risk control, seen on 2026-10-04
+# for every request shape (including a byte-for-byte MediaCrawler replica) after a heavy crawl
+# through the same session; it is not a signing defect and lifts by itself after a while.
+NO_PERMISSION_CODE = -104
 RATE_LIMIT_CODES = {300011, 300012, 300013}
 VERIFY_STATUSES = {461, 471}
 MAX_ATTEMPTS = 3
-SIGNED_HEADER_NAMES = ("x-s", "x-t", "x-s-common", "x-b3-traceid", "x-xray-traceid")
+# Every header xhshow emits for a browser tab's request; anything else it adds is dropped.
+# x-rap-param is the risk-control header the search, feed and comment endpoints require
+# (xhshow README, "x-rap-param"); without it search answers -104 "没有权限访问".
+SIGNED_HEADER_NAMES = (
+    "x-s",
+    "x-t",
+    "x-s-common",
+    "x-b3-traceid",
+    "x-xray-traceid",
+    "x-mns",
+    "xy-direction",
+    "x-rap-param",
+)
+# What a Chromium tab on www.xiaohongshu.com sends with an XHR to edith, besides the signed
+# headers and the cookie. The client hints agree with USER_AGENT.
+BROWSER_HEADERS = {
+    "Accept": "application/json, text/plain, */*",
+    "Accept-Language": "zh-CN,zh;q=0.9",
+    "Cache-Control": "no-cache",
+    "Content-Type": "application/json;charset=UTF-8",
+    "Origin": WEB_ORIGIN,
+    "Pragma": "no-cache",
+    "Priority": "u=1, i",
+    "Referer": WEB_ORIGIN + "/",
+    "Sec-CH-UA": '"Chromium";v="146", "Google Chrome";v="146", "Not.A/Brand";v="99"',
+    "Sec-CH-UA-Mobile": "?0",
+    "Sec-CH-UA-Platform": '"macOS"',
+    "Sec-Fetch-Dest": "empty",
+    "Sec-Fetch-Mode": "cors",
+    "Sec-Fetch-Site": "same-site",
+    "User-Agent": USER_AGENT,
+}
 _B36 = "0123456789abcdefghijklmnopqrstuvwxyz"
 
 
 class Signer(Protocol):
-    def sign_headers_get(self, uri: str, cookies: str, params: dict) -> dict[str, str]: ...
+    def sign_headers_get(
+        self, uri: str, cookies: str, params: dict, x_rap: bool = False
+    ) -> dict[str, str]: ...
 
-    def sign_headers_post(self, uri: str, cookies: str, payload: dict) -> dict[str, str]: ...
+    def sign_headers_post(
+        self, uri: str, cookies: str, payload: dict, x_rap: bool = False
+    ) -> dict[str, str]: ...
 
 
 def _default_signer() -> Signer:
@@ -147,14 +186,7 @@ class XhsApiClient:
         self._last_request_at = time.monotonic()
 
     def _headers(self, signed: dict[str, str]) -> dict[str, str]:
-        base = {
-            "Cookie": self.cookies,
-            "Origin": WEB_ORIGIN,
-            "Referer": WEB_ORIGIN + "/",
-            "User-Agent": USER_AGENT,
-            "Accept": "application/json, text/plain, */*",
-            "Content-Type": "application/json;charset=UTF-8",
-        }
+        base = {"Cookie": self.cookies, **BROWSER_HEADERS}
         base.update({k: v for k, v in signed.items() if k in SIGNED_HEADER_NAMES and v})
         return base
 
@@ -163,7 +195,7 @@ class XhsApiClient:
     ) -> httpx.Response:
         if method == "GET":
             signed = self.signer.sign_headers_get(
-                uri=uri, cookies=self.cookies, params=params or {}
+                uri=uri, cookies=self.cookies, params=params or {}, x_rap=True
             )
             # Build the query by hand so the wire string equals the signed string: xhshow quotes
             # each value with safe="," (httpx would send %2C), keeps dict order and `k=` for "".
@@ -172,7 +204,9 @@ class XhsApiClient:
                 headers=self._headers(signed),
                 timeout=15.0,
             )
-        signed = self.signer.sign_headers_post(uri=uri, cookies=self.cookies, payload=payload or {})
+        signed = self.signer.sign_headers_post(
+            uri=uri, cookies=self.cookies, payload=payload or {}, x_rap=True
+        )
         # The signer saw `payload`; send exactly its compact, non-ASCII-escaped serialisation.
         body = json.dumps(payload or {}, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
         return self.http.post(
@@ -201,6 +235,13 @@ class XhsApiClient:
                 return body.get("data") or {}
             code = int(body.get("code") or 0)
             msg = str(body.get("msg") or body.get("message") or "")
+            if code == NO_PERMISSION_CODE:
+                raise XhsLoginRequired(
+                    f"{uri}: account has no permission ({code} {msg}); xiaohongshu's risk "
+                    "control is holding this account back for a while: check that search "
+                    "works in the browser tab, then retry later",
+                    code=code,
+                )
             if code in LOGIN_CODES:
                 raise XhsLoginRequired(f"{uri}: login expired ({code} {msg})", code=code)
             if code in RATE_LIMIT_CODES:

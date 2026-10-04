@@ -21,13 +21,16 @@ COOKIES = "a1=A1; web_session=WS"
 class FakeSigner:
     def __init__(self):
         self.calls = []
+        self.x_rap = []
 
-    def sign_headers_get(self, uri, cookies, params):
+    def sign_headers_get(self, uri, cookies, params, x_rap=False):
         self.calls.append(("GET", uri, cookies, params))
+        self.x_rap.append(x_rap)
         return {"x-s": "XS", "x-t": "1", "x-s-common": "XSC", "x-b3-traceid": "T"}
 
-    def sign_headers_post(self, uri, cookies, payload):
+    def sign_headers_post(self, uri, cookies, payload, x_rap=False):
         self.calls.append(("POST", uri, cookies, payload))
+        self.x_rap.append(x_rap)
         return {"x-s": "XS", "x-t": "1", "x-s-common": "XSC", "x-b3-traceid": "T"}
 
 
@@ -75,6 +78,45 @@ def test_search_posts_the_platform_body_and_signed_headers():
     assert req.headers["origin"] == "https://www.xiaohongshu.com"
     assert req.headers["referer"] == "https://www.xiaohongshu.com/"
     assert req.headers["content-type"].startswith("application/json")
+
+
+@respx.mock
+def test_requests_carry_the_browser_header_set_and_every_signed_header():
+    """A tab sends x-mns, xy-direction and the sec-* fetch metadata with every request, and
+    xhshow documents x-rap-param (x_rap=True) as required by the search and feed endpoints.
+    (Task 6 live check: none of this changed the -104 the risk-controlled session returned; it
+    is kept because it is what the browser sends.)"""
+    route = respx.post(API_HOST + SEARCH_URI).mock(return_value=ok({"items": []}))
+    client, signer, _ = make_client()
+    seen = {}
+
+    def sign_post(uri, cookies, payload, x_rap=False):
+        seen["x_rap"] = x_rap
+        return {
+            "x-s": "XS",
+            "x-t": "1",
+            "x-s-common": "XSC",
+            "x-b3-traceid": "T",
+            "x-xray-traceid": "X",
+            "x-mns": "unload",
+            "xy-direction": "27",
+            "x-rap-param": "RAP",
+            "x-other": "dropped",
+        }
+
+    signer.sign_headers_post = sign_post
+    client.search_notes("k", 1)
+    assert seen == {"x_rap": True}
+    h = route.calls.last.request.headers
+    for name in ("x-s", "x-t", "x-s-common", "x-b3-traceid", "x-xray-traceid"):
+        assert h[name]
+    assert h["x-mns"] == "unload" and h["xy-direction"] == "27" and h["x-rap-param"] == "RAP"
+    assert "x-other" not in h
+    assert h["sec-fetch-site"] == "same-site" and h["sec-fetch-mode"] == "cors"
+    assert h["sec-fetch-dest"] == "empty" and h["sec-ch-ua-mobile"] == "?0"
+    assert h["sec-ch-ua-platform"] == '"macOS"' and "146" in h["sec-ch-ua"]
+    assert h["accept-language"].startswith("zh-CN") and "146" in h["user-agent"]
+    assert h["cookie"] == COOKIES
 
 
 @respx.mock
@@ -145,12 +187,28 @@ def test_requests_are_paced_by_the_interval():
 @respx.mock
 def test_login_expired_code_raises_login_required_without_retry():
     route = respx.post(API_HOST + SEARCH_URI).mock(
-        return_value=httpx.Response(200, json={"code": -104, "success": False, "msg": "登录已过期"})
+        return_value=httpx.Response(200, json={"code": -100, "success": False, "msg": "登录已过期"})
     )
     client, _, _ = make_client()
-    with pytest.raises(XhsLoginRequired, match="-104"):
+    with pytest.raises(XhsLoginRequired, match="login expired .-100"):
         client.search_notes("k", 1)
     assert route.call_count == 1
+
+
+@respx.mock
+def test_no_permission_code_names_the_risk_control_without_retry():
+    """-104 is the platform holding the account back (seen live, Task 6), not an expired login:
+    the message must tell the user to check the browser and retry later. No retry, no backoff."""
+    route = respx.post(API_HOST + SEARCH_URI).mock(
+        return_value=httpx.Response(
+            200, json={"code": -104, "success": False, "msg": "您当前登录的账号没有权限访问"}
+        )
+    )
+    client, _, sleeps = make_client()
+    with pytest.raises(XhsLoginRequired, match="no permission .-104 .*retry later") as e:
+        client.search_notes("k", 1)
+    assert e.value.code == -104
+    assert route.call_count == 1 and sleeps == []
 
 
 @respx.mock
@@ -219,5 +277,7 @@ def test_real_signer_produces_the_required_headers():
     """xhshow is pure Python; one offline call proves the dependency and the key names."""
     from xhshow import Xhshow
 
-    headers = Xhshow().sign_headers_post(uri=SEARCH_URI, cookies=COOKIES, payload={"keyword": "k"})
-    assert {"x-s", "x-t", "x-s-common"} <= set(headers)
+    headers = Xhshow().sign_headers_post(
+        uri=SEARCH_URI, cookies=COOKIES, payload={"keyword": "k"}, x_rap=True
+    )
+    assert {"x-s", "x-t", "x-s-common", "x-rap-param"} <= set(headers)

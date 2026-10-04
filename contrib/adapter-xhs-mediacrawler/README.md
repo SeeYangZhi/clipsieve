@@ -44,7 +44,7 @@ clipsieve itself is Apache-2.0, but **this adapter does not change MediaCrawler'
    cd backend && uv pip install -e ../contrib/adapter-xhs-mediacrawler
    ```
 
-   `GET /api/adapters` then lists `xiaohongshu` with its health. If health is false, the message says which of Chrome, the checkout or the pinned commit is wrong.
+   `GET /api/adapters` then lists `xiaohongshu` with its health. If health is false, the message says what is wrong: with the `api` runner, the browser on the CDP port or its xiaohongshu.com login; with `mediacrawler`, Chrome, the checkout or the pinned commit.
 
 ## How the api runner works
 
@@ -53,10 +53,12 @@ clipsieve itself is Apache-2.0, but **this adapter does not change MediaCrawler'
 - Search asks for `note_type=1` when `CLIPSIEVE_XHS_NOTE_KINDS=video` (server-side filter) and `CLIPSIEVE_XHS_PAGE_SIZE` notes (default 20). One search call is one page, so paging, dedupe, `limit` and `CLIPSIEVE_XHS_MAX_PAGES` behave as with the other runner. Each note needs one detail request for the video stream URL; comments are opt-in (`CLIPSIEVE_XHS_COMMENTS=1`) because they cost one more request per note.
 - Records use the keys MediaCrawler writes, so the mapping, the raw-payload privacy stripping, the media-URL cache and media download are shared by both runners. Creator ids are hashed before they leave the runner; nicknames are not emitted.
 - Requests are serial with a jittered interval (`CLIPSIEVE_XHS_REQUEST_INTERVAL_S`, default 1.0 s) and a short backoff on the platform's rate-limit codes. Login-expired and verification responses stop the page with a recoverable error instead of retrying; open xiaohongshu.com in that browser, resolve the check, and run again.
+- Every request carries the headers a browser tab sends (`Origin`, `Referer`, the browser's `User-Agent`, client hints, `Sec-Fetch-*`) and every header xhshow signs, including the `x-rap-param` risk-control header the search and feed endpoints require.
+- `code -104 您当前登录的账号没有权限访问` ("this account has no permission") is xiaohongshu's account-level risk control, not a signing problem: it answers every request shape, typically after a heavy crawl through the same session, and lifts by itself after a while. The page stops with a recoverable error that says so; check that search works in the browser tab, then run again later. Comments (`CLIPSIEVE_XHS_COMMENTS=1`) and the MediaCrawler runner (which always fetches comments) raise the request count per note and with it the chance of tripping it.
 
 ## Performance
 
-Expected, measured in Task 6:
+Expected (design note). Not yet measured: the live probe on 2026-10-04 (`scripts/probe_api_runner.py`) reached the search endpoint through the browser session, but the session was under `-104` risk control for every request shape, including a byte-for-byte replica of the MediaCrawler runner's request that had collected 20 notes through the same session 95 minutes earlier. Re-run the probe once the browser tab can search again and replace this table with the measured notes per page, seconds per page and videos per minute. The `1.0` s default interval is unchanged and still unvalidated.
 
 | | MediaCrawler runner | API runner |
 |---|---|---|
@@ -65,9 +67,11 @@ Expected, measured in Task 6:
 | 50 videos collected | 25 to 50 min | 2 to 3 min |
 | Comments | always | opt-in |
 
+To measure, from this directory with Brave or Chrome on the CDP port and logged in: `uv run python scripts/probe_api_runner.py "新加坡搬到上海" 1`, then with a second keyword and `3` pages. The script prints counts and timings only and writes nothing.
+
 ## What it collects
 
-Per note: title, caption (`desc`), hashtags (`tag_list`), likes, saves, comments count, shares, post time, image URLs or video URL, up to 50 top-level comments sorted by likes, and the untouched MediaCrawler record as `raw_ref`. `creator_hash` is clipsieve's salted hash of MediaCrawler's already-anonymised `creator_hash`. Nicknames are kept only as `creator_display`.
+Per note: title, caption (`desc`), hashtags (`tag_list`), likes, saves, comments count, shares, post time, image URLs or video URL, up to 50 top-level comments sorted by likes (api runner: only with `CLIPSIEVE_XHS_COMMENTS=1`), and the runner's record, in MediaCrawler's jsonl shape, as `raw_ref`. `creator_hash` is clipsieve's salted hash of the runner's creator hash (api runner: a SHA-256 of the user id; MediaCrawler: its already-anonymised `creator_hash`). The api runner emits no nicknames; MediaCrawler's are kept only as `creator_display`.
 
 ## Video-only runs
 
@@ -75,6 +79,6 @@ Set `CLIPSIEVE_XHS_NOTE_KINDS=video` to keep only video notes. The api runner as
 
 ## Limits
 
-- Search only (`--type search`). Creator and detail modes are out of scope.
-- MediaCrawler decides how many notes a search page yields; the adapter stops once `limit` posts are mapped and discards the rest.
+- Search only (api runner: the search endpoint; MediaCrawler: `--type search`). Creator and detail modes are out of scope.
+- The platform decides how many notes a search page yields (at most `CLIPSIEVE_XHS_PAGE_SIZE` with the api runner; MediaCrawler's own paging with the fallback); the adapter stops once `limit` posts are mapped and discards the rest.
 - Media download is done by the adapter with plain HTTP GETs on the URLs in the record. Some CDN URLs expire; a failed download is reported as a recoverable error for that post.
