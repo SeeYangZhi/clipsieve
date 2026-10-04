@@ -82,6 +82,7 @@ export const zh: Record<string, string> = {
   "plan.approved": "该计划已批准，任务正在进行中。",
   "plan.approving": "正在启动…",
   "plan.audience": "受众",
+  "plan.failed": "规划失败",
   "plan.open_run": "查看任务",
   "plan.pending": "Claude 正在把你的简述整理成计划…",
   "plan.persona": "人设",
@@ -98,6 +99,7 @@ export const zh: Record<string, string> = {
   "plan.query.text": "关键词",
   "plan.save": "保存计划",
   "plan.saved": "计划已保存",
+  "plan.start_over": "重新开始",
 
   "plan.title": "审阅计划",
   "plan.topic": "主题",
@@ -154,8 +156,10 @@ export const zh: Record<string, string> = {
   "review.open": "打开列表",
 
   "review.title": "难以判断",
+  "run.back_to_run": "返回任务",
   "run.connected": "实时",
   "run.disconnected": "重新连接中…",
+  "run.failed": "任务失败",
   "run.pause": "暂停",
   "run.resume": "继续",
   "run.stage.collecting": "采集中",

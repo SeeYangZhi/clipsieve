@@ -117,6 +117,68 @@ describe("PlanPage", () => {
     expect(mocks.getRun).toHaveBeenCalledWith("run 1");
   });
 
+  it("replaces the spinner with the planner's error and a way to start over", async () => {
+    mocks.getRun.mockResolvedValue({ plan: null, run });
+    mocks.events = [
+      {
+        payload: {},
+        run_id: "run 1",
+        seq: 1,
+        stage: "planning",
+        ts: "2026-10-03T10:00:00Z",
+        type: "run_created",
+      },
+      {
+        payload: {
+          message: "claude: not found",
+          recoverable: true,
+          where: "planner",
+        },
+        run_id: "run 1",
+        seq: 2,
+        stage: "planning",
+        ts: "2026-10-03T10:00:01Z",
+        type: "error",
+      },
+    ] satisfies RunEvent[];
+    render(<PlanPage />);
+    const alert = await screen.findByRole("alert");
+    expect(alert).toHaveTextContent("Planning failed");
+    expect(alert).toHaveTextContent("claude: not found");
+    expect(
+      screen.queryByText("Claude is turning your brief into a plan…")
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Start over" })).toHaveAttribute(
+      "href",
+      "/"
+    );
+    act(() => setLocale("zh"));
+    expect(screen.getByRole("alert")).toHaveTextContent("规划失败");
+  });
+
+  it("keeps showing a stored plan even after a planner error in the log", async () => {
+    mocks.getRun.mockResolvedValue({ plan, run });
+    mocks.events = [
+      {
+        payload: {
+          message: "claude: not found",
+          recoverable: true,
+          where: "planner",
+        },
+        run_id: "run 1",
+        seq: 2,
+        stage: "planning",
+        ts: "2026-10-03T10:00:01Z",
+        type: "error",
+      },
+    ] satisfies RunEvent[];
+    render(<PlanPage />);
+    expect(
+      await screen.findByDisplayValue("新加坡人 上海 生活 vlog")
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
   it("shows the stored plan, not the planner's original from the log", async () => {
     const stored = deferred<{ plan: Plan; run: Run }>();
     mocks.getRun.mockReturnValue(stored.promise);

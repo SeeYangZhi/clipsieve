@@ -4,7 +4,9 @@ import fixtureJson from "./__fixtures__/run-events.json";
 import {
   answersPerSecond,
   type DashboardState,
+  failureMessage,
   initialState,
+  plannerError,
   readyPlan,
   reduceAll,
   reduceEvent,
@@ -291,5 +293,58 @@ describe("readyPlan", () => {
     expect(readyPlan([first, later])?.rubric_pack).toBe("other");
     const empty = makeEvent(41, "plan_ready", "planning", { plan: null });
     expect(readyPlan([first, empty])?.rubric_pack).toBe("creator-hooks-v1");
+  });
+});
+
+describe("plannerError", () => {
+  it("is the message of the latest planner error, else null", () => {
+    expect(plannerError([])).toBeNull();
+    expect(plannerError(fixtureEvents)).toBeNull();
+    const first = makeEvent(2, "error", "planning", {
+      message: "claude: not found",
+      recoverable: true,
+      where: "planner",
+    });
+    const later = makeEvent(3, "error", "planning", {
+      message: "planner.parse: bad json",
+      recoverable: true,
+      where: "planner.parse",
+    });
+    const judge = makeEvent(4, "error", "pass_one", {
+      message: "jev timeout",
+      post_id: "local:fx-001",
+      where: "judge.pass_one",
+    });
+    expect(plannerError([first])).toBe("claude: not found");
+    expect(plannerError([first, later, judge])).toBe("planner.parse: bad json");
+    expect(plannerError([judge])).toBeNull();
+  });
+});
+
+describe("failureMessage", () => {
+  it("prefers the last unrecoverable error, then the last error, else null", () => {
+    expect(failureMessage([])).toBeNull();
+    const soft = makeEvent(5, "error", "pass_one", {
+      message: "jev timeout",
+      recoverable: true,
+      where: "judge.pass_one",
+    });
+    const hard = makeEvent(6, "error", "explaining", {
+      message: "nothing to explain: no post reached the shortlist",
+      recoverable: false,
+      where: "explain",
+    });
+    const trailing = makeEvent(7, "error", "explaining", {
+      message: "late warning",
+      recoverable: true,
+      where: "explain",
+    });
+    expect(failureMessage([soft])).toBe("jev timeout");
+    expect(failureMessage([soft, hard, trailing])).toBe(
+      "nothing to explain: no post reached the shortlist"
+    );
+    expect(
+      failureMessage([makeEvent(8, "error", "explaining", {})])
+    ).toBeNull();
   });
 });

@@ -1,12 +1,15 @@
 "use client";
 
+import { CircleAlert } from "lucide-react";
+import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 import { PlanEditor } from "@/components/plan/PlanEditor";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { Button } from "@/components/ui/button";
 import { ApiError, api } from "@/lib/api";
-import { readyPlan } from "@/lib/events";
+import { plannerError, readyPlan } from "@/lib/events";
 import { t, useLocale } from "@/lib/i18n";
 import type { Plan } from "@/lib/types";
 import { useRunEvents } from "@/lib/useRunEvents";
@@ -114,6 +117,23 @@ export default function PlanPage() {
   // While planning it is null, and the live log's plan_ready supplies it.
   const plan = current.plan ?? readyPlan(events);
   if (plan === null) {
+    // The planner failed (a recoverable `error` with `where: planner`): say so
+    // instead of waiting for a plan_ready that will not come.
+    const failure = plannerError(events);
+    if (failure !== null) {
+      return (
+        <div className="flex flex-col items-start gap-3">
+          <Alert variant="destructive">
+            <CircleAlert aria-hidden="true" />
+            <AlertTitle>{t("plan.failed", locale)}</AlertTitle>
+            <AlertDescription>{failure}</AlertDescription>
+          </Alert>
+          <Button asChild variant="outline">
+            <Link href="/">{t("plan.start_over", locale)}</Link>
+          </Button>
+        </div>
+      );
+    }
     return (
       <p className="text-muted-foreground text-sm">
         {t("plan.pending", locale)}

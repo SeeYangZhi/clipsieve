@@ -82,20 +82,66 @@ describe("RunPage", () => {
     expect(screen.getByText("Pass two")).toBeInTheDocument();
   });
 
-  it("pauses and resumes through the API", async () => {
-    mocks.getRun.mockResolvedValue({ plan, run });
-    mocks.pauseRun.mockResolvedValue({ ...run, paused: true });
-    mocks.resumeRun.mockResolvedValue({ ...run, paused: false });
+  it("pauses and resumes through the API, showing the intent before the server agrees", async () => {
+    // The real API answers a pause with `paused` still false (the pipeline pauses
+    // cooperatively) and a resume while busy with `paused` still true; the run only
+    // reaches the requested state a little later, which GET /runs/{id} then shows.
+    let server: Run = run;
+    mocks.getRun.mockImplementation(async () => ({ plan, run: server }));
+    mocks.pauseRun.mockImplementation(() => {
+      const before = server;
+      server = { ...server, paused: true };
+      return Promise.resolve(before);
+    });
+    mocks.resumeRun.mockImplementation(() => {
+      const before = server;
+      server = { ...server, paused: false };
+      return Promise.resolve(before);
+    });
     render(<RunPage />);
     await userEvent.click(await screen.findByRole("button", { name: "Pause" }));
     expect(mocks.pauseRun).toHaveBeenCalledWith("run 1");
-    await userEvent.click(
+    expect(
       await screen.findByRole("button", { name: "Resume" })
+    ).toBeInTheDocument();
+    // It re-polls the run until the server reports the requested state.
+    await waitFor(
+      () => expect(mocks.getRun.mock.calls.length).toBeGreaterThan(1),
+      {
+        timeout: 2000,
+      }
     );
+    expect(screen.getByRole("button", { name: "Resume" })).toBeInTheDocument();
+
+    const polls = mocks.getRun.mock.calls.length;
+    await userEvent.click(screen.getByRole("button", { name: "Resume" }));
     expect(mocks.resumeRun).toHaveBeenCalledWith("run 1");
     expect(
       await screen.findByRole("button", { name: "Pause" })
     ).toBeInTheDocument();
+    await waitFor(
+      () => expect(mocks.getRun.mock.calls.length).toBeGreaterThan(polls),
+      { timeout: 2000 }
+    );
+    expect(screen.getByRole("button", { name: "Pause" })).toBeInTheDocument();
+  });
+
+  it("shows the failure message of a failed run", async () => {
+    live(fixtureEvents);
+    mocks.getRun.mockResolvedValue({
+      plan,
+      run: { ...run, error: "explain backend exited 1", stage: "failed" },
+    });
+    mocks.state = {
+      ...(reduceAll(fixtureEvents) as DashboardState),
+      done: true,
+      errors: [],
+      stage: "failed",
+    };
+    render(<RunPage />);
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      "explain backend exited 1"
+    );
   });
 
   it("toasts the API detail when pausing fails", async () => {

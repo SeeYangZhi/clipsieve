@@ -82,6 +82,7 @@ export const en: Record<string, string> = {
   "plan.approved": "This plan is approved and the run is under way.",
   "plan.approving": "Starting…",
   "plan.audience": "Audience",
+  "plan.failed": "Planning failed",
   "plan.open_run": "Open the run",
   "plan.pending": "Claude is turning your brief into a plan…",
   "plan.persona": "Persona",
@@ -98,6 +99,7 @@ export const en: Record<string, string> = {
   "plan.query.text": "Query",
   "plan.save": "Save plan",
   "plan.saved": "Plan saved",
+  "plan.start_over": "Start over",
 
   "plan.title": "Review the plan",
   "plan.topic": "Topic",
@@ -154,8 +156,10 @@ export const en: Record<string, string> = {
   "review.open": "Open list",
 
   "review.title": "Too close to call",
+  "run.back_to_run": "Back to run",
   "run.connected": "live",
   "run.disconnected": "reconnecting…",
+  "run.failed": "Run failed",
   "run.pause": "Pause",
   "run.resume": "Resume",
   "run.stage.collecting": "Collecting",

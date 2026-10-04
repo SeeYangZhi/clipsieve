@@ -33,6 +33,7 @@ export default function ReplayPage() {
         />
       }
       events={events}
+      mode="replay"
       runId={id}
       state={state}
       total={Math.max(

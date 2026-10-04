@@ -3,6 +3,7 @@ import { afterEach, describe, expect, it } from "vitest";
 import { fixtureEvents } from "@/lib/__fixtures__/run-events";
 import { type PostTile, reduceAll } from "@/lib/events";
 import { setLocale } from "@/lib/i18n";
+import type { RunEvent } from "@/lib/types";
 import { Aggregates } from "./Aggregates";
 import { Counters } from "./Counters";
 import { CurrentItem } from "./CurrentItem";
@@ -234,6 +235,7 @@ describe("Dashboard", () => {
         connected={true}
         controls={<button type="button">Pause</button>}
         events={fixtureEvents.filter((e) => e.seq <= 23)}
+        mode="live"
         runId="run 1"
         state={midRun}
       />
@@ -262,6 +264,7 @@ describe("Dashboard", () => {
       <Dashboard
         connected={false}
         events={fixtureEvents}
+        mode="live"
         runId="run 1"
         state={done}
         total={8}
@@ -281,6 +284,7 @@ describe("Dashboard", () => {
       <Dashboard
         connected={false}
         events={[]}
+        mode="live"
         runId="run 1"
         state={{ ...midRun, done: true, stage: "failed" }}
       />
@@ -294,8 +298,108 @@ describe("Dashboard", () => {
 
   it("shows a dropped stream as reconnecting while the run is going", () => {
     render(
-      <Dashboard connected={false} events={[]} runId="run 1" state={midRun} />
+      <Dashboard
+        connected={false}
+        events={[]}
+        mode="live"
+        runId="run 1"
+        state={midRun}
+      />
     );
     expect(screen.getByText("reconnecting…")).toBeInTheDocument();
+  });
+
+  it("never shows the connection badge in replay, and links back to the run", () => {
+    render(
+      <Dashboard
+        connected={false}
+        events={[]}
+        mode="replay"
+        runId="run 1"
+        state={midRun}
+      />
+    );
+    expect(screen.queryByText("reconnecting…")).not.toBeInTheDocument();
+    expect(screen.queryByText("live")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("link", { name: "Replay" })
+    ).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Back to run" })).toHaveAttribute(
+      "href",
+      "/runs/run%201"
+    );
+  });
+
+  it("explains a failed run with the pipeline's last unrecoverable error", () => {
+    // What the runner's `_fail` writes: the error first, then the failed stage.
+    const failedEvents: RunEvent[] = [
+      ...fixtureEvents.filter((e) => e.seq <= 23),
+      {
+        payload: {
+          message: "nothing to explain: no post reached the shortlist",
+          recoverable: false,
+          where: "explain",
+        },
+        run_id: "FIXTURE",
+        seq: 24,
+        stage: "explaining",
+        ts: "2026-10-03T10:00:30Z",
+        type: "error",
+      },
+      {
+        payload: { from: "explaining", to: "failed" },
+        run_id: "FIXTURE",
+        seq: 25,
+        stage: "failed",
+        ts: "2026-10-03T10:00:31Z",
+        type: "stage_changed",
+      },
+    ];
+    const failed = reduceAll(failedEvents);
+    render(
+      <Dashboard
+        connected={false}
+        events={failedEvents}
+        mode="live"
+        runId="run 1"
+        state={failed}
+      />
+    );
+    const alert = screen.getByRole("alert");
+    expect(alert).toHaveTextContent("Run failed");
+    expect(alert).toHaveTextContent(
+      "nothing to explain: no post reached the shortlist"
+    );
+    act(() => setLocale("zh"));
+    expect(screen.getByRole("alert")).toHaveTextContent("任务失败");
+  });
+
+  it("falls back to the stored run's error when the log carries none", () => {
+    render(
+      <Dashboard
+        connected={false}
+        error="explain backend exited 1"
+        events={[]}
+        mode="live"
+        runId="run 1"
+        state={{ ...midRun, done: true, stage: "failed" }}
+      />
+    );
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "explain backend exited 1"
+    );
+  });
+
+  it("shows no failure alert while the run is going", () => {
+    render(
+      <Dashboard
+        connected={true}
+        events={[]}
+        mode="live"
+        runId="run 1"
+        state={midRun}
+      />
+    );
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

@@ -14,8 +14,13 @@ import { Dashboard } from "@/components/dashboard/Dashboard";
 import { Button } from "@/components/ui/button";
 import { ApiError, api } from "@/lib/api";
 import { t, useLocale } from "@/lib/i18n";
+import { pollUntil } from "@/lib/poll";
 import type { Plan, Run } from "@/lib/types";
 import { useRunEvents } from "@/lib/useRunEvents";
+
+/** After a pause/resume is accepted, GET /runs/{id} this often, for this long. */
+const PAUSE_POLL_MS = 500;
+const PAUSE_POLL_MAX_MS = 10_000;
 
 /** GET /runs/{id}, tagged with the id it was for. */
 interface Loaded {
@@ -35,6 +40,8 @@ export default function RunPage() {
   const [busy, setBusy] = useState(false);
   const { state, events, connected } = useRunEvents(id, { mode: "live" });
   const mounted = useRef<boolean>(false);
+  /** The pause/resume re-poll in flight; a new toggle cancels the previous one. */
+  const settle = useRef<{ cancelled: boolean }>({ cancelled: false });
 
   useEffect(() => {
     mounted.current = true;
@@ -78,17 +85,38 @@ export default function RunPage() {
   const planned = sum(current?.plan?.quantities ?? run?.quantities);
   const total = Math.max(planned, state.counters.collected);
 
+  const setRun = useCallback((runId: string, next: Run) => {
+    if (mounted.current) {
+      setLoaded((l) => (l?.id === runId ? { ...l, run: next } : l));
+    }
+  }, []);
+
   const toggle = useCallback(async () => {
     if (run === null) {
       return;
     }
+    const want = !run.paused;
+    settle.current.cancelled = true;
+    const poll = { cancelled: false };
+    settle.current = poll;
     setBusy(true);
     try {
-      const next = run.paused
-        ? await api.resumeRun(id)
-        : await api.pauseRun(id);
+      // The API answers before the pipeline reaches its pause point (a pause
+      // returns `paused: false`; a resume while busy still `paused: true`), so
+      // a 2xx is the intent accepted: show it, then re-poll until the server
+      // agrees, falling back to whatever it last said.
+      const accepted = want ? await api.pauseRun(id) : await api.resumeRun(id);
+      setRun(id, { ...accepted, paused: want });
       if (mounted.current) {
-        setLoaded((l) => (l?.id === id ? { ...l, run: next } : l));
+        setBusy(false);
+      }
+      const settled = await pollUntil(
+        async () => (await api.getRun(id)).run,
+        (r) => r.paused === want,
+        { cancel: poll, intervalMs: PAUSE_POLL_MS, maxMs: PAUSE_POLL_MAX_MS }
+      );
+      if (settled !== null && !poll.cancelled) {
+        setRun(id, settled);
       }
     } catch (e) {
       showError(e);
@@ -97,7 +125,7 @@ export default function RunPage() {
         setBusy(false);
       }
     }
-  }, [id, run, showError]);
+  }, [id, run, setRun, showError]);
 
   const controls =
     run && !state.done ? (
@@ -115,7 +143,9 @@ export default function RunPage() {
     <Dashboard
       connected={connected}
       controls={controls}
+      error={run?.error}
       events={events}
+      mode="live"
       runId={id}
       state={state}
       total={total}

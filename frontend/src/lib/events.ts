@@ -265,6 +265,37 @@ export function readyPlan(events: RunEvent[]): Plan | null {
   return ready ? (ready.payload.plan as Plan) : null;
 }
 
+function errorMessage(e: RunEvent | undefined): string | null {
+  const m = e?.payload.message;
+  return typeof m === "string" && m !== "" ? m : null;
+}
+
+/** The message of the latest `error` whose `where` starts with `planner`, or null. */
+export function plannerError(events: RunEvent[]): string | null {
+  const e = events.findLast(
+    (ev) =>
+      ev.type === "error" &&
+      typeof ev.payload.where === "string" &&
+      ev.payload.where.startsWith("planner")
+  );
+  return errorMessage(e);
+}
+
+/**
+ * Why a run failed, from its `error` events: the last one marked
+ * `recoverable: false` (the runner's `_fail` writes that right before the
+ * failed stage), else the last error with a message, else null.
+ */
+export function failureMessage(errors: RunEvent[]): string | null {
+  const fatal = errors.findLast(
+    (e) => e.payload.recoverable === false && errorMessage(e) !== null
+  );
+  return (
+    errorMessage(fatal) ??
+    errorMessage(errors.findLast((e) => errorMessage(e) !== null))
+  );
+}
+
 /** Judge answers per second over the `windowMs` before the last event's ts. */
 export function answersPerSecond(events: RunEvent[], windowMs = 5000): number {
   const last = events.at(-1);

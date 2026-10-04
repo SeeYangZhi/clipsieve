@@ -36,7 +36,9 @@ export function PostDialog({
           showCloseButton={false}
         >
           <DialogHeader>
-            <DialogTitle>{view.post.text.title || view.post.id}</DialogTitle>
+            <DialogTitle>
+              {view.post.text.title || view.post.text.caption || view.post.id}
+            </DialogTitle>
             <DialogDescription>
               {view.post.id} · {t(`post.kind.${view.post.kind}`, locale)}
             </DialogDescription>
