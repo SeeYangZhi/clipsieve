@@ -4,6 +4,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import httpx
+import pytest
 
 from clipsieve.adapters.base import AdapterHealth
 from clipsieve_xhs.api_runner import (
@@ -194,29 +195,72 @@ def counting_provider(cookies="a1=A; web_session=W"):
     return provider, calls
 
 
-def test_login_expired_mid_page_returns_partial_and_stops(tmp_path):
+def assert_halted_run(runner: XhsApiRunner, client: FakeClient, tmp_path, marker: str) -> None:
+    """Shared by the login-expired and rate-limited cases: page 1 keeps what it got and is
+    fatal; every later page (a second query's page 1 included) is refused without a request;
+    `healthcheck` reports the halt once and then resets it."""
+    out = runner.search("k", 1, tmp_path)
+    assert [n["note_id"] for n in out.notes] == [N1]
+    assert out.fatal is True and out.returncode == 1
+    assert any(marker in e for e in out.errors)
+    n_calls = len(client.calls)
+    out2 = runner.search("k", 2, tmp_path)
+    out3 = runner.search("another query", 1, tmp_path)
+    for refused in (out2, out3):
+        assert refused.fatal is True and refused.returncode == 1 and refused.notes == []
+        assert len(refused.errors) == 1 and refused.errors[0].startswith("halted: ")
+        assert marker in refused.errors[0]
+    assert len(client.calls) == n_calls  # no search, detail or comment request was made
+    health = runner.healthcheck()
+    assert health.ok is False and "halted" in health.message and marker in health.message
+    assert "new run" in health.message
+    assert runner.healthcheck().ok is True  # the halt is cleared: a new run gets a fresh chance
+
+
+def test_login_expired_mid_page_halts_the_run_until_the_next_healthcheck(tmp_path):
     client = FakeClient(fail={N3: XhsLoginRequired("/feed: login expired (-104)", code=-104)})
     provider, calls = counting_provider()
     runner = make_runner(client, cookies=provider, clipsieve_xhs_note_kinds="video")
-    out = runner.search("k", 1, tmp_path)
-    assert [n["note_id"] for n in out.notes] == [N1]
-    assert out.returncode == 1 and any("login expired" in e for e in out.errors)
-    assert calls["n"] == 1
-    # the next page must not reuse the dead session: the client is rebuilt from fresh cookies
-    out2 = runner.search("k", 2, tmp_path)
-    assert out2.returncode == 0 and out2.notes == []
+    assert_halted_run(runner, client, tmp_path, "login expired")
+    # cookies were read once for page 1 and once for the second (ok) healthcheck; never while
+    # halted
     assert calls["n"] == 2
 
 
-def test_rate_limit_keeps_the_client_across_pages(tmp_path):
+def test_rate_limit_mid_page_halts_the_run_until_the_next_healthcheck(tmp_path):
     client = FakeClient(
         fail={N3: XhsRateLimited("/feed: rate limited after 3 attempts (300012)", code=300012)}
     )
     provider, calls = counting_provider()
     runner = make_runner(client, cookies=provider, clipsieve_xhs_note_kinds="video")
-    assert runner.search("k", 1, tmp_path).returncode == 1
-    assert runner.search("k", 2, tmp_path).returncode == 0
-    assert calls["n"] == 1  # throttled, not logged out: the same session is reused
+    assert_halted_run(runner, client, tmp_path, "300012")
+    assert calls["n"] == 2
+
+
+def test_login_expired_on_the_search_request_halts_too(tmp_path):
+    client = FakeClient(
+        fail={"search": XhsLoginRequired("/search: login expired (-100)", code=-100)}
+    )
+    runner = make_runner(client)
+    out = runner.search("k", 1, tmp_path)
+    assert out.notes == [] and out.fatal is True and out.returncode == 1
+    n_calls = len(client.calls)
+    assert runner.search("k", 2, tmp_path).fatal is True
+    assert len(client.calls) == n_calls
+    assert runner.healthcheck().ok is False
+
+
+def test_plain_api_errors_do_not_halt(tmp_path):
+    client = FakeClient(fail={N3: XhsApiError("/feed: 500 boom", code=500)})
+    runner = make_runner(client, clipsieve_xhs_note_kinds="video")
+    out = runner.search("k", 1, tmp_path)
+    assert out.fatal is False and out.returncode == 0
+    assert runner.search("k", 2, tmp_path).fatal is False
+    assert runner.healthcheck().ok is True
+
+
+def test_runner_output_fatal_defaults_to_false():
+    assert RunnerOutput(notes=[], comments=[]).fatal is False
 
 
 def test_missing_cookies_are_a_page_error(tmp_path):
@@ -258,3 +302,40 @@ def test_healthcheck_reports_the_session_or_the_login_problem():
 
     down = make_runner(FakeClient(), cookies=no_browser).healthcheck()
     assert down.ok is False and "9222" in down.message
+
+
+# -- dedicated client (fix 3) ---------------------------------------------------------
+
+
+def test_default_http_client_does_not_follow_redirects():
+    """A redirect from edith would be a challenge or login page: never follow it with the
+    signed headers and the cookie. The media-download client (which follows) is not shared."""
+    runner = XhsApiRunner(settings(), cdp_port=9222)
+    assert runner.http.follow_redirects is False
+
+
+# -- search_only (fix 4) ---------------------------------------------------------------
+
+
+def test_search_only_makes_one_search_request_and_no_details():
+    client = FakeClient()
+    runner = make_runner(client, clipsieve_xhs_note_kinds="video")
+    assert runner.search_only("k") == {"items": 4, "has_more": True}
+    assert client.calls == [("search", "k", 1, "video", 20)]
+    assert runner.search_only("k", page=2) == {"items": 0, "has_more": False}
+    assert len(client.calls) == 2 and runner.healthcheck().ok is True
+
+
+def test_search_only_halts_the_runner_on_login_or_rate_limit(tmp_path):
+    client = FakeClient(fail={"search": XhsLoginRequired("/search: no permission (-104)")})
+    runner = make_runner(client)
+    with pytest.raises(XhsLoginRequired, match="-104"):
+        runner.search_only("k")
+    n_calls = len(client.calls)
+    with pytest.raises(XhsApiError, match="halted"):
+        runner.search_only("k")  # refused without a request
+    assert runner.search("k", 1, tmp_path).fatal is True
+    assert len(client.calls) == n_calls
+    health = runner.healthcheck()
+    assert health.ok is False and "halted" in health.message
+    assert runner.healthcheck().ok is True

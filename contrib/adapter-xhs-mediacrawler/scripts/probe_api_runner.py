@@ -3,7 +3,10 @@
 
 Run from contrib/adapter-xhs-mediacrawler:
     uv run python scripts/probe_api_runner.py "新加坡搬到上海" [pages]
-Prints counts and timing only; writes nothing. Not a test; needs Brave on the CDP port, logged in.
+    uv run python scripts/probe_api_runner.py "新加坡搬到上海" --search-only
+`--search-only` sends exactly one search request and no detail requests: the smallest safe way
+to find out whether a session that was under risk control (-104) can search again. Prints counts
+and timing only; writes nothing. Not a test; needs Brave on the CDP port, logged in.
 """
 
 from __future__ import annotations
@@ -16,6 +19,7 @@ from pathlib import Path
 
 from clipsieve.config import get_settings
 from clipsieve_xhs.api_runner import XhsApiRunner
+from clipsieve_xhs.errors import XhsApiError
 from clipsieve_xhs.mapping import map_note
 from clipsieve_xhs.settings import get_xhs_settings
 
@@ -36,8 +40,10 @@ def describe_shape(note: dict) -> str:
 
 
 def main() -> int:
-    keyword = sys.argv[1] if len(sys.argv) > 1 else "新加坡搬到上海"
-    pages = int(sys.argv[2]) if len(sys.argv) > 2 else 1
+    search_only = "--search-only" in sys.argv
+    args = [a for a in sys.argv[1:] if a != "--search-only"]
+    keyword = args[0] if args else "新加坡搬到上海"
+    pages = int(args[1]) if len(args) > 1 else 1
     core = get_settings()
     xhs = get_xhs_settings().model_copy(update={"clipsieve_xhs_note_kinds": "video"})
     runner = XhsApiRunner(xhs, cdp_port=core.clipsieve_xhs_chrome_cdp_port)
@@ -45,6 +51,14 @@ def main() -> int:
     sys.stdout.write(f"health: {health.ok} {health.message}\n")
     if not health.ok:
         return 2
+    if search_only:
+        try:
+            counts = runner.search_only(keyword)
+        except XhsApiError as e:
+            sys.stdout.write(f"search-only: error={str(e)[:160]}\n")
+            return 1
+        sys.stdout.write(f"search-only: items={counts['items']} has_more={counts['has_more']}\n")
+        return 0
     workdir = Path(tempfile.mkdtemp(prefix="xhs-api-probe-"))
     total_notes = 0
     shape_done = False
@@ -55,7 +69,8 @@ def main() -> int:
         videos = sum(1 for n in out.notes if n.get("video_url"))
         sys.stdout.write(
             f"page {page}: notes={len(out.notes)} videos={videos} comments={len(out.comments)} "
-            f"errors={len(out.errors)} rc={out.returncode} in {time.monotonic() - t0:.1f}s\n"
+            f"errors={len(out.errors)} rc={out.returncode} fatal={out.fatal} "
+            f"in {time.monotonic() - t0:.1f}s\n"
         )
         for err in out.errors[:3]:
             sys.stdout.write(f"  error: {err[:160]}\n")
@@ -63,7 +78,7 @@ def main() -> int:
             sys.stdout.write(describe_shape(out.notes[0]))
             shape_done = True
         total_notes += len(out.notes)
-        if out.returncode != 0 or not out.notes:
+        if out.fatal or out.returncode != 0 or not out.notes:
             break
     elapsed = time.monotonic() - started
     sys.stdout.write(

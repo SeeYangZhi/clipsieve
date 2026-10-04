@@ -148,7 +148,7 @@ class XhsApiRunner:
     ) -> None:
         self.settings = settings
         self.cdp_port = cdp_port
-        self.http = http or httpx.Client(timeout=15.0)
+        self.http = http or httpx.Client(follow_redirects=False, timeout=15.0)
         self._cookies_provider = cookies_provider or (
             lambda: cookie_header(self.cdp_port, self.http)
         )
@@ -159,11 +159,21 @@ class XhsApiRunner:
         )
         self._now_ms = now_ms
         self._client: XhsApiClient | None = None
+        # Set when the platform told us the session is dead (login/-104/rate limit): every later
+        # `search` for this run is refused without a request; `healthcheck` reports and clears it.
+        self._halted: XhsApiError | None = None
 
     # -- RunnerProtocol -------------------------------------------------------------------
 
     def healthcheck(self) -> AdapterHealth:
         port = self.cdp_port
+        if self._halted is not None:
+            halted, self._halted = self._halted, None  # core healthchecks at run start
+            return AdapterHealth(
+                False,
+                f"api runner halted: {halted}; check that search works in the browser tab, "
+                "then start a new run",
+            )
         try:
             self._cookies_provider()
         except XhsLoginRequired as e:
@@ -184,6 +194,8 @@ class XhsApiRunner:
         notes: list[dict] = []
         comments: list[dict] = []
         errors: list[str] = []
+        if self._halted is not None:
+            return self._halted_output()
         try:
             client = self._get_client()
         except (XhsLoginRequired, httpx.HTTPError) as e:
@@ -192,17 +204,20 @@ class XhsApiRunner:
             )
         kind = self.settings.clipsieve_xhs_note_kinds
         try:
-            data = client.search_notes(
-                keyword, start_page, note_type=kind, page_size=self.settings.clipsieve_xhs_page_size
-            )
+            data = self._search_page(client, keyword, start_page)
         except XhsApiError as e:
-            self._drop_client_if_dead(e)
             return RunnerOutput(
-                notes=[], comments=[], errors=[str(e)], returncode=1, stderr_tail=""
+                notes=[],
+                comments=[],
+                errors=[str(e)],
+                returncode=1,
+                stderr_tail="",
+                fatal=self._halted is not None,
             )
 
         items = [it for it in data.get("items") or [] if _as_dict(it).get("model_type") == "note"]
         returncode = 0
+        fatal = False
         for item in items:
             if kind == "video" and _as_dict(item.get("note_card")).get("type") not in (
                 None,
@@ -218,8 +233,9 @@ class XhsApiRunner:
                 )
             except (XhsLoginRequired, XhsRateLimited) as e:
                 errors.append(f"{note_id}: {e}")
-                self._drop_client_if_dead(e)
+                self._halt(e)
                 returncode = 1
+                fatal = True
                 break  # the session is dead or throttled: stop this page, keep what we have
             except XhsApiError as e:
                 errors.append(f"{note_id}: {e}")
@@ -243,11 +259,29 @@ class XhsApiRunner:
             notes=len(notes),
             comments=len(comments),
             errors=len(errors),
+            fatal=fatal,
             has_more=bool(data.get("has_more")),
         )
         return RunnerOutput(
-            notes=notes, comments=comments, errors=errors, returncode=returncode, stderr_tail=""
+            notes=notes,
+            comments=comments,
+            errors=errors,
+            returncode=returncode,
+            stderr_tail="",
+            fatal=fatal,
         )
+
+    def search_only(self, keyword: str, page: int = 1) -> dict:
+        """Exactly one search request, no detail requests: `{"items": n, "has_more": bool}`.
+
+        For `scripts/probe_api_runner.py --search-only`, the smallest safe re-probe of a session
+        that was under risk control. Login/rate-limit errors halt the runner as `search` does and
+        are re-raised; a halted runner raises without a request.
+        """
+        if self._halted is not None:
+            raise XhsApiError(f"halted: {self._halted}")
+        data = self._search_page(self._get_client(), keyword, page)
+        return {"items": len(data.get("items") or []), "has_more": bool(data.get("has_more"))}
 
     # -- helpers --------------------------------------------------------------------------
 
@@ -256,6 +290,29 @@ class XhsApiRunner:
             self._client = self._client_factory(self._cookies_provider())
         return self._client
 
-    def _drop_client_if_dead(self, error: XhsApiError) -> None:
-        if isinstance(error, XhsLoginRequired):
-            self._client = None  # the next page re-reads cookies from the browser
+    def _search_page(self, client: XhsApiClient, keyword: str, page: int) -> dict:
+        try:
+            return client.search_notes(
+                keyword,
+                page,
+                note_type=self.settings.clipsieve_xhs_note_kinds,
+                page_size=self.settings.clipsieve_xhs_page_size,
+            )
+        except (XhsLoginRequired, XhsRateLimited) as e:
+            self._halt(e)
+            raise
+
+    def _halt(self, error: XhsApiError) -> None:
+        self._halted = error
+        self._client = None  # never reuse the dead session; healthcheck re-reads cookies later
+        log.warning("xhs.api.halted", error=str(error))
+
+    def _halted_output(self) -> RunnerOutput:
+        return RunnerOutput(
+            notes=[],
+            comments=[],
+            errors=[f"halted: {self._halted}"],
+            returncode=1,
+            stderr_tail="",
+            fatal=True,
+        )
