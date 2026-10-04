@@ -1,5 +1,12 @@
 # clipsieve v0.1 — STATUS: DONE
 
+## Post-v0.1 work (2026-10-04)
+
+- **Plan 06 — Xiaohongshu api runner** merged into main at 8f05bda (`docs/superpowers/plans/2026-10-04-clipsieve-v0.2-06-xhs-api-runner.md`, design note `docs/superpowers/specs/2026-10-04-xhs-api-runner-design.md`). Tasks 1-5 complete and reviewed (107 contrib tests, offline). Task 6 steps 1 and 5 done (probe script, docs); **steps 2-4 (live throughput measurement and the dashboard run) are blocked by the platform**: every request on 2026-10-04, including a byte-for-byte MediaCrawler replica through the same session, answered `-104 您当前登录的账号没有权限访问` (account-level risk control per MediaCrawler issues). Next: once search works again in the Brave tab, run from `contrib/adapter-xhs-mediacrawler`: `uv run python scripts/probe_api_runner.py "新加坡搬到上海" 1 --search-only` (1 request), then the plan's 1-page and 3-page probes, then a 30-video dashboard run; fill the README Performance table and tick Task 6.
+- Known follow-ups recorded in the plan 06 ledger (deferred minors): hard-coded `Sec-CH-UA`/platform headers (derive from CDP version info), `x-rap-param` unverified live, the runner fetches every detail on a page the adapter may abandon.
+- Fixes on main since v0.1: yt-dlp[default] + deno for YouTube extraction; dev reload limited to `clipsieve/`; SSE `: connected` comment and 15 s keepalive; post dialog from tiles and the review list with local media and the original link; `Post.url` keeps the Xiaohongshu share token; XHS video-only filter and page cap; MediaCrawler run from its checkout with `--save_data_path`.
+
+
 **DONE at commit 5a9d816** (merge of plan/05-contrib-xhs-evals into main, 2026-10-04T03:40:14Z). All five plans are merged into `main` and all seven definition-of-done checks in KICKOFF.md passed in this iteration on `main` at 5a9d816:
 
 1. Every `- [ ]` in plans 01-05 is ticked (0 unticked boxes in each of the five plan files).
@@ -10,7 +17,7 @@
 6. `git status` clean, `git branch --no-merged main` empty, `main` pushed to origin (5a9d816).
 7. This file.
 
-Updated: 2026-10-04T03:40:14Z by iteration 5 — **DONE**
+Updated: 2026-10-04T09:45:51Z — v0.1 DONE at 5a9d816; post-v0.1 work below
 
 ## Plans
 | Plan | Branch | Tasks done / total | Merged | Last commit |
