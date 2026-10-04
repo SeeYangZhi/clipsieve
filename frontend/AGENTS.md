@@ -43,10 +43,15 @@ Docs live at `frontend/node_modules/next/dist/docs/` (Bun isolated linker: `fron
 - Biome via ultracite; no eslint, no prettier. `biome.jsonc` has `"extends": "//"`, the root config (Biome 2.5 accepts `"//"` only as a string, not inside an array). The ultracite `react` and `next` presets are in the root `biome.jsonc`. Here, `files.includes` replaces the root list. It excludes the generated `src/lib/types.ts` and the shadcn `src/components/ui`.
 - `frontend/biome.jsonc` overrides `useFilenamingConvention` to allow kebab-case, camelCase and PascalCase frontend-wide, because the plan names components `LocaleSwitch.tsx`, `BriefForm.tsx` and hooks `useRunEvents.ts`. The override replaces the rule `options`, so it restates ultracite's `requireAscii: true` (its only other option); keep it in sync if ultracite changes.
 - shadcn style `radix-nova` (Radix primitives from `radix-ui`, `asChild` API), icons `lucide-react`. Components in `src/components/ui/` are generated: re-add with `bunx --bun shadcn@latest add <name>` instead of hand-editing. They import `cn` from the `cn` package. `src/lib/utils.ts` wraps it for the `@/lib/utils` alias. Toasts need `<Toaster />` from `ui/sonner`; the root layout mounts it. Tooltips need a `<TooltipProvider>`, not mounted yet.
-- Vitest + Testing Library + jsdom for unit tests (`src/**/*.test.{ts,tsx}`, explicit `vitest` imports, no globals); Playwright for `e2e/run-flow.spec.ts`. Testing Library auto-cleans only with globals, so `vitest.setup.ts` registers `afterEach(cleanup)`.
+- Vitest + Testing Library + jsdom for unit tests (`src/**/*.test.{ts,tsx}`, explicit `vitest` imports, no globals); Playwright for `e2e/run-flow.spec.ts` (see E2E below). Testing Library auto-cleans only with globals, so `vitest.setup.ts` registers `afterEach(cleanup)`.
 - The ultracite React rules reject inline handler props (`noJsxPropsBind`) and `cond && <X/>` on non-booleans (`noLeakedRender`): wrap handlers in `useCallback` (per-item handlers go in a small row component) and render with `cond ? <X/> : null`.
 - React `act()` flushes renders and effects only when its callback returns. A timer chain where each step waits for a re-render advances one step per `act(advanceTimersByTime)`; schedule the next timer from the timer callback instead (as `useRunEvents` replay does).
 - Install with `bun add` here; the single lockfile is the root `bun.lock`. Never create `frontend/bun.lock`.
+
+## E2E
+- `cd frontend && bun run e2e` runs one Playwright flow (`e2e/run-flow.spec.ts`) in Chromium: brief, plan approve, live dashboard to Done (collected 5, shortlisted tile), report citation dialog, replay at 16x to five tiles.
+- `playwright.config.ts` starts both servers: the backend (`uv run uvicorn clipsieve.app:app --port 8000` from `../backend`, `CLIPSIEVE_EXPLAIN_BACKEND=fake`, a fresh `mkdtemp` `CLIPSIEVE_DATA_DIR` per suite run) and `bun run dev` on :3000. `reuseExistingServer` is on outside CI, so a stale server on :8000 or :3000 is reused with its old data; free the ports for a clean run.
+- Needs `uv`, Bun and the browser once: `bunx playwright install chromium`. No network beyond localhost. Output dirs `test-results/` and `playwright-report/` are git-ignored.
 
 ## Child DOX Index
 None.
