@@ -29,6 +29,22 @@ Next.js 16 App Router client for clipsieve. Thin: all state from `/api/*` (Next 
 - API origin: `CLIPSIEVE_API_ORIGIN` (default `http://localhost:8000`), read when `next.config.ts` loads (`next dev` start, `next build`; baked into the build's routes manifest).
 - Env: Next reads `frontend/.env*` and the process environment; `bun run dev` from the root also loads the root `.env`. Empty values fall back to defaults (`||`, not `??`).
 
+## Component map
+- `src/app/page.tsx` -> `brief/BriefForm` + `brief/RecentRuns`
+- `src/app/runs/[id]/plan/page.tsx` -> `plan/PlanEditor` (live `useRunEvents` until a `plan_ready` plan arrives)
+- `src/app/runs/[id]/page.tsx` -> `dashboard/Dashboard` (live) with pause/resume controls
+- `src/app/runs/[id]/report/page.tsx` -> `report/ReportView` + `report/PostDialog`
+- `src/app/runs/[id]/replay/page.tsx` -> `dashboard/Dashboard` (replay) + `dashboard/ReplayControls`
+
+## Data flow
+`EventSource` (`useRunEvents`) -> `reduceEvent` -> `DashboardState` -> components. Replay reads the whole log over the same SSE endpoint (`after=0`, the server closes after `done` or a `failed`-stage event), then re-emits it on `ts` deltas / speed. Live reconnect uses `after=lastSeq`; the reducer ignores `seq <= lastSeq`.
+
+## Conventions
+- Native `<select>` for form selects (`BriefForm`, `PlanEditor`); shadcn `Select` portals and jsdom cannot drive it.
+- Tiles request `mediaUrl(runId, post.id, "thumb.jpg")` (`/api/runs/{id}/media/{post_id}/thumb.jpg`) and fall back to a kind icon on error.
+- `data-testid="tile-<post_id>"` and `data-state` on grid tiles are part of the e2e contract.
+- Fixture event log: `src/lib/__fixtures__/run-events.ts` (builder) and generated `run-events.json` (`bun run scripts/write-fixture-events.ts` in `frontend/`).
+
 ## Next 16 notes (verified against node_modules/next/dist/docs on scaffold)
 Docs live at `frontend/node_modules/next/dist/docs/` (Bun isolated linker: `frontend/node_modules/next` links into the root `node_modules/.bun/`; there is no root `node_modules/next`).
 - `next.config.ts` `rewrites()` (sync or async) returns `{ source, destination }[]` (optional `basePath`, `locale`, `has`, `missing`), or `{ beforeFiles, afterFiles, fallback }`. A plain array runs as `afterFiles`: after pages and `public/`, before dynamic routes. External destinations are allowed. (`01-app/03-api-reference/05-config/01-next-config-js/rewrites.md`)
